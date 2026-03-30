@@ -235,3 +235,4 @@ All endpoints are available at `http://localhost:8080/api/` — interactive docs
 ```
 http://localhost:8080/api/docs
 ```
+
