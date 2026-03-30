@@ -1,0 +1,16 @@
+# Test dependencies — install in any service venv or a dedicated test venv
+
+# Core
+pytest>=8.1.0
+pytest-asyncio>=0.23.0      # async test support
+pytest-cov>=5.0.0           # coverage reporting
+
+# Layer 2 — integration tests
+testcontainers[postgres,redis]>=4.5.0  # real Postgres + Redis containers
+
+# Service runtime deps (needed so tests can import service modules)
+asyncpg>=0.29.0
+redis>=5.0.0
+pydantic>=2.0.0
+jinja2>=3.1.0
+pyyaml>=6.0.0

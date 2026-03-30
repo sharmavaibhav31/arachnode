@@ -1,0 +1,21 @@
+[tool.pytest.ini_options]
+asyncio_mode = "auto"            # pytest-asyncio: all async tests auto-detected
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "live: requires real Redis/Postgres (skip by default, pass -m live)",
+]
+
+[tool.coverage.run]
+source = [
+    "aggregator-service",
+    "email-generator-service",
+    "scheduler",
+]
+omit = ["*/test_*", "*/conftest.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
