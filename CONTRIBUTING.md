@@ -4,7 +4,7 @@
 
 ### *Self-hosted microservice platform*
 
-<img src="https://img.shields.io/badge/Open%20Source-Welcoming-blue?style=for-the-badge" />
+<img src="https://img.shields.io/badge/Open%20Source-blue?style=for-the-badge" />
 <img src="https://img.shields.io/badge/Contributions-Always%20Welcome-success?style=for-the-badge" />
 <img src="https://img.shields.io/badge/Built%20for-Job Discovery-red?style=for-the-badge" />
 <img src="https://img.shields.io/badge/Made%20with-Python-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
