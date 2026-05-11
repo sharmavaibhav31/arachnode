@@ -1,177 +1,37 @@
 # Scheduler Service
 
-A standalone Python process (not FastAPI) that automates the full job discovery pipeline on a cron schedule using **APScheduler 3.x**.
+## Request/Data Flow
 
----
+1. APScheduler runs `run_scrape_cycle()` every CRAWL_INTERVAL_HOURS: POST /api/scrape to gateway, runs Scrapy subprocess for remotive/yc_jobs spiders, waits for pipelines, counts job delta.
+2. APScheduler runs `run_discover_cycle()` every DISCOVER_INTERVAL_HOURS: fetches new jobs via GET /api/jobs, POST /api/discover for each job with delay between calls.
+3. APScheduler runs `run_draft_cycle()` every DISCOVER_INTERVAL_HOURS: fetches new jobs, checks for contacts via GET /api/contacts, POST /api/generate for jobs with contacts.
+4. After each task, summary is written to /data/run_summary.json with jobs_discovered, contacts_found, emails_drafted, errors.
 
-## Architecture
+## Internal Execution Pipeline
 
-```
-APScheduler (in-process, background scheduler)
-  │
-  ├── Every 8h  : run_scrape_cycle()
-  │     POST /api/scrape        ← platform scrapers (Naukri/LI/Internshala)
-  │     scrapy crawl remotive   ← via subprocess
-  │     scrapy crawl yc_jobs    ← via subprocess
-  │     Wait 60s → count delta jobs
-  │
-  ├── Every 24h (+4h offset): run_discover_cycle()
-  │     For each new job → POST /api/discover
-  │     30s delay between calls
-  │
-  └── Every 24h (+8h offset): run_draft_cycle()
-        For each new job with contacts → POST /api/generate
-        Pre-generates cold_outreach drafts in Postgres
+- **Scrape Cycle**: `tasks.run_scrape_cycle()` counts jobs before, triggers platform scrapers via httpx POST, runs Scrapy subprocess with timeout, waits SCRAPER_WAIT_SECS, counts delta and updates summary.
+- **Discover Cycle**: `tasks.run_discover_cycle()` fetches new jobs via httpx GET, loops over jobs, POST /api/discover with DISCOVER_DELAY_SECS pause, increments contacts_found on success.
+- **Draft Cycle**: `tasks.run_draft_cycle()` fetches new jobs, checks contacts via GET /api/contacts, generates drafts via POST /api/generate for jobs with contacts, updates emails_drafted.
+- **Summary Flushing**: `main._write_summary()` serializes summary dict to JSON file, logged on success/failure.
+- **Manual Runs**: `main._maybe_manual_run()` dispatches single tasks or all via MANUAL_TASK env var, exits after completion.
 
-After each cycle → /data/run_summary.json
-Gateway reads it via GET /api/summary
-```
+## Important Modules/Files
 
----
+- `main.py`: APScheduler setup with interval jobs for scrape/discover/draft, graceful shutdown handling, summary writing, manual task dispatch.
+- `tasks.py`: Synchronous task functions with httpx calls to gateway, subprocess for Scrapy, summary state management, error recording.
+- `logger.py`: JSONFormatter for structured logging to stdout, StructLogger adapter for extra fields.
 
-## Project layout
+## Service Interactions
 
-```
-scheduler/
-├── main.py       # APScheduler setup, signal handlers, manual run
-├── tasks.py      # One function per scheduled task
-├── logger.py     # Structured JSON logging to stdout
-├── requirements.txt
-├── Dockerfile
-└── README.md
-```
+- Calls gateway /api/scrape, /api/jobs, /api/discover, /api/contacts, /api/generate via httpx.
+- Runs Scrapy subprocess for crawler-service spiders.
+- Writes run summary to shared Docker volume /data/run_summary.json, read by gateway.
 
----
+## Debugging Notes
 
-## Configuration (environment variables)
-
-| Variable | Default | Description |
-|---|---|---|
-| `GATEWAY_URL` | `http://gateway:8080` | Base URL for all API calls |
-| `JOBSEEKER_ROLE` | `Backend Engineer` | Role sent to scraper |
-| `JOBSEEKER_STACK` | `Python,FastAPI,...` | Stack filter (comma-separated) |
-| `CRAWL_INTERVAL_HOURS` | `8` | How often to run the scrape cycle |
-| `DISCOVER_INTERVAL_HOURS` | `24` | How often to run discover + draft cycles |
-| `SCRAPER_WAIT_SECS` | `60` | Wait time after triggering scrapers |
-| `DISCOVER_DELAY_SECS` | `30` | Delay between each per-job discover call |
-| `SCRAPY_PROJECT_DIR` | `/crawler` | CWD for `scrapy crawl` subprocess |
-| `SUMMARY_PATH` | `/data/run_summary.json` | Output path for run summary |
-
----
-
-## Quick start
-
-### Docker (recommended — part of full stack)
-
-```bash
-cd /path/to/jobCrawler
-docker compose up --build
-# Scheduler auto-starts after gateway is healthy
-```
-
-### Local dev
-
-```bash
-cd scheduler
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-
-export GATEWAY_URL="http://localhost:8080"
-export JOBSEEKER_ROLE="Backend Engineer"
-export JOBSEEKER_STACK="Python,Go,FastAPI"
-
-python main.py
-```
-
----
-
-## Triggering a manual run without waiting for the cron
-
-Set the `MANUAL_TASK` environment variable before starting the process.
-The scheduler will run that task immediately and exit (no APScheduler loop).
-
-```bash
-# Run only the scrape cycle now
-MANUAL_TASK=scrape python main.py
-
-# Run only the discover cycle now
-MANUAL_TASK=discover python main.py
-
-# Run only the draft cycle now
-MANUAL_TASK=draft python main.py
-
-# Run all three cycles in sequence
-MANUAL_TASK=all python main.py
-```
-
-**Via Docker (without restarting the container):**
-
-```bash
-docker compose run --rm \
-  -e MANUAL_TASK=scrape \
-  -e GATEWAY_URL=http://gateway:8080 \
-  scheduler
-```
-
----
-
-## Changing the schedule
-
-Edit `main.py → build_scheduler()`.
-
-The three jobs use `trigger="interval"` with an `hours=` parameter.
-To switch to a cron-style trigger (e.g., run at 6 AM every day):
-
-```python
-from apscheduler.triggers.cron import CronTrigger
-
-scheduler.add_job(
-    func=lambda: _run(tasks.run_scrape_cycle, "scrape"),
-    trigger=CronTrigger(hour=6, minute=0, timezone="Asia/Kolkata"),
-    id="scrape",
-)
-```
-
-Alternatively, adjust the `CRAWL_INTERVAL_HOURS` and `DISCOVER_INTERVAL_HOURS`
-environment variables without rebuilding the image.
-
----
-
-## Run summary
-
-The scheduler writes `/data/run_summary.json` after every cycle:
-
-```json
-{
-  "run_at": "2026-03-19T12:00:00Z",
-  "jobs_discovered": 42,
-  "contacts_found": 18,
-  "emails_drafted": 12,
-  "errors": []
-}
-```
-
-Read it via the gateway:
-
-```bash
-curl http://localhost:8080/api/summary
-```
-
-The `/data` directory is a shared Docker volume (`scheduler_data`) mounted by
-both the **scheduler** (writer) and the **gateway** (reader).
-
----
-
-## Graceful shutdown
-
-The process handles `SIGTERM` and `SIGINT`:
-
-```
-SIGTERM received
-  → APScheduler stops accepting new jobs
-  → Waits for the currently executing task to complete
-  → Exits cleanly
-```
-
-Docker sends `SIGTERM` on `docker compose stop` / `docker compose down`,
-so no data will be lost mid-cycle.
+- Task exceptions logged as JSON with context/detail, appended to summary errors.
+- HTTP timeouts/failures logged in tasks, with _record_error() updating summary.
+- Subprocess timeouts/errors logged, with stderr captured in summary.
+- Scheduler misfires logged via APScheduler, with grace time 300s.
+- Manual runs exit after task, useful for testing without schedule.
+- Concurrent tasks prevented by _task_lock, with warnings for skipped runs.
