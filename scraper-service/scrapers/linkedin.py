@@ -51,7 +51,7 @@ logger = logging.getLogger(__name__)
 MIN_SCROLL_DELAY = 4.0   # seconds — do NOT lower this
 
 # ── Selectors ── loaded from YAML config
-from selectors import SelectorLoader
+from selector_loader import SelectorLoader
 
 _selector_loader = SelectorLoader()
 _CARD_SEL      = _selector_loader.get("job_card")
