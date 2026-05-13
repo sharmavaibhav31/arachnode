@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import argparse
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, BackgroundTasks
@@ -122,3 +123,55 @@ async def trigger_scrape(body: ScrapeRequest, background_tasks: BackgroundTasks)
     """
     background_tasks.add_task(_run_all_scrapers, body.role, body.stack)
     return ScrapeResponse(triggered=True, platforms=PLATFORMS)
+
+
+# ---------------------------------------------------------------------------
+# CLI entry point for --verify flag
+# ---------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="LinkedIn Scraper Selector Verification")
+    parser.add_argument(
+        '--verify', 
+        action='store_true', 
+        help='Verify LinkedIn selectors from config file'
+    )
+    args = parser.parse_args()
+    
+    if args.verify:
+        print("\n" + "="*50)
+        print("LinkedIn Selector Verification")
+        print("="*50 + "\n")
+        
+        try:
+            from selectors import SelectorLoader
+            loader = SelectorLoader()
+            results = loader.verify()
+            
+            all_valid = True
+            for name, info in results.items():
+                status = "✅" if info["valid"] else "❌"
+                print(f"{status} {name}: {info['selector']}")
+                if not info["valid"]:
+                    all_valid = False
+            
+            print("\n" + "="*50)
+            if all_valid:
+                print("✅ All selectors are valid!")
+            else:
+                print("❌ Some selectors are invalid or missing.")
+                print("   Update config/linkedin_selectors.yaml with correct selectors.")
+            print("="*50)
+            
+        except FileNotFoundError:
+            print("❌ Config file not found: config/linkedin_selectors.yaml")
+            print("   Please create the YAML config file first.")
+        except Exception as e:
+            print(f"❌ Error during verification: {e}")
+        
+        exit(0)
+    
+    # Normal FastAPI startup
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+    
