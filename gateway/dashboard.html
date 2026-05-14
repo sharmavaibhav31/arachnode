@@ -847,8 +847,9 @@
         <button class="nav-tab" data-tab="stats">Stats</button>
       </div>
     </div>
-    <button id="btn-scrape">▶ Trigger Scrape</button>
-  </nav>
+  <button id="btn-scrape">▶ Trigger Scrape</button>
+        <button id="btn-export-csv" style="padding:7px 14px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;" title="Export jobs as CSV">⬇ Export CSV</button>
+      </nav>
 
   <!-- OFFLINE BANNER -->
   <div id="offline-banner">
@@ -1155,7 +1156,23 @@
       const jobs = filteredJobs();
       const grid = document.getElementById('jobs-grid');
       if (!jobs.length) {
-        grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><p>No jobs found. Trigger a scrape to get started.</p></div>`;
+grid.innerHTML = `<div class="empty" style="grid-column:1/-1">
+  <div class="empty-icon">📭</div>
+  <h3 style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:8px">No jobs found yet</h3>
+  <p style="margin-bottom:20px;font-size:13px">Follow these steps to start discovering jobs</p>
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:300px;margin:0 auto 20px;text-align:left">
+    <div style="padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px">
+      <strong>Step 1</strong> — Click "Trigger Scrape" to start crawling job platforms
+    </div>
+    <div style="padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px">
+      <strong>Step 2</strong> — Wait ~60 seconds for jobs to appear
+    </div>
+    <div style="padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px">
+      <strong>Step 3</strong> — Use filters above to narrow down by role or stack
+    </div>
+  </div>
+  <button class="btn-accent" onclick="document.getElementById('btn-scrape').click()">▶ Trigger Scrape</button>
+</div>`;
         return;
       }
       grid.innerHTML = jobs.map(j => `
@@ -1575,6 +1592,28 @@
     document.getElementById('modal-close').addEventListener('click', () => scrapeModal.classList.remove('open'));
     document.getElementById('modal-cancel').addEventListener('click', () => scrapeModal.classList.remove('open'));
     scrapeModal.addEventListener('click', e => { if (e.target === scrapeModal) scrapeModal.classList.remove('open'); });
+    // CSV Export
+  document.getElementById('btn-export-csv').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-export-csv');
+    btn.textContent = '⏳ Exporting...';
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/jobs/export/csv');
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `jobs_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert('Export failed: ' + e.message);
+    } finally {
+      btn.textContent = '⬇ Export CSV';
+      btn.disabled = false;
+    }
+  });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') scrapeModal.classList.remove('open'); });
 
     document.getElementById('modal-submit').addEventListener('click', async () => {
