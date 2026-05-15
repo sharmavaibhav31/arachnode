@@ -17,6 +17,7 @@ email-generator-service/
 ├── templates/
 │   ├── cold_outreach.j2       # To hiring manager / engineer (≤150 words)
 │   ├── recruiter_outreach.j2  # To recruiter (≤120 words)
+│   ├── referral_outreach.j2   # To a mutual connection referral contact
 │   └── followup.j2            # Follow-up after no reply (≤80 words)
 ├── requirements.txt
 ├── Dockerfile
@@ -146,6 +147,14 @@ curl -X POST http://localhost:8003/generate \
      -d '{"job_id": "...", "contact_id": "...", "template": "recruiter_outreach",
           "your_name": "Vaibhav Sharma", "your_stack": ["Go", "Kubernetes"],
           "github_url": "https://github.com/sharmavaibhav31", "graduation_year": 2025}'
+
+# Referral outreach
+curl -X POST http://localhost:8003/generate \
+     -H "Content-Type: application/json" \
+     -d '{"job_id": "...", "contact_id": "...", "template": "referral_outreach",
+          "your_name": "Vaibhav Sharma", "your_stack": ["Python", "FastAPI"],
+          "github_url": "https://github.com/sharmavaibhav31",
+          "referred_by": "Priya Menon"}'
 
 # Follow-up (7 days later)
 curl -X POST http://localhost:8003/generate \

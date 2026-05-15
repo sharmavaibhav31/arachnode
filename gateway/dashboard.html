@@ -1262,22 +1262,35 @@
         const tmplSel = `<select id="panel-tmpl" style="height:30px;padding:0 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;margin-right:6px">
       <option value="cold_outreach">Cold Outreach</option>
       <option value="recruiter_outreach">Recruiter</option>
+      <option value="referral_outreach">Referral Outreach</option>
       <option value="followup">Follow-up</option>
     </select>`;
+        const referralInput = `<input id="panel-referred-by" type="text" placeholder="Referred by" style="display:none;height:30px;padding:0 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;margin-right:6px;min-width:150px">`;
         if (!emails?.length) {
-          eSect.innerHTML = `<h4>Emails</h4><p style="font-size:13px;color:var(--muted);margin-bottom:10px">No emails drafted. Click 'Draft email' on a job card.</p>${tmplSel}<button class="btn-accent" id="panel-draft-btn" style="height:30px;font-size:12px">Draft Email</button>`;
+          eSect.innerHTML = `<h4>Emails</h4><p style="font-size:13px;color:var(--muted);margin-bottom:10px">No emails drafted. Click 'Draft email' on a job card.</p>${tmplSel}${referralInput}<button class="btn-accent" id="panel-draft-btn" style="height:30px;font-size:12px">Draft Email</button>`;
         } else {
           eSect.innerHTML = `<h4>Emails</h4>${emails.map(e => `
         <div style="margin-bottom:8px;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
           <div style="font-weight:500;margin-bottom:2px">${esc(e.subject)}</div>
           <div style="color:var(--muted)">${esc(e.template)} · ${statusBadge(e.status)}</div>
         </div>`).join('')}
-        <div style="margin-top:10px">${tmplSel}<button class="btn-accent" id="panel-draft-btn" style="height:30px;font-size:12px">Draft New</button></div>`;
+        <div style="margin-top:10px">${tmplSel}${referralInput}<button class="btn-accent" id="panel-draft-btn" style="height:30px;font-size:12px">Draft New</button></div>`;
         }
+        const tmplEl = document.getElementById('panel-tmpl');
+        const referredByEl = document.getElementById('panel-referred-by');
+        const syncReferralInput = () => {
+          if (referredByEl) referredByEl.style.display = tmplEl?.value === 'referral_outreach' ? 'inline-block' : 'none';
+        };
+        tmplEl?.addEventListener('change', syncReferralInput);
+        syncReferralInput();
         document.getElementById('panel-draft-btn')?.addEventListener('click', async () => {
-          const tmpl = document.getElementById('panel-tmpl')?.value || 'cold_outreach';
+          const tmpl = tmplEl?.value || 'cold_outreach';
+          const payload = { job_id: job.id, template: tmpl };
+          if (tmpl === 'referral_outreach' && referredByEl?.value.trim()) {
+            payload.referred_by = referredByEl.value.trim();
+          }
           toast('Generating…', 'info');
-          const r = await apiFetch('/workflow/apply', { method: 'POST', body: { job_id: job.id, template: tmpl } });
+          const r = await apiFetch('/workflow/apply', { method: 'POST', body: payload });
           if (r) { toast('Draft created!', 'success'); fetchPanelData(job); }
         });
       }

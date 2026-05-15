@@ -65,12 +65,13 @@ app = FastAPI(
 class GenerateRequest(BaseModel):
     job_id:          Optional[UUID] = None
     contact_id:      Optional[UUID] = None
-    template:        Literal["cold_outreach", "recruiter_outreach", "followup"]
+    template:        Literal["cold_outreach", "recruiter_outreach", "referral_outreach", "followup"]
     your_name:       str = ""
     your_stack:      List[str] = []
     github_url:      str = ""
     graduation_year: Optional[int] = None
     availability:    Optional[str] = None
+    referred_by:     Optional[str] = None
 
 
 class GenerateResponse(BaseModel):
@@ -140,6 +141,7 @@ async def generate(req: GenerateRequest):
             github_url=github_url,
             graduation_year=req.graduation_year,
             availability=req.availability,
+            referred_by=req.referred_by,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
