@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import argparse
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, BackgroundTasks
@@ -122,3 +123,4 @@ async def trigger_scrape(body: ScrapeRequest, background_tasks: BackgroundTasks)
     """
     background_tasks.add_task(_run_all_scrapers, body.role, body.stack)
     return ScrapeResponse(triggered=True, platforms=PLATFORMS)
+

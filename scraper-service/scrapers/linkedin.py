@@ -50,14 +50,16 @@ logger = logging.getLogger(__name__)
 
 MIN_SCROLL_DELAY = 4.0   # seconds — do NOT lower this
 
-# ── Selectors — update here when LinkedIn changes its markup ─────────────────
-_CARD_SEL      = "li > div.base-search-card"
-_TITLE_SEL     = "h3.base-search-card__title"
-_COMPANY_SEL   = "h4.base-search-card__subtitle"
-_LOCATION_SEL  = "span.job-search-card__location"
-_LINK_SEL      = "a.base-card__full-link"
-_TIME_SEL      = "time"
+# ── Selectors ── loaded from YAML config
+from selector_loader import SelectorLoader
 
+_selector_loader = SelectorLoader()
+_CARD_SEL      = _selector_loader.get("job_card")
+_TITLE_SEL     = _selector_loader.get("title")
+_COMPANY_SEL   = _selector_loader.get("company")
+_LOCATION_SEL  = _selector_loader.get("location")
+_LINK_SEL      = _selector_loader.get("job_url")
+_TIME_SEL      = _selector_loader.get("posted_date")
 
 def _build_url(role: str) -> str:
     kw = quote_plus(role)
