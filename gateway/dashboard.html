@@ -43,6 +43,28 @@
       --font: 'SF Mono', 'Fira Code', monospace;
     }
 
+    html[data-theme="dark"] {
+      --accent: #8b5cf6;
+      --accent-low: rgba(139, 92, 246, .18);
+      --bg: #09090f;
+      --surface: #141420;
+      --border: rgba(255, 255, 255, .12);
+      --text: #f8fafc;
+      --muted: #a1a1aa;
+      --green: #22c55e;
+      --amber: #f59e0b;
+      --red: #f87171;
+      --blue: #60a5fa;
+    }
+
+    html {
+      color-scheme: light;
+    }
+
+    html[data-theme="dark"] {
+      color-scheme: dark;
+    }
+
     *,
     *::before,
     *::after {
@@ -56,7 +78,10 @@
       font-size: 14px;
       color: var(--text);
       background: var(--bg);
-      line-height: 1.5
+      line-height: 1.5;
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background-color .25s ease, color .25s ease;
     }
 
     button {
@@ -831,10 +856,174 @@
       opacity: 0;
       transition: opacity .3s ease
     }
+    /* === THEME TOGGLE === */
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .theme-toggle {
+      height: 34px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--text);
+      background: color-mix(in srgb, var(--surface) 82%, transparent);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background-color .25s ease, border-color .25s ease, transform .2s ease;
+    }
+
+    .theme-toggle:hover {
+      transform: translateY(-1px);
+      border-color: var(--accent);
+    }
+
+    .theme-icon {
+      width: 18px;
+      height: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* === ANIMATED BACKGROUND === */
+    .motion-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(108, 71, 255, .16), transparent 28%),
+        radial-gradient(circle at 85% 15%, rgba(37, 99, 235, .12), transparent 24%),
+        radial-gradient(circle at 50% 90%, rgba(22, 163, 74, .10), transparent 28%);
+    }
+
+    html[data-theme="dark"] .motion-bg {
+      background:
+        radial-gradient(circle at 20% 20%, rgba(139, 92, 246, .24), transparent 30%),
+        radial-gradient(circle at 85% 15%, rgba(96, 165, 250, .16), transparent 26%),
+        radial-gradient(circle at 50% 90%, rgba(34, 197, 94, .12), transparent 30%);
+    }
+
+    .motion-orb {
+      position: absolute;
+      width: 320px;
+      height: 320px;
+      border-radius: 999px;
+      filter: blur(42px);
+      opacity: .32;
+      transform: translate3d(0, 0, 0);
+      animation: floatOrb 14s ease-in-out infinite alternate;
+    }
+
+    .motion-orb.one {
+      top: 12%;
+      left: 6%;
+      background: rgba(108, 71, 255, .42);
+    }
+
+    .motion-orb.two {
+      right: 8%;
+      top: 18%;
+      background: rgba(37, 99, 235, .28);
+      animation-delay: -4s;
+    }
+
+    .motion-orb.three {
+      left: 36%;
+      bottom: 4%;
+      background: rgba(22, 163, 74, .22);
+      animation-delay: -8s;
+    }
+
+    @keyframes floatOrb {
+      from {
+        transform: translate3d(0, 0, 0) scale(1);
+      }
+      to {
+        transform: translate3d(42px, -28px, 0) scale(1.08);
+      }
+    }
+
+    #main {
+      position: relative;
+      z-index: 1;
+    }
+
+    #navbar,
+    #offline-banner,
+    #detail-panel,
+    #panel-backdrop,
+    .modal-backdrop,
+    #toasts {
+      position: relative;
+    }
+
+    .card,
+    .metric-card,
+    .summary-card,
+    .table-wrap,
+    .modal,
+    #detail-panel,
+    .filter-bar input,
+    .filter-bar select,
+    .field-group input,
+    .field-group select,
+    .toast {
+      transition:
+        background-color .25s ease,
+        color .25s ease,
+        border-color .25s ease,
+        box-shadow .25s ease;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .motion-orb {
+        animation: none;
+      }
+
+      .theme-toggle,
+      .card,
+      .metric-card,
+      .summary-card,
+      .table-wrap,
+      .modal,
+      #detail-panel {
+        transition: none;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .nav-actions {
+        gap: 6px;
+      }
+
+      .theme-label {
+        display: none;
+      }
+
+      .theme-toggle {
+        width: 36px;
+        padding: 0;
+        justify-content: center;
+      }
+    }
   </style>
 </head>
 
 <body>
+
+  <div class="motion-bg" aria-hidden="true">
+    <span class="motion-orb one"></span>
+    <span class="motion-orb two"></span>
+    <span class="motion-orb three"></span>
+  </div>
 
   <!-- NAVBAR -->
   <nav id="navbar">
@@ -847,7 +1036,14 @@
         <button class="nav-tab" data-tab="stats">Stats</button>
       </div>
     </div>
-    <button id="btn-scrape">▶ Trigger Scrape</button>
+    <div class="nav-actions">
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark theme">
+        <span class="theme-icon" id="theme-icon">🌙</span>
+        <span class="theme-label" id="theme-label">Dark</span>
+      </button>
+
+      <button id="btn-scrape">▶ Trigger Scrape</button>
+    </div>
   </nav>
 
   <!-- OFFLINE BANNER -->
@@ -1597,6 +1793,61 @@
     // ===========================================================================
     (async () => {
       switchTab('jobs');
+    })();
+  </script>
+
+  <script>
+    (function () {
+      const STORAGE_KEY = "arachnode-theme";
+      const root = document.documentElement;
+      const toggle = document.getElementById("theme-toggle");
+      const icon = document.getElementById("theme-icon");
+      const label = document.getElementById("theme-label");
+
+      function getInitialTheme() {
+        const savedTheme = localStorage.getItem(STORAGE_KEY);
+
+        if (savedTheme === "light" || savedTheme === "dark") {
+          return savedTheme;
+        }
+
+        return window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light";
+      }
+
+      function applyTheme(theme) {
+        root.setAttribute("data-theme", theme);
+        localStorage.setItem(STORAGE_KEY, theme);
+
+        const isDark = theme === "dark";
+
+        if (toggle) {
+          toggle.setAttribute(
+            "aria-label",
+            isDark ? "Switch to light theme" : "Switch to dark theme"
+          );
+          toggle.setAttribute("title", isDark ? "Switch to light theme" : "Switch to dark theme");
+        }
+
+        if (icon) {
+          icon.textContent = isDark ? "☀️" : "🌙";
+        }
+
+        if (label) {
+          label.textContent = isDark ? "Light" : "Dark";
+        }
+      }
+
+      applyTheme(getInitialTheme());
+
+      if (toggle) {
+        toggle.addEventListener("click", function () {
+          const currentTheme = root.getAttribute("data-theme") || "light";
+          const nextTheme = currentTheme === "dark" ? "light" : "dark";
+          applyTheme(nextTheme);
+        });
+      }
     })();
   </script>
 </body>
