@@ -251,3 +251,74 @@ def run_draft_cycle() -> None:
 
     _summary["emails_drafted"] += drafted
     log.info("Draft cycle complete", drafted=drafted)
+
+# --------------------------------------------------------------------------
+# Follow-up scheduling cycle
+# --------------------------------------------------------------------------
+
+FOLLOWUP_DAYS = int(os.getenv("FOLLOWUP_DAYS", 7))
+
+
+def run_followup_cycle() -> None:
+    """
+    Checks for emails marked as 'sent' more than FOLLOWUP_DAYS days ago
+    that have not received a reply. For each, drafts a follow-up using
+    followup.j2 and surfaces it as a pending action in the dashboard.
+    Never sends automatically — always requires manual review.
+    """
+    log.info("Follow-up cycle started", followup_days=FOLLOWUP_DAYS)
+    reminded = 0
+
+    try:
+        with httpx.Client(timeout=httpx.Timeout(30.0, connect=10.0)) as c:
+            r = c.get(
+                f"{_gw()}/api/emails",
+                params={"status": "sent"},
+            )
+            r.raise_for_status()
+            emails = r.json()
+    except Exception as exc:
+        _record_error("followup_fetch", str(exc))
+        log.warning("Follow-up cycle: could not fetch sent emails", error=str(exc))
+        return
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=FOLLOWUP_DAYS)
+
+    for email in emails:
+        sent_at_raw = email.get("sent_at")
+        if not sent_at_raw:
+            continue
+
+        try:
+            sent_at = datetime.fromisoformat(sent_at_raw.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+
+        if sent_at > cutoff:
+            continue
+
+        eid = email.get("id")
+        jid = email.get("job_id")
+
+        log.info("Drafting follow-up", email_id=eid, job_id=jid, sent_at=sent_at_raw)
+
+        payload = {
+            "email_id": eid,
+            "job_id": jid,
+            "template": "followup",
+            "action": "pending_followup",
+        }
+
+        try:
+            with httpx.Client(timeout=httpx.Timeout(90.0, connect=10.0)) as c:
+                r = c.post(f"{_gw()}/api/generate", json=payload)
+                r.raise_for_status()
+                reminded += 1
+                log.info("Follow-up draft created", email_id=eid, job_id=jid)
+        except Exception as exc:
+            _record_error(f"followup_{eid}", str(exc))
+
+        time.sleep(2)
+
+    _summary["followups_drafted"] = _summary.get("followups_drafted", 0) + reminded
+    log.info("Follow-up cycle complete", reminded=reminded)
