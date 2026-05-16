@@ -150,6 +150,16 @@ def build_scheduler() -> BackgroundScheduler:
         start_date=_offset_start(hours=8),
     )
 
+
+    # -- Job 4: Check for follow-ups every 24 hours --
+    scheduler.add_job(
+        func=lambda: _run(tasks.run_followup_cycle, "followup"),
+        trigger="interval",
+        hours=24,
+        id="followup",
+        name="Follow-up reminder drafting",
+        start_date=_offset_start(hours=12),
+    )
     return scheduler
 
 
@@ -220,3 +230,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
