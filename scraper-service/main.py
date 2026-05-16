@@ -20,6 +20,7 @@ import emit as emitter
 from scrapers.naukri import NaukriScraper
 from scrapers.linkedin import LinkedInScraper
 from scrapers.internshala import IntershalaScraper
+from scrapers.unstop import UnstopScraper
 
 logging.basicConfig(
     level=logging.INFO,
@@ -27,7 +28,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-PLATFORMS = ["naukri", "linkedin", "internshala"]
+PLATFORMS = ["naukri", "linkedin", "internshala", "unstop"]
 
 
 # ---------------------------------------------------------------------------
@@ -75,13 +76,14 @@ class ScrapeResponse(BaseModel):
 
 async def _run_all_scrapers(role: str, stack: list[str]) -> None:
     """
-    Run all three scrapers concurrently then emit results to Redis.
+    Run all four scrapers concurrently then emit results to Redis.
     Designed to be launched as a BackgroundTask so /scrape returns immediately.
     """
     scrapers = [
         NaukriScraper(),
         LinkedInScraper(),
         IntershalaScraper(),
+        UnstopScraper(),
     ]
 
     # Run all scrapers in parallel; capture per-scraper exceptions.
