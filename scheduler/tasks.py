@@ -361,14 +361,21 @@ def run_followup_cycle() -> None:
     for email in emails:
         sent_at_raw = email.get("sent_at")
         if not sent_at_raw:
+            log.warning("Follow-up cycle: skipping email with missing sent_at", email_id=email.get("id"))
             continue
 
         try:
             sent_at = datetime.fromisoformat(sent_at_raw.replace("Z", "+00:00"))
         except ValueError:
+            log.warning("Follow-up cycle: malformed sent_at value", email_id=email.get("id"), sent_at=sent_at_raw)
             continue
 
         if sent_at > cutoff:
+            continue
+
+        # Skip if follow-up already drafted — prevents duplicate drafts across scheduler runs
+        if email.get("followup_status") == "pending_followup":
+            log.info("Follow-up already pending, skipping", email_id=email.get("id"))
             continue
 
         eid = email.get("id")
@@ -391,8 +398,6 @@ def run_followup_cycle() -> None:
                 log.info("Follow-up draft created", email_id=eid, job_id=jid)
         except Exception as exc:
             _record_error(f"followup_{eid}", str(exc))
-
-        time.sleep(2)
 
     _summary["followups_drafted"] = _summary.get("followups_drafted", 0) + reminded
     log.info("Follow-up cycle complete", reminded=reminded)
