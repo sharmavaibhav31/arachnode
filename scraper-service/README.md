@@ -21,7 +21,7 @@ scraper-service/
 │   ├── base.py              # PlatformScraper ABC
 │   ├── naukri.py            # httpx + BeautifulSoup (3 pages)
 │   ├── linkedin.py          # Playwright headless (public-only)
-│   └── internshala.py       # httpx + BeautifulSoup (2 pages)
+│   └── internshala.py       # httpx + BeautifulSoup (full-time jobs pages)
 ├── requirements.txt
 ├── Dockerfile
 └── README.md
@@ -151,19 +151,27 @@ URL pattern: `https://www.linkedin.com/jobs/search/?keywords={role}&location=Ind
 
 ### Internshala (`scrapers/internshala.py`)
 
-> Mostly server-rendered; httpx works well.  CAPTCHA appears after excessive requests.  
+> Mostly server-rendered; httpx works well. CAPTCHA appears after excessive requests.  
 > Keep `SCRAPER_DELAY_SECONDS ≥ 2`.
 
 | Selector constant | Target element |
 |---|---|
 | `card_sel` | `div.individual_internship` — one posting |
-| `title_sel` | `h3.job-internship-name a` / `div.profile h3 a` — title anchor |
-| `company_sel` | `h4.company-name a` / `div.company_name a` — company |
-| `loc_sel` | `a.location_link` — city |
-| `skills_sel` | `div.round_tabs_container span.round_tabs` — skill badges |
-| `stipend_sel` | `div.stipend_container span.stipend` — stipend/salary (mapped to `product` field) |
+| `title_sel` | `h2.job-internship-name a` / `h3.job-internship-name a` / `div.profile h3 a` / `a.job-title-href` — title anchor |
+| `company_sel` | `h4.company-name a` / `div.company_name a` / `p.company-name` / `div.company_and_premium p.company-name` — company |
+| `loc_sel` | `a.location_link` / `p.locations span a` / `p.locations span` / `div.internship_other_details_container span a` — city |
+| `skills_sel` | `div.job_skills div.job_skill` / `div.round_tabs_container span.round_tabs` / `div#skills_section span.skill` — skill badges |
+| `stipend_sel` | `div.detail-row-1 div.row-1-item span.desktop` / `div.stipend_container span.stipend` / `span.stipend` — stipend/salary (mapped to `product` field) |
 
-URL pattern: `https://internshala.com/jobs/keywords-{role-slug}/` (page 2: `?page=2`)
+URL pattern:
+
+- page 1: `https://internshala.com/jobs/{role-slug}-jobs/`
+- page 2+: `https://internshala.com/jobs/{role-slug}-jobs/page-N/`
+
+Other Internshala notes:
+
+- Posted dates are normalized to UTC ISO-8601 when the card contains relative labels like `today`, `yesterday`, or `2 days ago`.
+- Pagination stops early when a page has no cards, when Internshala returns an HTTP error, or when the final redirected URL repeats a previously seen page.
 
 ---
 

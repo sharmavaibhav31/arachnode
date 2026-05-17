@@ -1,1 +1,20 @@
 /.env
+
+# Python bytecode and caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local Python environments
+.venv/
+venv/
+
+# Test and tooling caches
+.pytest_cache/
+.coverage
+coverage.xml
+
+# Local scratch / temporary files
+change.txt
+/__pycache__/
