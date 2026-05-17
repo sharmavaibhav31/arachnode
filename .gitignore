@@ -1,4 +1,9 @@
 /.env
+arachnode/contact-discovery-service/.venv
+.venv
+bash.env
+.env.local
+.env.*.local
 
 # Python bytecode and caches
 __pycache__/
