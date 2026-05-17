@@ -1,223 +1,45 @@
-# Cold Email Generator Service
+# Email Generator Service
 
-A FastAPI microservice that drafts personalized cold emails for job applications using **Jinja2 templates** + an optional **local Ollama LLM** (mistral/llama3) for a one-line company product observation. Falls back to curated static observations from `fallbacks.yaml` when Ollama is unavailable.
+## Request/Data Flow
 
----
+1. `POST /generate` accepts a JSON payload with `template`, optional `job_id`/`contact_id`, candidate details, and context fields.
+2. `main.py` initializes the asyncpg pool and fetches job/contact records from PostgreSQL using `storage.py` if IDs are provided.
+3. `generator.py` constructs the email context, invokes `ollama_client.py` for product observation generation, and renders Jinja2 templates.
+4. Rendered subject/body are inserted into the `emails` table via `storage.insert_email()`, returning the email UUID.
+5. `GET /emails` and `GET /emails/{id}` retrieve drafts from PostgreSQL using `storage.py` queries.
+6. `POST /emails/{id}/send` resolves the recipient email from the linked contact record, sends via `mailer.py`, and updates `sent_at`/`status` in the database.
 
-## Project layout
+## Internal Execution Pipeline
 
-```
-email-generator-service/
-├── main.py              # FastAPI app — all endpoints
-├── generator.py         # Email generation pipeline (Ollama → fallback → Jinja2)
-├── ollama_client.py     # Async Ollama REST client
-├── mailer.py            # Gmail SMTP_SSL sender
-├── storage.py           # asyncpg pool, emails table DDL, CRUD
-├── fallbacks.yaml       # Static observations by domain (fintech, devtools…)
-├── templates/
-│   ├── cold_outreach.j2       # To hiring manager / engineer (≤150 words)
-│   ├── recruiter_outreach.j2  # To recruiter (≤120 words)
-│   └── followup.j2            # Follow-up after no reply (≤80 words)
-├── requirements.txt
-├── Dockerfile
-└── README.md
-```
+- **Generation Pipeline**: `generator.generate_email()` loads job/contact data, attempts Ollama observation via `ollama_client.generate_observation()`, falls back to YAML-based selection from `fallbacks.yaml`, and renders templates using Jinja2 with context variables.
+- **Ollama Integration**: `ollama_client.py` detects available models (mistral/llama3), sends a prompt to `/api/generate`, and returns a single observation sentence or None on failure.
+- **Fallback Logic**: `generator._select_fallback()` matches keywords from product/stack against `fallbacks.yaml` categories, selecting a random observation from the best-matched bucket.
+- **Template Rendering**: Jinja2 environment in `generator.py` processes templates with variables like `company`, `role`, `your_name`, `product_observation`, and `contact_name`.
+- **Storage Operations**: `storage.py` manages asyncpg pool, executes DDL for `jobs`/`contacts`/`emails` tables, and performs CRUD with parameterized queries.
+- **Email Sending**: `mailer.send_email()` uses `smtplib.SMTP_SSL` with Gmail credentials, sending plain-text emails and handling authentication errors.
 
----
+## Important Modules/Files
 
-## Configuration (environment variables)
+- `main.py`: FastAPI application with endpoints (`/generate`, `/emails`, `/emails/{id}`, `/emails/{id}/send`), Pydantic models for requests/responses, and lifespan hooks for pool management.
+- `generator.py`: Core logic for email creation, including Ollama client calls, fallback selection, and Jinja2 rendering with context assembly.
+- `ollama_client.py`: Async HTTP client for Ollama API, model detection via `/api/tags`, and observation generation with timeout handling.
+- `mailer.py`: Synchronous Gmail SMTP sender wrapped in `asyncio.run_in_executor`, using SSL on port 465 with App Password authentication.
+- `storage.py`: asyncpg pool lifecycle, schema initialization (including `pgcrypto` extension), and CRUD functions for jobs, contacts, and emails tables.
+- `fallbacks.yaml`: YAML structure with keyword lists per category (e.g., fintech, devtools) and observation arrays for static fallbacks.
+- `templates/`: Directory containing Jinja2 templates (`cold_outreach.j2`, `recruiter_outreach.j2`, `followup.j2`) with conditional rendering and variable substitution.
 
-| Variable | Default | Description |
-|---|---|---|
-| `DATABASE_URL` | — | asyncpg DSN (shared with aggregator / contact discovery) |
-| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama REST API base URL |
-| `GMAIL_ADDRESS` | — | Your Gmail address for sending |
-| `GMAIL_APP_PASSWORD` | — | 16-char Gmail App Password (not login password) |
-| `YOUR_NAME` | `Applicant` | Shown in email sign-off |
-| `YOUR_GITHUB_URL` | — | GitHub profile URL embedded in emails |
+## Service Interactions
 
----
+- Reads `jobs` and `contacts` tables from PostgreSQL to populate email templates and resolve recipient addresses.
+- Writes to the `emails` table for draft storage and status updates, sharing the database with `aggregator-service` and `contact-discovery-service`.
+- Makes HTTP requests to a local Ollama server at `OLLAMA_BASE_URL` for product observations, with automatic fallback to static data.
+- Sends outbound emails via Gmail SMTP, requiring external Gmail account configuration for delivery.
 
-## Ollama setup (optional but recommended)
+## Debugging Notes
 
-Install Ollama, then pull the preferred model:
-
-```bash
-# Install (Linux)
-curl -fsSL https://ollama.com/install.sh | sh
-
-# Pull models (mistral is preferred; llama3 is the fallback)
-ollama pull mistral
-ollama pull llama3   # optional
-
-# Start the server (runs on http://localhost:11434 by default)
-ollama serve
-```
-
-The service auto-detects which model is available. If Ollama is not running, it falls back to `fallbacks.yaml` silently — **no configuration change needed**.
-
----
-
-## Quick start
-
-### Local dev
-
-```bash
-cd email-generator-service
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-
-export DATABASE_URL="postgresql://jobuser:jobpass@localhost:5432/jobsdb"
-export GMAIL_ADDRESS="you@gmail.com"
-export GMAIL_APP_PASSWORD="abcd efgh ijkl mnop"
-export YOUR_NAME="Your Name"
-export YOUR_GITHUB_URL="https://github.com/yourhandle"
-
-uvicorn main:app --reload --port 8003
-```
-
-### Docker
-
-```bash
-docker build -t email-generator .
-docker run \
-  -e DATABASE_URL="postgresql://jobuser:jobpass@host.docker.internal:5432/jobsdb" \
-  -e OLLAMA_BASE_URL="http://host.docker.internal:11434" \
-  -e GMAIL_ADDRESS="you@gmail.com" \
-  -e GMAIL_APP_PASSWORD="abcd efgh ijkl mnop" \
-  -e YOUR_NAME="Your Name" \
-  -e YOUR_GITHUB_URL="https://github.com/yourhandle" \
-  -p 8003:8000 \
-  email-generator
-```
-
----
-
-## Gmail App Password setup
-
-1. Go to <https://myaccount.google.com/apppasswords>
-2. Select **Mail** + **Linux** (or any device)
-3. Copy the generated 16-character password → `GMAIL_APP_PASSWORD`
-
-> You must have **2-Step Verification** enabled on your Google account.
-
----
-
-## API reference
-
-Interactive docs: <http://localhost:8003/docs>
-
-### `GET /health`
-
-```bash
-curl http://localhost:8003/health
-```
-
----
-
-### `POST /generate` — generate and store an email
-
-```bash
-# Cold outreach to a hiring manager
-curl -X POST http://localhost:8003/generate \
-     -H "Content-Type: application/json" \
-     -d '{
-       "job_id":          "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-       "contact_id":      "a1b2c3d4-0000-0000-0000-000000000001",
-       "template":        "cold_outreach",
-       "your_name":       "Vaibhav Sharma",
-       "your_stack":      ["Python", "FastAPI", "PostgreSQL"],
-       "github_url":      "https://github.com/sharmavaibhav31",
-       "graduation_year": 2025
-     }'
-```
-```json
-{
-  "email_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-  "subject":  "Backend Engineer opportunity — Vaibhav Sharma",
-  "body":     "Hi Alice,\n\nI came across Razorpay's Backend Engineer opening..."
-}
-```
-
-```bash
-# Recruiter outreach
-curl -X POST http://localhost:8003/generate \
-     -H "Content-Type: application/json" \
-     -d '{"job_id": "...", "contact_id": "...", "template": "recruiter_outreach",
-          "your_name": "Vaibhav Sharma", "your_stack": ["Go", "Kubernetes"],
-          "github_url": "https://github.com/sharmavaibhav31", "graduation_year": 2025}'
-
-# Follow-up (7 days later)
-curl -X POST http://localhost:8003/generate \
-     -H "Content-Type: application/json" \
-     -d '{"job_id": "...", "contact_id": "...", "template": "followup",
-          "your_name": "Vaibhav Sharma", "your_stack": [],
-          "github_url": "https://github.com/sharmavaibhav31",
-          "availability": "Monday and Wednesday between 2–5 PM IST"}'
-```
-
----
-
-### `GET /emails?job_id={uuid}` — list emails for a job
-
-```bash
-curl "http://localhost:8003/emails?job_id=3fa85f64-5717-4562-b3fc-2c963f66afa6"
-```
-
----
-
-### `GET /emails/{id}` — fetch a single email
-
-```bash
-curl http://localhost:8003/emails/f47ac10b-58cc-4372-a567-0e02b2c3d479
-```
-
----
-
-### `PATCH /emails/{id}/status` — update status
-
-Valid values: `draft`, `sent`, `replied`.
-
-```bash
-curl -X PATCH http://localhost:8003/emails/f47ac10b-.../status \
-     -H "Content-Type: application/json" \
-     -d '{"status": "replied"}'
-```
-
----
-
-### `POST /emails/{id}/send` — send via Gmail
-
-Fetches the recipient address from the linked contact record. Marks `sent_at` and `status = sent` on success.
-
-```bash
-curl -X POST http://localhost:8003/emails/f47ac10b-.../send
-```
-
----
-
-## Template customization
-
-All templates live in `templates/`. Edit them freely — they use standard [Jinja2](https://jinja.palletsprojects.com/) syntax.
-
-Available context variables:
-
-| Variable | Source |
-|---|---|
-| `company` | jobs table |
-| `role` | jobs table |
-| `your_name` | request body / `YOUR_NAME` env |
-| `your_stack` | request body |
-| `github_url` | request body / `YOUR_GITHUB_URL` env |
-| `product_observation` | Ollama or fallbacks.yaml |
-| `contact_name` | contacts table |
-| `graduation_year` | request body |
-| `availability` | request body (followup only) |
-
----
-
-## How the fallback selection works
-
-`fallbacks.yaml` contains observations in 5 categories: `fintech`, `devtools`, `saas`, `ecommerce`, `infra`.
-
-The generator counts keyword matches between the job's `product` + `stack` fields and each category's `keywords` list. The category with the highest score wins, and a random observation from that category's list is chosen. A `default` category is used when no keywords match.
+- Ollama failures log warnings in `ollama_client.py` for timeouts or HTTP errors, but do not halt generation due to fallback mechanism.
+- Database connection issues in `storage.py` raise `RuntimeError` if pool is not initialized, logged during lifespan startup.
+- SMTP authentication errors in `mailer.py` propagate as `smtplib.SMTPAuthenticationError`, indicating invalid `GMAIL_APP_PASSWORD`.
+- Template rendering errors in `generator.py` raise `ValueError` for unknown templates, logged with template names.
+- Asyncpg query timeouts default to 30 seconds in `storage.py`, potentially causing delays in high-load scenarios.
+- Fallback selection in `generator.py` logs category scores and selected observations for keyword matching verification.
