@@ -78,6 +78,36 @@ Subsequent starts: `docker compose up` (no `--build`) — under 30 seconds.
 
 ---
 
+## Reset local development state
+
+Use the scoped reset helper when you want a clean local development run without
+destroying Docker volumes or unrelated Redis data:
+
+```bash
+make reset
+```
+
+The script prompts for confirmation, then:
+
+- stops app services while keeping Postgres and Redis available
+- truncates local Arachnode tables if present: `emails`, `contacts`, `jobs`
+- deletes Arachnode Redis state: `jobs:raw`, `dedup:*`, `dedup:agg:*`
+- clears the scheduler run summary file when the shared data volume is mounted
+- restarts the Docker Compose stack by default
+
+Useful variants:
+
+```bash
+./scripts/reset.sh --yes
+./scripts/reset.sh --no-restart
+```
+
+With `--no-restart`, the database and Redis reset still run, but the shared
+scheduler summary file is left untouched because the gateway/scheduler
+containers are not restarted.
+
+---
+
 ## Step 3 — Open the dashboard
 
 Once you see this log line:
