@@ -1,1 +1,6 @@
 /.env
+arachnode/contact-discovery-service/.venv
+.venv
+bash.env
+.env.local
+.env.*.local
