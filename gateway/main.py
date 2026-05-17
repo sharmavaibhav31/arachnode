@@ -190,7 +190,8 @@ async def proxy_generate(request: Request):
 
 class WorkflowRequest(BaseModel):
     job_id:   UUID
-    template: Literal["cold_outreach", "recruiter_outreach", "followup"] = "cold_outreach"
+    template: Literal["cold_outreach", "recruiter_outreach", "referral_outreach", "followup"] = "cold_outreach"
+    referred_by: Optional[str] = None
     roles:    list[str] = ["Engineering Manager", "Recruiter"]
 
 
@@ -237,6 +238,7 @@ async def workflow_apply(body: WorkflowRequest):
             job_id=body.job_id,
             contact_id=contact_id,
             template=body.template,
+            referred_by=body.referred_by,
         )
     except Exception as exc:
         logger.warning("Email generation failed: %s", exc)

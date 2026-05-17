@@ -38,7 +38,7 @@ _jinja_env = Environment(
     lstrip_blocks=True,
 )
 
-VALID_TEMPLATES = {"cold_outreach", "recruiter_outreach", "followup"}
+VALID_TEMPLATES = {"cold_outreach", "recruiter_outreach", "referral_outreach", "followup"}
 
 
 # ---------------------------------------------------------------------------
@@ -134,6 +134,7 @@ async def generate_email(
     github_url: str,
     graduation_year: Optional[int] = None,
     availability: Optional[str] = None,
+    referred_by: Optional[str] = None,
 ) -> tuple[str, str]:
     """
     Generate a cold email, returning (subject, body).
@@ -182,6 +183,7 @@ async def generate_email(
         "contact_email":       contact_email,
         "graduation_year":     graduation_year or os.environ.get("GRADUATION_YEAR", "2025"),
         "availability":        availability,
+        "referred_by":         referred_by,
     }
 
     rendered = tmpl.render(**ctx)
