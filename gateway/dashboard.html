@@ -1155,7 +1155,7 @@
       const jobs = filteredJobs();
       const grid = document.getElementById('jobs-grid');
       if (!jobs.length) {
-        grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><p>No jobs found. Trigger a scrape to get started.</p></div>`;
+        grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🕷️</div><p><strong>No jobs yet!</strong><br>Trigger your first scrape to get started.</p><button class="btn" style="margin-top:12px" onclick="document.getElementById('scrape-modal').classList.add('open')">🚀 Start First Scrape</button></div>`;
         return;
       }
       grid.innerHTML = jobs.map(j => `
