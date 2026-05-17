@@ -150,6 +150,28 @@
       opacity: .88
     }
 
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    #btn-shortcuts {
+      width: 38px;
+      height: 38px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--fg);
+      font-size: 18px;
+      font-weight: 700;
+      transition: var(--trans)
+    }
+
+    #btn-shortcuts:hover {
+      background: var(--surface)
+    }
+
     /* === OFFLINE BANNER === */
     #offline-banner {
       display: none;
@@ -281,6 +303,12 @@
 
     .job-card:hover {
       background: var(--surface)
+    }
+
+    .job-card.keyboard-focused {
+      outline: 3px solid rgba(37, 99, 235, .55);
+      outline-offset: 3px;
+      box-shadow: 0 0 0 6px rgba(37, 99, 235, .12)
     }
 
     .job-card.status-new {
@@ -766,6 +794,34 @@
       justify-content: flex-end
     }
 
+    .shortcut-grid {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px 18px;
+      align-items: center
+    }
+
+    .shortcut-key {
+      min-width: 34px;
+      height: 28px;
+      padding: 0 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      border-bottom-width: 2px;
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--fg);
+      font-size: 12px;
+      font-weight: 700
+    }
+
+    .shortcut-desc {
+      color: var(--muted);
+      font-size: 13px
+    }
+
     .btn-close-x {
       width: 28px;
       height: 28px;
@@ -847,7 +903,10 @@
         <button class="nav-tab" data-tab="stats">Stats</button>
       </div>
     </div>
-    <button id="btn-scrape">▶ Trigger Scrape</button>
+    <div class="nav-actions">
+      <button id="btn-shortcuts" title="Keyboard shortcuts">?</button>
+      <button id="btn-scrape">▶ Trigger Scrape</button>
+    </div>
   </nav>
 
   <!-- OFFLINE BANNER -->
@@ -997,6 +1056,27 @@
     </div>
   </div>
 
+  <!-- SHORTCUTS MODAL -->
+  <div class="modal-backdrop" id="shortcuts-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Keyboard Shortcuts</h3>
+        <button class="btn-close-x" id="shortcuts-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="shortcut-grid">
+          <span class="shortcut-key">S</span><span class="shortcut-desc">Trigger scrape</span>
+          <span class="shortcut-key">R</span><span class="shortcut-desc">Refresh jobs</span>
+          <span class="shortcut-key">J</span><span class="shortcut-desc">Move to next job card</span>
+          <span class="shortcut-key">K</span><span class="shortcut-desc">Move to previous job card</span>
+          <span class="shortcut-key">Enter</span><span class="shortcut-desc">Open selected job details</span>
+          <span class="shortcut-key">Esc</span><span class="shortcut-desc">Close panel or modal</span>
+          <span class="shortcut-key">?</span><span class="shortcut-desc">Show this reference</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- TOASTS -->
   <div id="toasts"></div>
 
@@ -1016,6 +1096,7 @@
       summary: null,
       activeTab: 'jobs',
       selectedJobId: null,
+      focusedJobIndex: -1,
       filters: { search: '', status: 'all', stack: 'all' },
       contactSort: { col: 'company', dir: 1 },
       chart: null,
@@ -1152,15 +1233,56 @@
       });
     }
 
+    function visibleJobCards() {
+      return [...document.querySelectorAll('#jobs-grid .job-card')];
+    }
+
+    function updateFocusedJobCard({ scroll = false } = {}) {
+      const cards = visibleJobCards();
+      if (!cards.length) {
+        state.focusedJobIndex = -1;
+        return;
+      }
+      if (state.focusedJobIndex < 0) state.focusedJobIndex = 0;
+      if (state.focusedJobIndex >= cards.length) state.focusedJobIndex = cards.length - 1;
+      cards.forEach((card, idx) => {
+        const focused = idx === state.focusedJobIndex;
+        card.classList.toggle('keyboard-focused', focused);
+        card.setAttribute('aria-selected', focused ? 'true' : 'false');
+      });
+      if (scroll) cards[state.focusedJobIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+
+    function moveJobFocus(delta) {
+      if (state.activeTab !== 'jobs') switchTab('jobs');
+      const cards = visibleJobCards();
+      if (!cards.length) {
+        toast('No job cards to navigate', 'info');
+        return;
+      }
+      const next = state.focusedJobIndex < 0 ? 0 : state.focusedJobIndex + delta;
+      state.focusedJobIndex = Math.max(0, Math.min(cards.length - 1, next));
+      updateFocusedJobCard({ scroll: true });
+    }
+
+    function openFocusedJob() {
+      const cards = visibleJobCards();
+      if (!cards.length) return;
+      if (state.focusedJobIndex < 0) state.focusedJobIndex = 0;
+      const card = cards[state.focusedJobIndex];
+      if (card?.dataset.id) openDetailPanel(card.dataset.id);
+    }
+
     function renderJobs() {
       const jobs = filteredJobs();
       const grid = document.getElementById('jobs-grid');
       if (!jobs.length) {
+        state.focusedJobIndex = -1;
         grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🕷️</div><p><strong>No jobs yet!</strong><br>Trigger your first scrape to get started.</p><button class="btn" style="margin-top:12px" onclick="document.getElementById('scrape-modal').classList.add('open')">🚀 Start First Scrape</button></div>`;
         return;
       }
       grid.innerHTML = jobs.map(j => `
-    <div class="job-card status-${esc(j.status || 'new')}" data-id="${esc(j.id)}">
+    <div class="job-card status-${esc(j.status || 'new')}" data-id="${esc(j.id)}" tabindex="0" role="button" aria-selected="false">
       <div class="card-actions">
         <button class="icon-btn" data-action="discover" data-id="${esc(j.id)}" title="Find contacts">👤</button>
         <button class="icon-btn" data-action="draft" data-id="${esc(j.id)}" title="Draft email">✉</button>
@@ -1176,6 +1298,7 @@
         <span>${relTime(j.posted_at)}</span>
       </div>
     </div>`).join('');
+      updateFocusedJobCard();
     }
 
     async function discoverForJob(jobId) {
@@ -1482,6 +1605,70 @@
       else if (tab === 'stats') loadStats();
     }
 
+    function isTypingTarget(target) {
+      const tag = target?.tagName?.toLowerCase();
+      return target?.isContentEditable || ['input', 'textarea', 'select'].includes(tag);
+    }
+
+    function openScrapeModal() {
+      scrapeModal.classList.add('open');
+      document.getElementById('scrape-role')?.focus();
+    }
+
+    function closeScrapeModal() {
+      scrapeModal.classList.remove('open');
+    }
+
+    function openShortcutsModal() {
+      document.getElementById('shortcuts-modal').classList.add('open');
+    }
+
+    function closeShortcutsModal() {
+      document.getElementById('shortcuts-modal').classList.remove('open');
+    }
+
+    function handleGlobalShortcut(e) {
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+      const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+
+      if (key === 'Escape') {
+        closeShortcutsModal();
+        closeScrapeModal();
+        closePanel();
+        return;
+      }
+
+      if (isTypingTarget(e.target)) return;
+
+      if (key === '?' || (e.shiftKey && e.key === '/')) {
+        e.preventDefault();
+        openShortcutsModal();
+        return;
+      }
+
+      if (document.getElementById('shortcuts-modal').classList.contains('open')) return;
+      if (scrapeModal.classList.contains('open')) return;
+
+      if (key === 's') {
+        e.preventDefault();
+        openScrapeModal();
+      } else if (key === 'r') {
+        e.preventDefault();
+        switchTab('jobs');
+        loadJobs(true);
+      } else if (key === 'j') {
+        e.preventDefault();
+        moveJobFocus(1);
+      } else if (key === 'k') {
+        e.preventDefault();
+        moveJobFocus(-1);
+      } else if (key === 'Enter') {
+        e.preventDefault();
+        openFocusedJob();
+      }
+    }
+
     function exportJobsCSV() {
       const params = new URLSearchParams();
 
@@ -1547,7 +1734,22 @@
         return;
       }
       const card = e.target.closest('.job-card');
-      if (card) openDetailPanel(card.dataset.id);
+      if (card) {
+        const idx = visibleJobCards().indexOf(card);
+        if (idx >= 0) {
+          state.focusedJobIndex = idx;
+          updateFocusedJobCard();
+        }
+        openDetailPanel(card.dataset.id);
+      }
+    });
+    document.getElementById('jobs-grid').addEventListener('focusin', e => {
+      const card = e.target.closest('.job-card');
+      const idx = card ? visibleJobCards().indexOf(card) : -1;
+      if (idx >= 0) {
+        state.focusedJobIndex = idx;
+        updateFocusedJobCard();
+      }
     });
 
     // Detail panel close
@@ -1597,11 +1799,17 @@
 
     // Scrape modal
     const scrapeModal = document.getElementById('scrape-modal');
-    document.getElementById('btn-scrape').addEventListener('click', () => scrapeModal.classList.add('open'));
-    document.getElementById('modal-close').addEventListener('click', () => scrapeModal.classList.remove('open'));
-    document.getElementById('modal-cancel').addEventListener('click', () => scrapeModal.classList.remove('open'));
-    scrapeModal.addEventListener('click', e => { if (e.target === scrapeModal) scrapeModal.classList.remove('open'); });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') scrapeModal.classList.remove('open'); });
+    document.getElementById('btn-scrape').addEventListener('click', openScrapeModal);
+    document.getElementById('modal-close').addEventListener('click', closeScrapeModal);
+    document.getElementById('modal-cancel').addEventListener('click', closeScrapeModal);
+    scrapeModal.addEventListener('click', e => { if (e.target === scrapeModal) closeScrapeModal(); });
+
+    // Shortcut reference
+    const shortcutsModal = document.getElementById('shortcuts-modal');
+    document.getElementById('btn-shortcuts').addEventListener('click', openShortcutsModal);
+    document.getElementById('shortcuts-close').addEventListener('click', closeShortcutsModal);
+    shortcutsModal.addEventListener('click', e => { if (e.target === shortcutsModal) closeShortcutsModal(); });
+    document.addEventListener('keydown', handleGlobalShortcut);
 
     document.getElementById('modal-submit').addEventListener('click', async () => {
       const role = document.getElementById('scrape-role').value.trim();
