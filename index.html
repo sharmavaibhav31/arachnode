@@ -5,958 +5,2048 @@
   To update GitHub link: search GITHUB_URL constant
   To update your name: search AUTHOR_NAME constant
 -->
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Arachnode - Automated Job Hunt</title>
-  <meta name="description" content="Arachnode - a self-hosted, microservice-based job discovery and application tracking system for engineering placements.">
-  <style>
-    /* === CORE VARIABLES & PREREQUISITES === */
-    :root {
-      --bg: #0a0a0a;
-      --surface: #111111;
-      --surface-elevated: #1a1a1a;
-      --border: rgba(255, 255, 255, 0.08);
-      --text-primary: #ededed;
-      --text-secondary: #888888;
-      --text-muted: #555555;
-      --accent-purple: #6c47ff;
-      --accent-purple-dim: rgba(108, 71, 255, 0.15);
-      --green: #22c55e;
-      --green-dim: rgba(34, 197, 94, 0.1);
-      --amber: #f59e0b;
-      --amber-dim: rgba(245, 158, 11, 0.1);
-      --red: #ef4444;
-      --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      --font-code: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-    body {
-      background-color: var(--bg);
-      color: var(--text-primary);
-      font-family: var(--font-body);
-      font-size: 16px;
-      line-height: 1.7;
-      overflow-x: hidden;
-      -webkit-font-smoothing: antialiased;
-    }
-    
-    body::before {
-      content: "";
-      position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100vh;
-      pointer-events: none;
-      z-index: 9999;
-      opacity: 0.03;
-      background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23noise)"/></svg>');
-    }
-
-    a { color: inherit; text-decoration: none; transition: color 150ms ease; }
-    a:hover { color: var(--text-primary); }
-    ul { list-style: none; }
-    button { font-family: inherit; cursor: pointer; border: none; background: none; }
-    
-    h1, h2, h3, h4 { font-weight: 500; line-height: 1.2; }
-    
-    .container { max-width: 1024px; margin: 0 auto; padding: 0 24px; }
-    
-    .pill {
-      display: inline-flex; align-items: center; justify-content: center;
-      padding: 4px 12px; border-radius: 6px; font-size: 13px;
-      background: var(--surface); border: 1px solid var(--border);
-      color: var(--text-secondary);
-    }
-    .pill.purple { background: var(--accent-purple-dim); border-color: var(--accent-purple); color: var(--accent-purple); }
-    .pill.amber { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
-    .pill.green { background: var(--green-dim); border-color: var(--green); color: var(--green); }
-    
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center;
-      padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 500;
-      transition: all 150ms ease; text-decoration: none;
-    }
-    .btn-primary { background: var(--accent-purple); color: #fff; }
-    .btn-primary:hover { background: #5a3ce0; transform: translateY(-1px); }
-    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-primary); }
-    .btn-outline:hover { background: var(--surface-elevated); }
-    
-    code { font-family: var(--font-code); background: var(--surface-elevated); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
-
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: var(--bg); }
-    ::-webkit-scrollbar-thumb { background: var(--surface-elevated); border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
-
-    /* Animations */
-    @media (prefers-reduced-motion: no-preference) {
-      .animate-on-scroll {
-        opacity: 0;
-        transform: translateY(20px);
-        transition: opacity 400ms ease, transform 400ms ease;
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Arachnode - Automated Job Hunt</title>
+    <meta
+      name="description"
+      content="Arachnode - a self-hosted, microservice-based job discovery and application tracking system for engineering placements."
+    />
+    <style>
+      /* === CORE VARIABLES & PREREQUISITES === */
+      :root {
+        --bg: #0a0a0a;
+        --surface: #111111;
+        --surface-elevated: #1a1a1a;
+        --border: rgba(255, 255, 255, 0.08);
+        --text-primary: #ededed;
+        --text-secondary: #888888;
+        --text-muted: #555555;
+        --accent-purple: #6c47ff;
+        --accent-purple-dim: rgba(108, 71, 255, 0.15);
+        --green: #22c55e;
+        --green-dim: rgba(34, 197, 94, 0.1);
+        --amber: #f59e0b;
+        --amber-dim: rgba(245, 158, 11, 0.1);
+        --red: #ef4444;
+        --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        --font-code: "SF Mono", "Fira Code", "Cascadia Code", monospace;
       }
-      .animate-on-scroll.visible { opacity: 1; transform: translateY(0); }
-    }
 
-    /* === NAVBAR === */
-    nav {
-      position: fixed; top: 0; left: 0; right: 0;
-      backdrop-filter: blur(12px); background: rgba(10, 10, 10, 0.8);
-      border-bottom: 1px solid var(--border);
-      z-index: 1000; height: 60px; display: flex; align-items: center;
-    }
-    .nav-inner { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-    .brand { display: flex; align-items: center; gap: 12px; font-weight: 500; color: #fff; }
-    .nav-links { display: flex; align-items: center; gap: 24px; font-size: 14px; color: var(--text-secondary); }
-    .nav-ctas { display: flex; align-items: center; gap: 16px; }
-    
-    #dashboard-btn {
-      padding: 6px 16px; border-radius: 6px; font-size: 14px;
-      background: var(--surface-elevated); color: var(--text-muted);
-      border: 1px solid var(--border); display: flex; align-items: center; gap: 8px;
-      cursor: not-allowed; position: relative;
-    }
-    #dashboard-btn.active { background: var(--accent-purple); color: #fff; border-color: var(--accent-purple); cursor: pointer; }
-    #dashboard-btn.active:hover { background: #5a3ce0; }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); }
-    #dashboard-btn.active .status-dot { background: var(--green); margin-right: 4px; box-shadow: 0 0 0 rgba(34, 197, 94, 0.4); animation: pulse 2s infinite; }
-    
-    #dashboard-btn[disabled]:hover::after {
-      content: "Start your services first: docker-compose up -d";
-      position: absolute; top: calc(100% + 8px); right: 0; width: 240px;
-      padding: 8px 12px; background: var(--surface-elevated); border: 1px solid var(--border);
-      border-radius: 6px; font-size: 12px; color: var(--text-primary);
-      z-index: 100;
-    }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        background-color: var(--bg);
+        color: var(--text-primary);
+        font-family: var(--font-body);
+        font-size: 16px;
+        line-height: 1.7;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+      }
 
-    .mobile-menu-btn { display: none; background: none; border: none; color: var(--text-primary); cursor: pointer; padding: 4px; }
-    .mobile-menu-btn svg { width: 24px; height: 24px; }
+      body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        pointer-events: none;
+        z-index: 9999;
+        opacity: 0.03;
+        background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23noise)"/></svg>');
+      }
 
-    @keyframes pulse {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
-      70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
-    }
+      a {
+        color: inherit;
+        text-decoration: none;
+        transition: color 150ms ease;
+      }
+      a:hover {
+        color: var(--text-primary);
+      }
+      ul {
+        list-style: none;
+      }
+      button {
+        font-family: inherit;
+        cursor: pointer;
+        border: none;
+        background: none;
+      }
 
-    /* === DASHBOARD STATUS BAR === */
-    #status-bar {
-      display: none; padding: 12px 16px; margin: 80px auto 0 auto; max-width: 600px;
-      background: var(--green-dim); border: 1px solid var(--green); border-radius: 8px;
-      font-size: 14px; color: var(--green); text-align: center;
-    }
-    #status-bar a { text-decoration: underline; margin-left: 8px; font-weight: 500; }
+      h1,
+      h2,
+      h3,
+      h4 {
+        font-weight: 500;
+        line-height: 1.2;
+      }
 
-    /* === HERO === */
-    .hero {
-      min-height: 100vh; display: flex; flex-direction: column;
-      justify-content: center; align-items: center; text-align: center;
-      padding: 120px 24px 80px; position: relative;
-    }
-    .hero-glow {
-      position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%);
-      width: 600px; height: 600px; background: radial-gradient(circle, rgba(108,71,255,0.08) 0%, rgba(0,0,0,0) 70%);
-      border-radius: 50%; pointer-events: none; z-index: -1;
-    }
-    .hero .pill { font-family: var(--font-code); margin-bottom: 32px; margin-top: 40px;}
-    .hero h1 { font-size: clamp(36px, 5vw, 52px); max-width: 720px; margin-bottom: 24px; letter-spacing: -0.02em; }
-    .hero p { font-size: 18px; color: var(--text-secondary); max-width: 540px; margin: 0 auto 40px; }
-    .hero-ctas { display: flex; gap: 16px; justify-content: center; margin-bottom: 48px; flex-wrap: wrap;}
-    
-    .tech-pills { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 64px;}
-    .tech-pill { padding: 6px 16px; border-radius: 50px; border: 1px solid var(--border); background: var(--surface); font-size: 13px; color: var(--text-muted); }
+      .container {
+        max-width: 1024px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
 
-    .scroll-indicator {
-      position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-      animation: bounce 2s infinite; color: var(--text-muted);
-    }
-    .scroll-indicator svg { width: 24px; height: 24px; }
-    @keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: translateY(0) translateX(-50%); } 40% { transform: translateY(-10px) translateX(-50%); } 60% { transform: translateY(-5px) translateX(-50%); } }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+      }
+      .pill.purple {
+        background: var(--accent-purple-dim);
+        border-color: var(--accent-purple);
+        color: var(--accent-purple);
+      }
+      .pill.amber {
+        background: var(--amber-dim);
+        border-color: var(--amber);
+        color: var(--amber);
+      }
+      .pill.green {
+        background: var(--green-dim);
+        border-color: var(--green);
+        color: var(--green);
+      }
 
-    /* === SECTIONS GENERAL === */
-    section { padding: 100px 0; border-top: 1px solid var(--border); }
-    .section-header { text-align: center; margin-bottom: 64px; }
-    .section-header h2 { font-size: 32px; margin-bottom: 16px; }
-    .section-header p { color: var(--text-secondary); font-size: 18px; }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 150ms ease;
+        text-decoration: none;
+      }
+      .btn-primary {
+        background: var(--accent-purple);
+        color: #fff;
+      }
+      .btn-primary:hover {
+        background: #5a3ce0;
+        transform: translateY(-1px);
+      }
+      .btn-outline {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+      }
+      .btn-outline:hover {
+        background: var(--surface-elevated);
+      }
 
-    /* === HOW IT WORKS === */
-    .steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
-    .step-card {
-      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
-      padding: 32px; position: relative; overflow: hidden; transition: border-color 150ms ease;
-    }
-    .step-card:hover { border-color: rgba(255,255,255,0.2); background: var(--surface-elevated); }
-    .step-number {
-      position: absolute; top: -10px; right: -10px; font-family: var(--font-code);
-      font-size: 120px; font-weight: 700; color: var(--accent-purple); opacity: 0.05;
-      line-height: 1; pointer-events: none;
-    }
-    .step-icon { width: 40px; height: 40px; border-radius: 8px; background: var(--surface-elevated); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; margin-bottom: 24px; color: var(--accent-purple); }
-    .step-icon svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    .step-card h3 { font-size: 20px; margin-bottom: 12px; }
-    .step-card p { color: var(--text-secondary); font-size: 15px; }
+      code {
+        font-family: var(--font-code);
+        background: var(--surface-elevated);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.9em;
+      }
 
-    /* === FEATURES === */
-    .features-split { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
-    .features-col h3 { margin-bottom: 32px; display: flex; align-items: center; }
-    .feature-row { display: flex; gap: 16px; margin-bottom: 24px; }
-    .feature-icon { color: var(--green); margin-top: 4px; flex-shrink: 0; }
-    .feature-icon svg { width: 20px; height: 20px; }
-    .feature-content h4 { font-size: 16px; margin-bottom: 4px; color: var(--text-primary); }
-    .feature-content p { font-size: 14px; color: var(--text-secondary); }
+      /* Scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--bg);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--surface-elevated);
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--text-muted);
+      }
 
-    /* === INSTALLATION === */
-    .tabs { margin-bottom: 24px; display: flex; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
-    .tab-btn { padding: 12px 24px; color: var(--text-muted); font-size: 15px; font-weight: 500; border-bottom: 2px solid transparent; transition: all 150ms ease; white-space: nowrap; }
-    .tab-btn:hover { color: var(--text-secondary); }
-    .tab-btn.active { color: var(--accent-purple); border-bottom-color: var(--accent-purple); }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-
-    .terminal { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 24px; }
-    .terminal-header { background: var(--surface-elevated); padding: 12px 16px; display: flex; align-items: center; border-bottom: 1px solid var(--border); }
-    .dots { display: flex; gap: 8px; }
-    .dot { width: 10px; height: 10px; border-radius: 50%; }
-    .dot:nth-child(1) { background: var(--red); }
-    .dot:nth-child(2) { background: var(--amber); }
-    .dot:nth-child(3) { background: var(--green); }
-    
-    .terminal-step { position: relative; padding: 20px; border-bottom: 1px solid var(--border); }
-    .terminal-step:last-child { border-bottom: none; }
-    .terminal-step-label { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
-    .terminal-grid { display: grid; gap: 4px; }
-    .terminal-line { font-family: var(--font-code); font-size: 14px; color: var(--text-primary); }
-    .terminal-comment { color: var(--text-muted); }
-    .copy-btn { position: absolute; top: 16px; right: 16px; background: var(--surface-elevated); border: 1px solid var(--border); color: var(--text-secondary); padding: 4px 8px; border-radius: 4px; font-size: 12px; opacity: 0; transition: opacity 150ms ease; }
-    .terminal-step:hover .copy-btn { opacity: 1; }
-    .copy-btn:hover { color: var(--text-primary); background: var(--border); }
-    
-    .prereq-row { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;}
-    .installation-note { font-size: 14px; color: var(--text-secondary); }
-
-    .config-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
-    .config-table th, .config-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); }
-    .config-table th { color: var(--text-muted); font-weight: 500; }
-    .config-table td:first-child code { background: none; padding: 0; color: var(--accent-purple); }
-
-    /* === ARCHITECTURE === */
-    .arch-diagram-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .arch-diagram {
-      min-width: 760px; margin: 40px auto; padding: 40px; background: var(--surface);
-      border: 1px solid var(--border); border-radius: 8px;
-    }
-    
-    /* Using Flexbox for CSS diagram */
-    .diagram-flow { display: flex; align-items: center; justify-content: space-between; position: relative; }
-    .node {
-      background: var(--surface-elevated); border: 1px solid var(--accent-purple);
-      padding: 16px 24px; border-radius: 8px; text-align: center; font-size: 14px;
-      z-index: 2; position: relative; width: 140px; font-weight: 500;
-    }
-    .node.db { border-color: var(--green); }
-    .node.queue { border-color: var(--amber); }
-    
-    .arrow { height: 2px; flex-grow: 1; background: var(--border); position: relative; z-index: 1; min-width: 30px; }
-    .arrow::after { content: ''; position: absolute; right: -2px; top: -4px; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 8px solid var(--border); }
-    
-    .diagram-column { display: flex; flex-direction: column; gap: 40px; }
-
-    .services-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; margin-top: 40px; margin-bottom: 32px; }
-    .services-table th, .services-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); }
-    .services-table th { color: var(--text-muted); font-weight: 500; }
-
-    .callout { background: rgba(108,71,255,0.05); border: 1px solid var(--accent-purple-dim); padding: 24px; border-radius: 8px; margin-top: 24px; }
-    .callout p { color: var(--text-secondary); font-size: 15px; margin-bottom: 8px; }
-
-    /* === CONTRIBUTOR === */
-    .contribute-section { background: var(--surface); }
-    .contrib-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 64px; }
-    .contrib-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 32px; }
-    .contrib-card h3 { font-size: 20px; margin-bottom: 16px; }
-    .contrib-card p { color: var(--text-secondary); font-size: 15px; margin-bottom: 24px; }
-    .contrib-card.c-amber { border-top: 2px solid var(--amber); }
-    .contrib-card.c-purple { border-top: 2px solid var(--accent-purple); }
-    .contrib-card.c-green { border-top: 2px solid var(--green); }
-    
-    .contrib-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
-    .contrib-tags span { font-size: 12px; padding: 4px 8px; background: var(--surface-elevated); border-radius: 4px; color: var(--text-muted); }
-    
-    .cta-link { color: var(--text-primary); font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; }
-    .cta-link:hover { color: var(--accent-purple); }
-
-    .steps-row { display: flex; justify-content: space-between; margin-bottom: 64px; }
-    .min-step { display: flex; align-items: center; gap: 16px; }
-    .min-step-num { font-family: var(--font-code); color: var(--accent-purple); font-size: 24px; opacity: 0.5; }
-    .min-step-text { font-weight: 500; color: var(--text-primary); }
-
-    .stats-row { text-align: center; color: var(--text-secondary); font-family: var(--font-code); font-size: 14px; margin-bottom: 32px; padding: 24px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-    .stats-row span { margin: 0 16px; }
-
-    /* === FOOTER === */
-    footer { border-top: 1px solid var(--border); padding: 80px 0 40px; background: var(--bg); }
-    .footer-cols { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 48px; margin-bottom: 64px; }
-    .footer-col h4 { margin-bottom: 24px; font-size: 16px; color: var(--text-primary); }
-    .footer-col p { color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;}
-    .footer-links { display: flex; flex-direction: column; gap: 12px; }
-    .footer-links a { color: var(--text-secondary); font-size: 14px; }
-    .footer-links a:hover { color: var(--text-primary); }
-    
-    .footer-bottom { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 24px; font-size: 14px; color: var(--text-muted); }
-
-    /* === RESPONSIVE === */
-    @media (max-width: 1024px) {
-      .features-split { grid-template-columns: 1fr; gap: 64px; }
-    }
-    @media (max-width: 768px) {
-      .footer-cols { grid-template-columns: 1fr; text-align: center; }
-      .steps-row { flex-direction: column; gap: 24px; }
-      .stats-row span { display: block; margin: 8px 0; }
-    }
-    @media (max-width: 640px) {
-      .nav-links { display: none; }
-      .nav-links.active { display: flex; flex-direction: column; position: absolute; top: 60px; left: 0; right: 0; background: var(--bg); padding: 24px; border-bottom: 1px solid var(--border); }
-      .mobile-menu-btn { display: block; }
-      .hero { padding-top: 100px; }
-      .hero h1 { font-size: 36px; }
-      .footer-bottom { flex-direction: column; gap: 16px; text-align: center; }
-    }
-  </style>
-</head>
-<body>
-
-  <!-- NAVBAR -->
-  <nav>
-    <div class="container nav-inner">
-      <div class="brand">
-        Arachnode
-        <span class="pill purple" style="padding: 2px 8px; font-size: 11px;">v1.0 &middot; open source</span>
-      </div>
-      <ul class="nav-links" id="nav-menu">
-        <li><a href="#installation">Docs</a></li>
-        <li><a href="https://github.com/sharmavaibhav31/arachnode" target="_blank" id="gh-link-nav">GitHub</a></li>
-        <li><a href="#contributor">Contributors</a></li>
-      </ul>
-      <div class="nav-ctas">
-        <a id="dashboard-btn" title="Dashboard">
-          <div class="status-dot"></div> Open Dashboard
-        </a>
-        <button class="mobile-menu-btn" id="mobile-toggle" aria-label="Toggle menu">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-        </button>
-      </div>
-    </div>
-  </nav>
-
-  <!-- DASHBOARD STATUS BAR -->
-  <div id="status-bar" class="animate-on-scroll">
-    &#10003; Services detected — your JobHunter dashboard is running
-    <a href="#" id="status-bar-link">Open Dashboard &rarr;</a>
-  </div>
-
-  <!-- HERO -->
-  <section class="hero" id="hero">
-    <div class="hero-glow"></div>
-    <div class="pill">⚡ Built for placement season &middot; Self-hosted &middot; Free forever</div>
-    <h1 class="animate-on-scroll">Stop applying manually.<br>Automate your entire<br>job hunt.</h1>
-    <p class="animate-on-scroll" style="transition-delay: 80ms">
-      Arachnode crawls startup job boards, finds hiring manager contacts, and drafts cold emails, running entirely on your machine. No subscriptions. No API bills. No black-box agents.
-    </p>
-    <div class="hero-ctas animate-on-scroll" style="transition-delay: 160ms">
-      <a href="#installation" class="btn btn-primary">Get started in 5 minutes</a>
-      <a href="https://github.com/sharmavaibhav31/arachnode" target="_blank" class="btn btn-outline" id="gh-link-hero">View on GitHub</a>
-    </div>
-    <div class="tech-pills animate-on-scroll" style="transition-delay: 240ms">
-      <div class="tech-pill">Scrapy</div>
-      <div class="tech-pill">FastAPI</div>
-      <div class="tech-pill">Redis Streams</div>
-      <div class="tech-pill">PostgreSQL</div>
-      <div class="tech-pill">Ollama</div>
-    </div>
-    <div class="scroll-indicator">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-    </div>
-  </section>
-
-  <!-- HOW IT WORKS -->
-  <section id="how-it-works">
-    <div class="container">
-      <div class="section-header animate-on-scroll">
-        <h2>From job board to inbox in minutes</h2>
-        <p>Three steps. Fully automated once configured.</p>
-      </div>
-      <div class="steps-grid">
-        <div class="step-card animate-on-scroll" style="transition-delay: 0ms">
-          <div class="step-number">01</div>
-          <div class="step-icon">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
-          </div>
-          <h3>Crawl every relevant job</h3>
-          <p>Arachnode scans Wellfound, YC Jobs, Remotive, Naukri, and LinkedIn continuously. New roles matching your stack appear in your dashboard within minutes.</p>
-        </div>
-        <div class="step-card animate-on-scroll" style="transition-delay: 80ms">
-          <div class="step-number">02</div>
-          <div class="step-icon">
-            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-          </div>
-          <h3>Find who to contact</h3>
-          <p>The contact discovery service finds publicly available emails and LinkedIn profiles for hiring managers and engineers at target companies using OSINT and the GitHub API.</p>
-        </div>
-        <div class="step-card animate-on-scroll" style="transition-delay: 160ms">
-          <div class="step-number">03</div>
-          <div class="step-icon">
-            <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-          </div>
-          <h3>Send emails that get replies</h3>
-          <p>A local LLM (Ollama + Mistral) personalizes cold emails based on each company's product. You review and send, nothing goes out automatically.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- FEATURES -->
-  <section id="features">
-    <div class="container">
-      <div class="section-header animate-on-scroll">
-        <h2>Everything you need. Nothing you don't.</h2>
-      </div>
-      <div class="features-split">
-        <div class="features-col animate-on-scroll" style="transition-delay: 0ms">
-          <h3><span class="pill purple" style="margin-right: 12px;">For job seekers</span> Use it</h3>
-          
-          <div class="feature-row">
-            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-            <div class="feature-content">
-              <h4>Multi-platform crawling</h4>
-              <p>Wellfound, YC, Remotive, Naukri, LinkedIn, Internshala — one command.</p>
-            </div>
-          </div>
-          <div class="feature-row">
-            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-            <div class="feature-content">
-              <h4>Smart deduplication</h4>
-              <p>Redis-backed dedup means you never see the same job twice across sources.</p>
-            </div>
-          </div>
-          <div class="feature-row">
-            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-            <div class="feature-content">
-              <h4>Contact discovery</h4>
-              <p>OSINT pipeline finds hiring manager emails from public GitHub and web data.</p>
-            </div>
-          </div>
-          <div class="feature-row">
-            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-            <div class="feature-content">
-              <h4>AI-personalized emails</h4>
-              <p>Ollama runs locally; no OpenAI key needed, no usage costs.</p>
-            </div>
-          </div>
-          <div class="feature-row">
-            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-            <div class="feature-content">
-              <h4>One-click Docker setup</h4>
-              <p>docker-compose up. That's it. Everything starts in the right order.</p>
-            </div>
-          </div>
-
-        </div>
-
-        <div class="features-col animate-on-scroll" style="transition-delay: 80ms">
-          <h3><span class="pill amber" style="margin-right: 12px;">For contributors</span> Build it</h3>
-          
-          <div class="feature-row">
-            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-            <div class="feature-content">
-              <h4>Microservice architecture</h4>
-              <p>Seven independent services. Pick one, understand it fully, improve it.</p>
-            </div>
-          </div>
-          <div class="feature-row">
-            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-            <div class="feature-content">
-              <h4>AI-assisted development</h4>
-              <p>Agent instruction files for Claude Code, Cursor, Blackbox, and AntiGravity are already in the repo. The context is written for you.</p>
-            </div>
-          </div>
-          <div class="feature-row">
-            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-            <div class="feature-content">
-              <h4>Event-driven core</h4>
-              <p>Redis Streams connect every service. Add a new data source without touching existing code.</p>
-            </div>
-          </div>
-          <div class="feature-row">
-            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-            <div class="feature-content">
-              <h4>Full test suite</h4>
-              <p>Four-layer testing: unit, integration, contract, and E2E. testcontainers handles infrastructure.</p>
-            </div>
-          </div>
-          <div class="feature-row">
-            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-            <div class="feature-content">
-              <h4>Extensible by design</h4>
-              <p>Adding a new job platform is three files and a class. The pipeline picks it up automatically.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- INSTALLATION -->
-  <section id="installation">
-    <div class="container animate-on-scroll">
-      <div class="section-header">
-        <h2>Up and running in 5 minutes</h2>
-        <p>If you have Docker installed, this is the entire process.</p>
-      </div>
-      
-      <div class="tabs">
-        <button class="tab-btn active" data-target="tab-quick">Quick start</button>
-        <button class="tab-btn" data-target="tab-manual">Manual setup</button>
-        <button class="tab-btn" data-target="tab-config">Configuration</button>
-      </div>
-
-      <div class="tab-content active" id="tab-quick">
-        <div class="terminal">
-          <div class="terminal-header">
-            <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
-          </div>
-          
-          <div class="terminal-step">
-            <div class="terminal-step-label">Step 1 — Clone</div>
-            <div class="terminal-grid" id="code-step-1">
-              <div class="terminal-line">git clone https://github.com/sharmavaibhav31/arachnode.git</div>
-              <div class="terminal-line">cd jobhunter</div>
-            </div>
-            <button class="copy-btn" data-text="git clone https://github.com/sharmavaibhav31/arachnode.git\ncd jobhunter">Copy</button>
-          </div>
-          
-          <div class="terminal-step">
-            <div class="terminal-step-label">Step 2 — Configure</div>
-            <div class="terminal-grid" id="code-step-2">
-              <div class="terminal-line">cp .env.example .env</div>
-              <div class="terminal-line terminal-comment"># Edit .env with your details (takes 2 minutes)</div>
-              <div class="terminal-line terminal-comment"># Required: JOBSEEKER_ROLE, JOBSEEKER_STACK, GMAIL_APP_PASSWORD</div>
-            </div>
-            <button class="copy-btn" data-text="cp .env.example .env">Copy</button>
-          </div>
-          
-          <div class="terminal-step">
-            <div class="terminal-step-label">Step 3 — Run</div>
-            <div class="terminal-grid" id="code-step-3">
-              <div class="terminal-line">docker-compose up -d</div>
-            </div>
-            <button class="copy-btn" data-text="docker-compose up -d">Copy</button>
-          </div>
-          
-          <div class="terminal-step">
-            <div class="terminal-step-label">Step 4 — Open</div>
-            <div class="terminal-grid" id="code-step-4">
-              <div class="terminal-line terminal-comment"># Visit http://localhost:8080</div>
-              <div class="terminal-line terminal-comment"># Or click "Open Dashboard" in the navbar above (activates automatically)</div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="prereq-row">
-          <div class="pill">Docker 24+</div>
-          <div class="pill">docker-compose v2</div>
-          <div class="pill">4GB RAM</div>
-          <div class="pill">Git</div>
-        </div>
-        <p class="installation-note">Ollama is optional. Without it, email templates still work — just without AI personalization.</p>
-      </div>
-
-      <div class="tab-content" id="tab-manual">
-        <div class="terminal">
-          <div class="terminal-header">
-            <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
-          </div>
-          <div class="terminal-step" style="padding: 24px;">
-            <div class="terminal-grid">
-              <div class="terminal-line">python -m venv venv</div>
-              <div class="terminal-line">source venv/bin/activate</div>
-              <div class="terminal-line">pip install -r requirements.txt</div>
-              <div class="terminal-line">playwright install chromium</div>
-              <br>
-              <div class="terminal-line terminal-comment"># Start Redis and Postgres separately, then:</div>
-              <div class="terminal-line">scrapy crawl remotive</div>
-              <div class="terminal-line">uvicorn aggregator.main:app --port 8000</div>
-            </div>
-            <button class="copy-btn" data-text="python -m venv venv\nsource venv/bin/activate\npip install -r requirements.txt\nplaywright install chromium\nscrapy crawl remotive\nuvicorn aggregator.main:app --port 8000">Copy</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="tab-content" id="tab-config">
-        <div class="terminal" style="padding: 0;">
-          <div style="overflow-x: auto;">
-            <table class="config-table">
-              <thead>
-                <tr>
-                  <th>Variable</th>
-                  <th>Required</th>
-                  <th>Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td><code>JOBSEEKER_ROLE</code></td>
-                  <td>Yes</td>
-                  <td>e.g. "Backend Engineer"</td>
-                </tr>
-                <tr>
-                  <td><code>JOBSEEKER_STACK</code></td>
-                  <td>Yes</td>
-                  <td>e.g. "Python,Go,FastAPI"</td>
-                </tr>
-                <tr>
-                  <td><code>GMAIL_ADDRESS</code></td>
-                  <td>For sending</td>
-                  <td>Your Gmail address</td>
-                </tr>
-                <tr>
-                  <td><code>GMAIL_APP_PASSWORD</code></td>
-                  <td>For sending</td>
-                  <td>Gmail app password (not your main password)</td>
-                </tr>
-                <tr>
-                  <td><code>OLLAMA_BASE_URL</code></td>
-                  <td>Optional</td>
-                  <td>Default: http://localhost:11434</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <a href="https://github.com/sharmavaibhav31/arachnode#configuration" target="_blank" class="cta-link">Full configuration reference &rarr;</a>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ARCHITECTURE -->
-  <section id="architecture">
-    <div class="container">
-      <div class="section-header animate-on-scroll">
-        <h2>Seven services. One pipeline.</h2>
-        <p>Each service does one thing. All of them together do everything.</p>
-      </div>
-      
-      <div class="arch-diagram-wrapper animate-on-scroll" style="transition-delay: 80ms">
-        <div class="arch-diagram">
-          <div class="diagram-flow">
-            <div class="diagram-column">
-              <div class="node">Crawler</div>
-              <div class="node">Platform Scraper</div>
-            </div>
-            <div class="arrow"></div>
-            <div class="node queue">Redis Stream</div>
-            <div class="arrow"></div>
-            <div class="node">Aggregator</div>
-            <div class="arrow"></div>
-            <div class="node db">PostgreSQL</div>
-          </div>
-          <div style="height: 40px;"></div>
-          <div class="diagram-flow" style="justify-content: center; gap: 40px;">
-            <div class="node">Contact Discovery</div>
-            <div class="arrow" style="flex-grow:0; width: 40px"></div>
-            <div class="node">Email Generator</div>
-          </div>
-          <div style="height: 40px;"></div>
-          <div class="diagram-flow" style="justify-content: center; gap: 40px;">
-            <div class="node" style="border-style: dashed;">Scheduler</div>
-            <div class="node" style="border-style: dashed;">Gateway</div>
-          </div>
-        </div>
-      </div>
-        
-      <div class="animate-on-scroll" style="transition-delay: 160ms; overflow-x: auto;">
-        <table class="services-table">
-          <thead>
-            <tr>
-              <th>Service</th>
-              <th>Language</th>
-              <th>Port</th>
-              <th>Key dependency</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Crawler</td><td>Python</td><td>-</td><td>Scrapy</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td>
-            </tr>
-            <tr>
-              <td>Platform Scraper</td><td>Python</td><td>8002</td><td>Playwright</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td>
-            </tr>
-            <tr>
-              <td>Aggregator</td><td>Python</td><td>8000</td><td>FastAPI</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td>
-            </tr>
-            <tr>
-              <td>Contact Discovery</td><td>Python</td><td>8003</td><td>GitHub API</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td>
-            </tr>
-            <tr>
-              <td>Email Generator</td><td>Python</td><td>8004</td><td>Ollama</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td>
-            </tr>
-            <tr>
-              <td>Scheduler</td><td>Python</td><td>-</td><td>Celery/Cron</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td>
-            </tr>
-            <tr>
-              <td>Gateway</td><td>JavaScript</td><td>8080</td><td>Express</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="callout animate-on-scroll" style="transition-delay: 240ms">
-        <p><strong>Why not agentic workflows?</strong></p>
-        <p>AI agents are the automation scripts of their era - impressive until a webpage changes its navbar. JobHunter uses deterministic microservices as the foundation. Agentic orchestration is on the roadmap, built on top of reliable infrastructure rather than instead of it.</p>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- CONTRIBUTOR -->
-  <section id="contributor" class="contribute-section">
-    <div class="container">
-      <div class="section-header animate-on-scroll">
-        <h2>Built in the open. Made better together.</h2>
-        <p>JobHunter is open source and actively looking for contributors. All skill levels welcome.</p>
-      </div>
-      
-      <div class="contrib-cards">
-        <div class="contrib-card c-amber animate-on-scroll" style="transition-delay: 0ms">
-          <h3>AI-assisted contributions</h3>
-          <p>Agent instruction files for Claude Code, Cursor, Blackbox, and AntiGravity are already in the repo under ai_assistance/. An orchestrator manages specialised subagents for code auditing, bug detection, security review, DB schema analysis, and more. Point your AI editor at the repo; the context is already written.</p>
-          <a href="#" class="cta-link">View agent files &rarr;</a>
-        </div>
-        
-        <div class="contrib-card c-purple animate-on-scroll" style="transition-delay: 80ms">
-          <h3>Good first issues</h3>
-          <p>Each service is independent and well-documented. Pick one you understand and improve it. New job platform? New email template? Better deduplication logic? All of these are scoped, reviewable PRs.</p>
-          <div class="contrib-tags">
-            <span>[Spider] New job platforms</span>
-            <span>[ML] Better stack matching</span>
-            <span>[UX] Dashboard improvements</span>
-            <span>[Infra] Performance & caching</span>
-          </div>
-          <a href="https://github.com/sharmavaibhav31/arachnode/issues" target="_blank" class="cta-link">Browse open issues &rarr;</a>
-        </div>
-        
-        <div class="contrib-card c-green animate-on-scroll" style="transition-delay: 160ms">
-          <h3>Non-code contributions</h3>
-          <p>Documentation improvements, README translations, testing on different platforms, reporting broken scrapers when sites update their HTML, all of these matter and all are welcome.</p>
-          <a href="https://github.com/sharmavaibhav31/arachnode/blob/main/CONTRIBUTING.md" target="_blank" class="cta-link">Contribution guide &rarr;</a>
-        </div>
-      </div>
-      
-      <div class="steps-row animate-on-scroll" style="transition-delay: 240ms">
-        <div class="min-step"><span class="min-step-num">1</span><span class="min-step-text">Fork the repo</span></div>
-        <div class="min-step"><span class="min-step-num">2</span><span class="min-step-text">Read CONTRIBUTING.md</span></div>
-        <div class="min-step"><span class="min-step-num">3</span><span class="min-step-text">Pick an issue or open one</span></div>
-        <div class="min-step"><span class="min-step-num">4</span><span class="min-step-text">Submit a PR</span></div>
-      </div>
-      
-      <div class="stats-row animate-on-scroll" style="transition-delay: 320ms">
-        <span>&#9733; Stars: 128</span> | <span>Forks: 32</span> | <span>Open issues: 14</span> | <span>Contributors: 7</span>
-      </div>
-      
-      <div class="text-center animate-on-scroll" style="transition-delay: 400ms; text-align: center;">
-        <p style="color: var(--text-secondary); margin-bottom: 8px;">Open for contributions &middot; MIT Licensed &middot; Built by the community, for the community</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- FOOTER -->
-  <footer>
-    <div class="container">
-      <div class="footer-cols">
-        <div class="footer-col">
-          <div class="brand" style="margin-bottom: 12px;">Arachnode</div>
-          <p>Self-hosted job discovery and communication pipeline.</p>
-          <p style="font-size: 13px;">MIT License. Open source and free forever.</p>
-        </div>
-        <div class="footer-col">
-          <h4>Links</h4>
-          <div class="footer-links">
-            <a href="#installation">Documentation</a>
-            <a href="https://github.com/sharmavaibhav31/arachnode" target="_blank">GitHub Repository</a>
-            <a href="https://github.com/sharmavaibhav31/arachnode/blob/main/CONTRIBUTING.md" target="_blank">Contributing Guide</a>
-            <a href="https://github.com/sharmavaibhav31/arachnode/issues" target="_blank">Report an Issue</a>
-          </div>
-        </div>
-        <div class="footer-col">
-          <h4>Built with</h4>
-          <div class="footer-links">
-            <a href="https://scrapy.org" target="_blank">Scrapy</a>
-            <a href="https://fastapi.tiangolo.com" target="_blank">FastAPI</a>
-            <a href="https://redis.io" target="_blank">Redis</a>
-            <a href="https://postgresql.org" target="_blank">PostgreSQL</a>
-            <a href="https://ollama.com" target="_blank">Ollama</a>
-            <a href="https://docker.com" target="_blank">Docker</a>
-          </div>
-        </div>
-      </div>
-      <div class="footer-bottom">
-        <div>MIT &copy; 2026 Vaibhav Sharma &middot; Made during placement season</div>
-        <div>Deployed on Github Pages</div>
-      </div>
-    </div>
-  </footer>
-
-  <script>
-    /* === CONFIGURATION CONSTANTS === */
-    const GITHUB_URL = 'https://github.com/sharmavaibhav31/arachnode';
-    const AUTHOR_NAME = 'Vaibhav Sharma';
-    const DASHBOARD_URL = 'http://localhost:8080';
-    const HEALTH_CHECK_INTERVAL = 10000;
-
-    /* === INITIALIZE UI DYNAMIC ELEMENTS === */
-    document.addEventListener('DOMContentLoaded', () => {
-      
-      // Setup dynamic links based on constants
-      document.getElementById('gh-link-nav').href = GITHUB_URL;
-      document.getElementById('gh-link-hero').href = GITHUB_URL;
-      document.getElementById('status-bar-link').href = DASHBOARD_URL;
-
-      /* === DASHBOARD DETECTION LOGIC === */
-      const dashBtn = document.getElementById('dashboard-btn');
-      const statusBar = document.getElementById('status-bar');
-      let pollingInterval;
-
-      const checkDashboardStatus = async () => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
-
-        try {
-          // Attempting request with no-cors to bypass CORS error on static deployment
-          const response = await fetch(`${DASHBOARD_URL}/api/health`, {
-            method: 'GET',
-            mode: 'no-cors',
-            signal: controller.signal
-          });
-          
-          // If fetch completed without throwing (even opaque response), success!
-          clearTimeout(timeoutId);
-          activateDashboardUI();
-          
-        } catch (error) {
-          // Failure (timeout, network error, connection refused)
-          // Silent failure per requirements, disable UI features if previously active
-          clearTimeout(timeoutId);
-          deactivateDashboardUI();
+      /* Animations */
+      @media (prefers-reduced-motion: no-preference) {
+        .animate-on-scroll {
+          opacity: 0;
+          transform: translateY(20px);
+          transition:
+            opacity 400ms ease,
+            transform 400ms ease;
         }
-      };
-
-      const activateDashboardUI = () => {
-        dashBtn.classList.add('active');
-        dashBtn.removeAttribute('disabled');
-        dashBtn.title = "";
-        dashBtn.href = DASHBOARD_URL;
-        statusBar.style.display = 'block';
-        if (pollingInterval) {
-           clearInterval(pollingInterval);
-           pollingInterval = null;
+        .animate-on-scroll.visible {
+          opacity: 1;
+          transform: translateY(0);
         }
-        
-        // Listen to leaving to trigger checking again if they come back
-        window.addEventListener('visibilitychange', handleVisibilityChange);
-      };
+      }
 
-      const deactivateDashboardUI = () => {
-        dashBtn.classList.remove('active');
-        dashBtn.setAttribute('disabled', 'true');
-        dashBtn.removeAttribute('href');
-        statusBar.style.display = 'none';
-      };
+      /* === NAVBAR === */
+      nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        backdrop-filter: blur(12px);
+        background: rgba(10, 10, 10, 0.8);
+        border-bottom: 1px solid var(--border);
+        z-index: 1000;
+        height: 60px;
+        display: flex;
+        align-items: center;
+      }
+      .nav-inner {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 500;
+        color: #fff;
+      }
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        font-size: 14px;
+        color: var(--text-secondary);
+      }
+      .nav-ctas {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
 
-      const handleVisibilityChange = () => {
-         if(document.visibilityState === 'visible' && !pollingInterval) {
-             // they came back, restart polling to make sure it's still alive
-             checkDashboardStatus();
-             pollingInterval = setInterval(checkDashboardStatus, HEALTH_CHECK_INTERVAL);
-         }
-      };
+      #dashboard-btn {
+        padding: 6px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        background: var(--surface-elevated);
+        color: var(--text-muted);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: not-allowed;
+        position: relative;
+      }
+      #dashboard-btn.active {
+        background: var(--accent-purple);
+        color: #fff;
+        border-color: var(--accent-purple);
+        cursor: pointer;
+      }
+      #dashboard-btn.active:hover {
+        background: #5a3ce0;
+      }
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--text-muted);
+      }
+      #dashboard-btn.active .status-dot {
+        background: var(--green);
+        margin-right: 4px;
+        box-shadow: 0 0 0 rgba(34, 197, 94, 0.4);
+        animation: pulse 2s infinite;
+      }
 
-      // Initial check & interval start
-      checkDashboardStatus();
-      pollingInterval = setInterval(checkDashboardStatus, HEALTH_CHECK_INTERVAL);
+      #dashboard-btn[disabled]:hover::after {
+        content: "Start your services first: docker-compose up -d";
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        width: 240px;
+        padding: 8px 12px;
+        background: var(--surface-elevated);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 12px;
+        color: var(--text-primary);
+        z-index: 100;
+      }
 
-      /* === TAB INTERFACE LOGIC === */
-      const tabBtns = document.querySelectorAll('.tab-btn');
-      const tabContents = document.querySelectorAll('.tab-content');
+      .mobile-menu-btn {
+        display: none;
+        background: none;
+        border: none;
+        color: var(--text-primary);
+        cursor: pointer;
+        padding: 4px;
+      }
+      .mobile-menu-btn svg {
+        width: 24px;
+        height: 24px;
+      }
 
-      tabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-          // Remove active classes
-          tabBtns.forEach(b => b.classList.remove('active'));
-          tabContents.forEach(c => c.classList.remove('active'));
-          
-          // Add active class to clicked
-          btn.classList.add('active');
-          document.getElementById(btn.dataset.target).classList.add('active');
-        });
-      });
+      @keyframes pulse {
+        0% {
+          transform: scale(0.95);
+          box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+        }
+        70% {
+          transform: scale(1);
+          box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+        }
+        100% {
+          transform: scale(0.95);
+          box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+        }
+      }
 
-      /* === COPY TO CLIPBOARD === */
-      const copyBtns = document.querySelectorAll('.copy-btn');
-      copyBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-          const text = btn.dataset.text.replace(/\\n/g, '\n');
-          navigator.clipboard.writeText(text).then(() => {
-            const originalText = btn.textContent;
-            btn.textContent = 'Copied!';
-            setTimeout(() => { btn.textContent = originalText; }, 2000);
-          });
-        });
-      });
+      /* === DASHBOARD STATUS BAR === */
+      #status-bar {
+        display: none;
+        padding: 12px 16px;
+        margin: 80px auto 0 auto;
+        max-width: 600px;
+        background: var(--green-dim);
+        border: 1px solid var(--green);
+        border-radius: 8px;
+        font-size: 14px;
+        color: var(--green);
+        text-align: center;
+      }
+      #status-bar a {
+        text-decoration: underline;
+        margin-left: 8px;
+        font-weight: 500;
+      }
 
-      /* === MOBILE MENU TOGGLE === */
-      const mobileToggle = document.getElementById('mobile-toggle');
-      const navMenu = document.getElementById('nav-menu');
-      
-      mobileToggle.addEventListener('click', () => {
-        navMenu.classList.toggle('active');
-      });
+      /* === HERO === */
+      .hero {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 120px 24px 80px;
+        position: relative;
+      }
+      .hero-glow {
+        position: absolute;
+        top: 30%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(
+          circle,
+          rgba(108, 71, 255, 0.08) 0%,
+          rgba(0, 0, 0, 0) 70%
+        );
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: -1;
+      }
+      .hero .pill {
+        font-family: var(--font-code);
+        margin-bottom: 32px;
+        margin-top: 40px;
+      }
+      .hero h1 {
+        font-size: clamp(36px, 5vw, 52px);
+        max-width: 720px;
+        margin-bottom: 24px;
+        letter-spacing: -0.02em;
+      }
+      .hero p {
+        font-size: 18px;
+        color: var(--text-secondary);
+        max-width: 540px;
+        margin: 0 auto 40px;
+      }
+      .hero-ctas {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+        margin-bottom: 48px;
+        flex-wrap: wrap;
+      }
 
-      // Close mobile menu on click link
-      navMenu.querySelectorAll('a').forEach(link => {
-        link.addEventListener('click', () => {
-          navMenu.classList.remove('active');
-        });
-      });
+      .tech-pills {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-bottom: 64px;
+      }
+      .tech-pill {
+        padding: 6px 16px;
+        border-radius: 50px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        font-size: 13px;
+        color: var(--text-muted);
+      }
 
-      /* === SCROLL ANIMATIONS (Intersection Observer) === */
-      // Respect prefers-reduced-motion
-      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-      
-      if (!prefersReducedMotion.matches) {
-        const observerOptions = {
-          root: null,
-          rootMargin: '0px',
-          threshold: 0.1
+      .scroll-indicator {
+        position: absolute;
+        bottom: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        animation: bounce 2s infinite;
+        color: var(--text-muted);
+      }
+      .scroll-indicator svg {
+        width: 24px;
+        height: 24px;
+      }
+      @keyframes bounce {
+        0%,
+        20%,
+        50%,
+        80%,
+        100% {
+          transform: translateY(0) translateX(-50%);
+        }
+        40% {
+          transform: translateY(-10px) translateX(-50%);
+        }
+        60% {
+          transform: translateY(-5px) translateX(-50%);
+        }
+      }
+
+      /* === SECTIONS GENERAL === */
+      section {
+        padding: 100px 0;
+        border-top: 1px solid var(--border);
+      }
+      .section-header {
+        text-align: center;
+        margin-bottom: 64px;
+      }
+      .section-header h2 {
+        font-size: 32px;
+        margin-bottom: 16px;
+      }
+      .section-header p {
+        color: var(--text-secondary);
+        font-size: 18px;
+      }
+
+      /* === HOW IT WORKS === */
+      .steps-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 24px;
+      }
+      .step-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 32px;
+        position: relative;
+        overflow: hidden;
+        transition: border-color 150ms ease;
+      }
+      .step-card:hover {
+        border-color: rgba(255, 255, 255, 0.2);
+        background: var(--surface-elevated);
+      }
+      .step-number {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        font-family: var(--font-code);
+        font-size: 120px;
+        font-weight: 700;
+        color: var(--accent-purple);
+        opacity: 0.05;
+        line-height: 1;
+        pointer-events: none;
+      }
+      .step-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        background: var(--surface-elevated);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 24px;
+        color: var(--accent-purple);
+      }
+      .step-icon svg {
+        width: 20px;
+        height: 20px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .step-card h3 {
+        font-size: 20px;
+        margin-bottom: 12px;
+      }
+      .step-card p {
+        color: var(--text-secondary);
+        font-size: 15px;
+      }
+
+      /* === FEATURES === */
+      .features-split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 48px;
+      }
+      .features-col h3 {
+        margin-bottom: 32px;
+        display: flex;
+        align-items: center;
+      }
+      .feature-row {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      .feature-icon {
+        color: var(--green);
+        margin-top: 4px;
+        flex-shrink: 0;
+      }
+      .feature-icon svg {
+        width: 20px;
+        height: 20px;
+      }
+      .feature-content h4 {
+        font-size: 16px;
+        margin-bottom: 4px;
+        color: var(--text-primary);
+      }
+      .feature-content p {
+        font-size: 14px;
+        color: var(--text-secondary);
+      }
+
+      /* === INSTALLATION === */
+      .tabs {
+        margin-bottom: 24px;
+        display: flex;
+        border-bottom: 1px solid var(--border);
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .tab-btn {
+        padding: 12px 24px;
+        color: var(--text-muted);
+        font-size: 15px;
+        font-weight: 500;
+        border-bottom: 2px solid transparent;
+        transition: all 150ms ease;
+        white-space: nowrap;
+      }
+      .tab-btn:hover {
+        color: var(--text-secondary);
+      }
+      .tab-btn.active {
+        color: var(--accent-purple);
+        border-bottom-color: var(--accent-purple);
+      }
+      .tab-content {
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
+      }
+
+      .terminal {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 24px;
+      }
+      .terminal-header {
+        background: var(--surface-elevated);
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid var(--border);
+      }
+      .dots {
+        display: flex;
+        gap: 8px;
+      }
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+      .dot:nth-child(1) {
+        background: var(--red);
+      }
+      .dot:nth-child(2) {
+        background: var(--amber);
+      }
+      .dot:nth-child(3) {
+        background: var(--green);
+      }
+
+      .terminal-step {
+        position: relative;
+        padding: 20px;
+        border-bottom: 1px solid var(--border);
+      }
+      .terminal-step:last-child {
+        border-bottom: none;
+      }
+      .terminal-step-label {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+      }
+      .terminal-grid {
+        display: grid;
+        gap: 4px;
+      }
+      .terminal-line {
+        font-family: var(--font-code);
+        font-size: 14px;
+        color: var(--text-primary);
+      }
+      .terminal-comment {
+        color: var(--text-muted);
+      }
+      .copy-btn {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        background: var(--surface-elevated);
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        opacity: 0;
+        transition: opacity 150ms ease;
+      }
+      .terminal-step:hover .copy-btn {
+        opacity: 1;
+      }
+      .copy-btn:hover {
+        color: var(--text-primary);
+        background: var(--border);
+      }
+
+      .prereq-row {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+      }
+      .installation-note {
+        font-size: 14px;
+        color: var(--text-secondary);
+      }
+
+      .config-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        font-size: 14px;
+      }
+      .config-table th,
+      .config-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+      }
+      .config-table th {
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+      .config-table td:first-child code {
+        background: none;
+        padding: 0;
+        color: var(--accent-purple);
+      }
+
+      /* === ARCHITECTURE === */
+      .arch-diagram-wrapper {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .arch-diagram {
+        min-width: 760px;
+        margin: 40px auto;
+        padding: 40px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+      }
+
+      /* Using Flexbox for CSS diagram */
+      .diagram-flow {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: relative;
+      }
+      .node {
+        background: var(--surface-elevated);
+        border: 1px solid var(--accent-purple);
+        padding: 16px 24px;
+        border-radius: 8px;
+        text-align: center;
+        font-size: 14px;
+        z-index: 2;
+        position: relative;
+        width: 140px;
+        font-weight: 500;
+      }
+      .node.db {
+        border-color: var(--green);
+      }
+      .node.queue {
+        border-color: var(--amber);
+      }
+
+      .arrow {
+        height: 2px;
+        flex-grow: 1;
+        background: var(--border);
+        position: relative;
+        z-index: 1;
+        min-width: 30px;
+      }
+      .arrow::after {
+        content: "";
+        position: absolute;
+        right: -2px;
+        top: -4px;
+        border-top: 5px solid transparent;
+        border-bottom: 5px solid transparent;
+        border-left: 8px solid var(--border);
+      }
+
+      .diagram-column {
+        display: flex;
+        flex-direction: column;
+        gap: 40px;
+      }
+
+      .services-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        font-size: 14px;
+        margin-top: 40px;
+        margin-bottom: 32px;
+      }
+      .services-table th,
+      .services-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+      }
+      .services-table th {
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+
+      .callout {
+        background: rgba(108, 71, 255, 0.05);
+        border: 1px solid var(--accent-purple-dim);
+        padding: 24px;
+        border-radius: 8px;
+        margin-top: 24px;
+      }
+      .callout p {
+        color: var(--text-secondary);
+        font-size: 15px;
+        margin-bottom: 8px;
+      }
+
+      /* === CONTRIBUTOR === */
+      .contribute-section {
+        background: var(--surface);
+      }
+      .contrib-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 24px;
+        margin-bottom: 64px;
+      }
+      .contrib-card {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 32px;
+      }
+      .contrib-card h3 {
+        font-size: 20px;
+        margin-bottom: 16px;
+      }
+      .contrib-card p {
+        color: var(--text-secondary);
+        font-size: 15px;
+        margin-bottom: 24px;
+      }
+      .contrib-card.c-amber {
+        border-top: 2px solid var(--amber);
+      }
+      .contrib-card.c-purple {
+        border-top: 2px solid var(--accent-purple);
+      }
+      .contrib-card.c-green {
+        border-top: 2px solid var(--green);
+      }
+
+      .contrib-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 24px;
+      }
+      .contrib-tags span {
+        font-size: 12px;
+        padding: 4px 8px;
+        background: var(--surface-elevated);
+        border-radius: 4px;
+        color: var(--text-muted);
+      }
+
+      .cta-link {
+        color: var(--text-primary);
+        font-size: 14px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+      }
+      .cta-link:hover {
+        color: var(--accent-purple);
+      }
+
+      .steps-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 64px;
+      }
+      .min-step {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .min-step-num {
+        font-family: var(--font-code);
+        color: var(--accent-purple);
+        font-size: 24px;
+        opacity: 0.5;
+      }
+      .min-step-text {
+        font-weight: 500;
+        color: var(--text-primary);
+      }
+
+      .stats-row {
+        text-align: center;
+        color: var(--text-secondary);
+        font-family: var(--font-code);
+        font-size: 14px;
+        margin-bottom: 32px;
+        padding: 24px 0;
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+      }
+      .stats-row span {
+        margin: 0 16px;
+      }
+
+      /* === FOOTER === */
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 80px 0 40px;
+        background: var(--bg);
+      }
+      .footer-cols {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr;
+        gap: 48px;
+        margin-bottom: 64px;
+      }
+      .footer-col h4 {
+        margin-bottom: 24px;
+        font-size: 16px;
+        color: var(--text-primary);
+      }
+      .footer-col p {
+        color: var(--text-secondary);
+        font-size: 14px;
+        margin-bottom: 16px;
+      }
+      .footer-links {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .footer-links a {
+        color: var(--text-secondary);
+        font-size: 14px;
+      }
+      .footer-links a:hover {
+        color: var(--text-primary);
+      }
+
+      .footer-bottom {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid var(--border);
+        padding-top: 24px;
+        font-size: 14px;
+        color: var(--text-muted);
+      }
+
+      /* === RESPONSIVE === */
+      @media (max-width: 1024px) {
+        .features-split {
+          grid-template-columns: 1fr;
+          gap: 64px;
+        }
+      }
+      @media (max-width: 768px) {
+        .footer-cols {
+          grid-template-columns: 1fr;
+          text-align: center;
+        }
+        .steps-row {
+          flex-direction: column;
+          gap: 24px;
+        }
+        .stats-row span {
+          display: block;
+          margin: 8px 0;
+        }
+      }
+      @media (max-width: 640px) {
+        .nav-links {
+          display: none;
+        }
+        .nav-links.active {
+          display: flex;
+          flex-direction: column;
+          position: absolute;
+          top: 60px;
+          left: 0;
+          right: 0;
+          background: var(--bg);
+          padding: 24px;
+          border-bottom: 1px solid var(--border);
+        }
+        .mobile-menu-btn {
+          display: block;
+        }
+        .hero {
+          padding-top: 100px;
+        }
+        .hero h1 {
+          font-size: 36px;
+        }
+        .footer-bottom {
+          flex-direction: column;
+          gap: 16px;
+          text-align: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- NAVBAR -->
+    <nav>
+      <div class="container nav-inner">
+        <div class="brand">
+          Arachnode
+          <span class="pill purple" style="padding: 2px 8px; font-size: 11px"
+            >v1.0 &middot; open source</span
+          >
+        </div>
+        <ul class="nav-links" id="nav-menu">
+          <li><a href="#installation">Docs</a></li>
+          <li>
+            <a
+              href="https://github.com/sharmavaibhav31/arachnode"
+              target="_blank"
+              id="gh-link-nav"
+              >GitHub</a
+            >
+          </li>
+          <li><a href="#contributor">Contributors</a></li>
+        </ul>
+        <div class="nav-ctas">
+          <a id="dashboard-btn" title="Dashboard">
+            <div class="status-dot"></div>
+            Open Dashboard
+          </a>
+          <button
+            class="mobile-menu-btn"
+            id="mobile-toggle"
+            aria-label="Toggle menu"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- DASHBOARD STATUS BAR -->
+    <div id="status-bar" class="animate-on-scroll">
+      &#10003; Services detected — your JobHunter dashboard is running
+      <a href="#" id="status-bar-link">Open Dashboard &rarr;</a>
+    </div>
+
+    <!-- HERO -->
+    <section class="hero" id="hero">
+      <div class="hero-glow"></div>
+      <div class="pill">
+        ⚡ Built for placement season &middot; Self-hosted &middot; Free forever
+      </div>
+      <h1 class="animate-on-scroll">
+        Stop applying manually.<br />Automate your entire<br />job hunt.
+      </h1>
+      <p class="animate-on-scroll" style="transition-delay: 80ms">
+        Arachnode crawls startup job boards, finds hiring manager contacts, and
+        drafts cold emails, running entirely on your machine. No subscriptions.
+        No API bills. No black-box agents.
+      </p>
+      <div class="hero-ctas animate-on-scroll" style="transition-delay: 160ms">
+        <a href="#installation" class="btn btn-primary"
+          >Get started in 5 minutes</a
+        >
+        <a
+          href="https://github.com/sharmavaibhav31/arachnode"
+          target="_blank"
+          class="btn btn-outline"
+          id="gh-link-hero"
+          >View on GitHub</a
+        >
+      </div>
+      <div class="tech-pills animate-on-scroll" style="transition-delay: 240ms">
+        <div class="tech-pill">Scrapy</div>
+        <div class="tech-pill">FastAPI</div>
+        <div class="tech-pill">Redis Streams</div>
+        <div class="tech-pill">PostgreSQL</div>
+        <div class="tech-pill">Ollama</div>
+      </div>
+      <div class="scroll-indicator">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section id="how-it-works">
+      <div class="container">
+        <div class="section-header animate-on-scroll">
+          <h2>From job board to inbox in minutes</h2>
+          <p>Three steps. Fully automated once configured.</p>
+        </div>
+        <div class="steps-grid">
+          <div
+            class="step-card animate-on-scroll"
+            style="transition-delay: 0ms"
+          >
+            <div class="step-number">01</div>
+            <div class="step-icon">
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="12" r="6"></circle>
+                <circle cx="12" cy="12" r="2"></circle>
+              </svg>
+            </div>
+            <h3>Crawl every relevant job</h3>
+            <p>
+              Arachnode scans Wellfound, YC Jobs, Remotive, Naukri, and LinkedIn
+              continuously. New roles matching your stack appear in your
+              dashboard within minutes.
+            </p>
+          </div>
+          <div
+            class="step-card animate-on-scroll"
+            style="transition-delay: 80ms"
+          >
+            <div class="step-number">02</div>
+            <div class="step-icon">
+              <svg viewBox="0 0 24 24">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </div>
+            <h3>Find who to contact</h3>
+            <p>
+              The contact discovery service finds publicly available emails and
+              LinkedIn profiles for hiring managers and engineers at target
+              companies using OSINT and the GitHub API.
+            </p>
+          </div>
+          <div
+            class="step-card animate-on-scroll"
+            style="transition-delay: 160ms"
+          >
+            <div class="step-number">03</div>
+            <div class="step-icon">
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+                ></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
+            </div>
+            <h3>Send emails that get replies</h3>
+            <p>
+              A local LLM (Ollama + Mistral) personalizes cold emails based on
+              each company's product. You review and send, nothing goes out
+              automatically.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section id="features">
+      <div class="container">
+        <div class="section-header animate-on-scroll">
+          <h2>Everything you need. Nothing you don't.</h2>
+        </div>
+        <div class="features-split">
+          <div
+            class="features-col animate-on-scroll"
+            style="transition-delay: 0ms"
+          >
+            <h3>
+              <span class="pill purple" style="margin-right: 12px"
+                >For job seekers</span
+              >
+              Use it
+            </h3>
+
+            <div class="feature-row">
+              <div class="feature-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+              <div class="feature-content">
+                <h4>Multi-platform crawling</h4>
+                <p>
+                  Wellfound, YC, Remotive, Naukri, LinkedIn, Internshala — one
+                  command.
+                </p>
+              </div>
+            </div>
+            <div class="feature-row">
+              <div class="feature-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+              <div class="feature-content">
+                <h4>Smart deduplication</h4>
+                <p>
+                  Redis-backed dedup means you never see the same job twice
+                  across sources.
+                </p>
+              </div>
+            </div>
+            <div class="feature-row">
+              <div class="feature-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+              <div class="feature-content">
+                <h4>Contact discovery</h4>
+                <p>
+                  OSINT pipeline finds hiring manager emails from public GitHub
+                  and web data.
+                </p>
+              </div>
+            </div>
+            <div class="feature-row">
+              <div class="feature-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+              <div class="feature-content">
+                <h4>AI-personalized emails</h4>
+                <p>
+                  Ollama runs locally; no OpenAI key needed, no usage costs.
+                </p>
+              </div>
+            </div>
+            <div class="feature-row">
+              <div class="feature-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+              <div class="feature-content">
+                <h4>One-click Docker setup</h4>
+                <p>
+                  docker-compose up. That's it. Everything starts in the right
+                  order.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="features-col animate-on-scroll"
+            style="transition-delay: 80ms"
+          >
+            <h3>
+              <span class="pill amber" style="margin-right: 12px"
+                >For contributors</span
+              >
+              Build it
+            </h3>
+
+            <div class="feature-row">
+              <div class="feature-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+              <div class="feature-content">
+                <h4>Microservice architecture</h4>
+                <p>
+                  Seven independent services. Pick one, understand it fully,
+                  improve it.
+                </p>
+              </div>
+            </div>
+            <div class="feature-row">
+              <div class="feature-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+              <div class="feature-content">
+                <h4>AI-assisted development</h4>
+                <p>
+                  Agent instruction files for Claude Code, Cursor, Blackbox, and
+                  AntiGravity are already in the repo. The context is written
+                  for you.
+                </p>
+              </div>
+            </div>
+            <div class="feature-row">
+              <div class="feature-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+              <div class="feature-content">
+                <h4>Event-driven core</h4>
+                <p>
+                  Redis Streams connect every service. Add a new data source
+                  without touching existing code.
+                </p>
+              </div>
+            </div>
+            <div class="feature-row">
+              <div class="feature-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+              <div class="feature-content">
+                <h4>Full test suite</h4>
+                <p>
+                  Four-layer testing: unit, integration, contract, and E2E.
+                  testcontainers handles infrastructure.
+                </p>
+              </div>
+            </div>
+            <div class="feature-row">
+              <div class="feature-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+              <div class="feature-content">
+                <h4>Extensible by design</h4>
+                <p>
+                  Adding a new job platform is three files and a class. The
+                  pipeline picks it up automatically.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- INSTALLATION -->
+    <section id="installation">
+      <div class="container animate-on-scroll">
+        <div class="section-header">
+          <h2>Up and running in 5 minutes</h2>
+          <p>If you have Docker installed, this is the entire process.</p>
+        </div>
+
+        <div class="tabs">
+          <button class="tab-btn active" data-target="tab-quick">
+            Quick start
+          </button>
+          <button class="tab-btn" data-target="tab-manual">Manual setup</button>
+          <button class="tab-btn" data-target="tab-config">
+            Configuration
+          </button>
+        </div>
+
+        <div class="tab-content active" id="tab-quick">
+          <div class="terminal">
+            <div class="terminal-header">
+              <div class="dots">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+              </div>
+            </div>
+
+            <div class="terminal-step">
+              <div class="terminal-step-label">Step 1 — Clone</div>
+              <div class="terminal-grid" id="code-step-1">
+                <div class="terminal-line">
+                  git clone https://github.com/sharmavaibhav31/arachnode.git
+                </div>
+                <div class="terminal-line">cd jobhunter</div>
+              </div>
+              <button
+                class="copy-btn"
+                data-text="git clone https://github.com/sharmavaibhav31/arachnode.git\ncd jobhunter"
+              >
+                Copy
+              </button>
+            </div>
+
+            <div class="terminal-step">
+              <div class="terminal-step-label">Step 2 — Configure</div>
+              <div class="terminal-grid" id="code-step-2">
+                <div class="terminal-line">cp .env.example .env</div>
+                <div class="terminal-line terminal-comment">
+                  # Edit .env with your details (takes 2 minutes)
+                </div>
+                <div class="terminal-line terminal-comment">
+                  # Required: JOBSEEKER_ROLE, JOBSEEKER_STACK,
+                  GMAIL_APP_PASSWORD
+                </div>
+              </div>
+              <button class="copy-btn" data-text="cp .env.example .env">
+                Copy
+              </button>
+            </div>
+
+            <div class="terminal-step">
+              <div class="terminal-step-label">Step 3 — Run</div>
+              <div class="terminal-grid" id="code-step-3">
+                <div class="terminal-line">docker-compose up -d</div>
+              </div>
+              <button class="copy-btn" data-text="docker-compose up -d">
+                Copy
+              </button>
+            </div>
+
+            <div class="terminal-step">
+              <div class="terminal-step-label">Step 4 — Open</div>
+              <div class="terminal-grid" id="code-step-4">
+                <div class="terminal-line terminal-comment">
+                  # Visit http://localhost:8080
+                </div>
+                <div class="terminal-line terminal-comment">
+                  # Or click "Open Dashboard" in the navbar above (activates
+                  automatically)
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="prereq-row">
+            <div class="pill">Docker 24+</div>
+            <div class="pill">docker-compose v2</div>
+            <div class="pill">4GB RAM</div>
+            <div class="pill">Git</div>
+          </div>
+          <p class="installation-note">
+            Ollama is optional. Without it, email templates still work — just
+            without AI personalization.
+          </p>
+        </div>
+
+        <div class="tab-content" id="tab-manual">
+          <div class="terminal">
+            <div class="terminal-header">
+              <div class="dots">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+              </div>
+            </div>
+            <div class="terminal-step" style="padding: 24px">
+              <div class="terminal-grid">
+                <div class="terminal-line">python -m venv venv</div>
+                <div class="terminal-line">source venv/bin/activate</div>
+                <div class="terminal-line">pip install -r requirements.txt</div>
+                <div class="terminal-line">playwright install chromium</div>
+                <br />
+                <div class="terminal-line terminal-comment">
+                  # Start Redis and Postgres separately, then:
+                </div>
+                <div class="terminal-line">scrapy crawl remotive</div>
+                <div class="terminal-line">
+                  uvicorn aggregator.main:app --port 8000
+                </div>
+              </div>
+              <button
+                class="copy-btn"
+                data-text="python -m venv venv\nsource venv/bin/activate\npip install -r requirements.txt\nplaywright install chromium\nscrapy crawl remotive\nuvicorn aggregator.main:app --port 8000"
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-content" id="tab-config">
+          <div class="terminal" style="padding: 0">
+            <div style="overflow-x: auto">
+              <table class="config-table">
+                <thead>
+                  <tr>
+                    <th>Variable</th>
+                    <th>Required</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>JOBSEEKER_ROLE</code></td>
+                    <td>Yes</td>
+                    <td>e.g. "Backend Engineer"</td>
+                  </tr>
+                  <tr>
+                    <td><code>JOBSEEKER_STACK</code></td>
+                    <td>Yes</td>
+                    <td>e.g. "Python,Go,FastAPI"</td>
+                  </tr>
+                  <tr>
+                    <td><code>GMAIL_ADDRESS</code></td>
+                    <td>For sending</td>
+                    <td>Your Gmail address</td>
+                  </tr>
+                  <tr>
+                    <td><code>GMAIL_APP_PASSWORD</code></td>
+                    <td>For sending</td>
+                    <td>Gmail app password (not your main password)</td>
+                  </tr>
+                  <tr>
+                    <td><code>OLLAMA_BASE_URL</code></td>
+                    <td>Optional</td>
+                    <td>Default: http://localhost:11434</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <a
+            href="https://github.com/sharmavaibhav31/arachnode#configuration"
+            target="_blank"
+            class="cta-link"
+            >Full configuration reference &rarr;</a
+          >
+        </div>
+      </div>
+    </section>
+
+    <!-- ARCHITECTURE -->
+    <section id="architecture">
+      <div class="container">
+        <div class="section-header animate-on-scroll">
+          <h2>Seven services. One pipeline.</h2>
+          <p>
+            Each service does one thing. All of them together do everything.
+          </p>
+        </div>
+
+        <div
+          class="arch-diagram-wrapper animate-on-scroll"
+          style="transition-delay: 80ms"
+        >
+          <div class="arch-diagram">
+            <div class="diagram-flow">
+              <div class="diagram-column">
+                <div class="node">Crawler</div>
+                <div class="node">Platform Scraper</div>
+              </div>
+              <div class="arrow"></div>
+              <div class="node queue">Redis Stream</div>
+              <div class="arrow"></div>
+              <div class="node">Aggregator</div>
+              <div class="arrow"></div>
+              <div class="node db">PostgreSQL</div>
+            </div>
+            <div style="height: 40px"></div>
+            <div
+              class="diagram-flow"
+              style="justify-content: center; gap: 40px"
+            >
+              <div class="node">Contact Discovery</div>
+              <div class="arrow" style="flex-grow: 0; width: 40px"></div>
+              <div class="node">Email Generator</div>
+            </div>
+            <div style="height: 40px"></div>
+            <div
+              class="diagram-flow"
+              style="justify-content: center; gap: 40px"
+            >
+              <div class="node" style="border-style: dashed">Scheduler</div>
+              <div class="node" style="border-style: dashed">Gateway</div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="animate-on-scroll"
+          style="transition-delay: 160ms; overflow-x: auto"
+        >
+          <table class="services-table">
+            <thead>
+              <tr>
+                <th>Service</th>
+                <th>Language</th>
+                <th>Port</th>
+                <th>Key dependency</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Crawler</td>
+                <td>Python</td>
+                <td>-</td>
+                <td>Scrapy</td>
+                <td>
+                  <span class="pill green" style="padding: 2px 8px"
+                    >stable</span
+                  >
+                </td>
+              </tr>
+              <tr>
+                <td>Platform Scraper</td>
+                <td>Python</td>
+                <td>8001</td>
+                <td>FastAPI + Playwright</td>
+                <td>
+                  <span class="pill green" style="padding: 2px 8px"
+                    >stable</span
+                  >
+                </td>
+              </tr>
+              <tr>
+                <td>Aggregator</td>
+                <td>Python</td>
+                <td>8000</td>
+                <td>FastAPI</td>
+                <td>
+                  <span class="pill green" style="padding: 2px 8px"
+                    >stable</span
+                  >
+                </td>
+              </tr>
+              <tr>
+                <td>Contact Discovery</td>
+                <td>Python</td>
+                <td>8002</td>
+                <td>FastAPI + httpx</td>
+                <td>
+                  <span class="pill green" style="padding: 2px 8px"
+                    >stable</span
+                  >
+                </td>
+              </tr>
+              <tr>
+                <td>Email Generator</td>
+                <td>Python</td>
+                <td>8003</td>
+                <td>FastAPI + Ollama</td>
+                <td>
+                  <span class="pill green" style="padding: 2px 8px"
+                    >stable</span
+                  >
+                </td>
+              </tr>
+              <tr>
+                <td>Scheduler</td>
+                <td>Python</td>
+                <td>-</td>
+                <td>Celery/Cron</td>
+                <td>
+                  <span class="pill green" style="padding: 2px 8px"
+                    >stable</span
+                  >
+                </td>
+              </tr>
+              <tr>
+                <td>Gateway</td>
+                <td>Python</td>
+                <td>8080</td>
+                <td>FastAPI</td>
+                <td>
+                  <span class="pill green" style="padding: 2px 8px"
+                    >stable</span
+                  >
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout animate-on-scroll" style="transition-delay: 240ms">
+          <p><strong>Why not agentic workflows?</strong></p>
+          <p>
+            AI agents are the automation scripts of their era - impressive until
+            a webpage changes its navbar. JobHunter uses deterministic
+            microservices as the foundation. Agentic orchestration is on the
+            roadmap, built on top of reliable infrastructure rather than instead
+            of it.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTRIBUTOR -->
+    <section id="contributor" class="contribute-section">
+      <div class="container">
+        <div class="section-header animate-on-scroll">
+          <h2>Built in the open. Made better together.</h2>
+          <p>
+            JobHunter is open source and actively looking for contributors. All
+            skill levels welcome.
+          </p>
+        </div>
+
+        <div class="contrib-cards">
+          <div
+            class="contrib-card c-amber animate-on-scroll"
+            style="transition-delay: 0ms"
+          >
+            <h3>AI-assisted contributions</h3>
+            <p>
+              Agent instruction files for Claude Code, Cursor, Blackbox, and
+              AntiGravity are already in the repo under ai_assistance/. An
+              orchestrator manages specialised subagents for code auditing, bug
+              detection, security review, DB schema analysis, and more. Point
+              your AI editor at the repo; the context is already written.
+            </p>
+            <a href="#" class="cta-link">View agent files &rarr;</a>
+          </div>
+
+          <div
+            class="contrib-card c-purple animate-on-scroll"
+            style="transition-delay: 80ms"
+          >
+            <h3>Good first issues</h3>
+            <p>
+              Each service is independent and well-documented. Pick one you
+              understand and improve it. New job platform? New email template?
+              Better deduplication logic? All of these are scoped, reviewable
+              PRs.
+            </p>
+            <div class="contrib-tags">
+              <span>[Spider] New job platforms</span>
+              <span>[ML] Better stack matching</span>
+              <span>[UX] Dashboard improvements</span>
+              <span>[Infra] Performance & caching</span>
+            </div>
+            <a
+              href="https://github.com/sharmavaibhav31/arachnode/issues"
+              target="_blank"
+              class="cta-link"
+              >Browse open issues &rarr;</a
+            >
+          </div>
+
+          <div
+            class="contrib-card c-green animate-on-scroll"
+            style="transition-delay: 160ms"
+          >
+            <h3>Non-code contributions</h3>
+            <p>
+              Documentation improvements, README translations, testing on
+              different platforms, reporting broken scrapers when sites update
+              their HTML, all of these matter and all are welcome.
+            </p>
+            <a
+              href="https://github.com/sharmavaibhav31/arachnode/blob/main/CONTRIBUTING.md"
+              target="_blank"
+              class="cta-link"
+              >Contribution guide &rarr;</a
+            >
+          </div>
+        </div>
+
+        <div
+          class="steps-row animate-on-scroll"
+          style="transition-delay: 240ms"
+        >
+          <div class="min-step">
+            <span class="min-step-num">1</span
+            ><span class="min-step-text">Fork the repo</span>
+          </div>
+          <div class="min-step">
+            <span class="min-step-num">2</span
+            ><span class="min-step-text">Read CONTRIBUTING.md</span>
+          </div>
+          <div class="min-step">
+            <span class="min-step-num">3</span
+            ><span class="min-step-text">Pick an issue or open one</span>
+          </div>
+          <div class="min-step">
+            <span class="min-step-num">4</span
+            ><span class="min-step-text">Submit a PR</span>
+          </div>
+        </div>
+
+        <div
+          class="stats-row animate-on-scroll"
+          style="transition-delay: 320ms"
+        >
+          <span>&#9733; Stars: 128</span> | <span>Forks: 32</span> |
+          <span>Open issues: 14</span> | <span>Contributors: 7</span>
+        </div>
+
+        <div
+          class="text-center animate-on-scroll"
+          style="transition-delay: 400ms; text-align: center"
+        >
+          <p style="color: var(--text-secondary); margin-bottom: 8px">
+            Open for contributions &middot; MIT Licensed &middot; Built by the
+            community, for the community
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+      <div class="container">
+        <div class="footer-cols">
+          <div class="footer-col">
+            <div class="brand" style="margin-bottom: 12px">Arachnode</div>
+            <p>Self-hosted job discovery and communication pipeline.</p>
+            <p style="font-size: 13px">
+              MIT License. Open source and free forever.
+            </p>
+          </div>
+          <div class="footer-col">
+            <h4>Links</h4>
+            <div class="footer-links">
+              <a href="#installation">Documentation</a>
+              <a
+                href="https://github.com/sharmavaibhav31/arachnode"
+                target="_blank"
+                >GitHub Repository</a
+              >
+              <a
+                href="https://github.com/sharmavaibhav31/arachnode/blob/main/CONTRIBUTING.md"
+                target="_blank"
+                >Contributing Guide</a
+              >
+              <a
+                href="https://github.com/sharmavaibhav31/arachnode/issues"
+                target="_blank"
+                >Report an Issue</a
+              >
+            </div>
+          </div>
+          <div class="footer-col">
+            <h4>Built with</h4>
+            <div class="footer-links">
+              <a href="https://scrapy.org" target="_blank">Scrapy</a>
+              <a href="https://fastapi.tiangolo.com" target="_blank">FastAPI</a>
+              <a href="https://redis.io" target="_blank">Redis</a>
+              <a href="https://postgresql.org" target="_blank">PostgreSQL</a>
+              <a href="https://ollama.com" target="_blank">Ollama</a>
+              <a href="https://docker.com" target="_blank">Docker</a>
+            </div>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <div>
+            MIT &copy; 2026 Vaibhav Sharma &middot; Made during placement season
+          </div>
+          <div>Deployed on Github Pages</div>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      /* === CONFIGURATION CONSTANTS === */
+      const GITHUB_URL = "https://github.com/sharmavaibhav31/arachnode";
+      const AUTHOR_NAME = "Vaibhav Sharma";
+      const DASHBOARD_URL = "http://localhost:8080";
+      const HEALTH_CHECK_INTERVAL = 10000;
+
+      /* === INITIALIZE UI DYNAMIC ELEMENTS === */
+      document.addEventListener("DOMContentLoaded", () => {
+        // Setup dynamic links based on constants
+        document.getElementById("gh-link-nav").href = GITHUB_URL;
+        document.getElementById("gh-link-hero").href = GITHUB_URL;
+        document.getElementById("status-bar-link").href = DASHBOARD_URL;
+
+        /* === DASHBOARD DETECTION LOGIC === */
+        const dashBtn = document.getElementById("dashboard-btn");
+        const statusBar = document.getElementById("status-bar");
+        let pollingInterval;
+
+        const checkDashboardStatus = async () => {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+          try {
+            // Attempting request with no-cors to bypass CORS error on static deployment
+            const response = await fetch(`${DASHBOARD_URL}/api/health`, {
+              method: "GET",
+              mode: "no-cors",
+              signal: controller.signal,
+            });
+
+            // If fetch completed without throwing (even opaque response), success!
+            clearTimeout(timeoutId);
+            activateDashboardUI();
+          } catch (error) {
+            // Failure (timeout, network error, connection refused)
+            // Silent failure per requirements, disable UI features if previously active
+            clearTimeout(timeoutId);
+            deactivateDashboardUI();
+          }
         };
 
-        const observer = new IntersectionObserver((entries, observer) => {
-          entries.forEach(entry => {
-            if (entry.isIntersecting) {
-              entry.target.classList.add('visible');
-              observer.unobserve(entry.target); // Only animate once
-            }
+        const activateDashboardUI = () => {
+          dashBtn.classList.add("active");
+          dashBtn.removeAttribute("disabled");
+          dashBtn.title = "";
+          dashBtn.href = DASHBOARD_URL;
+          statusBar.style.display = "block";
+          if (pollingInterval) {
+            clearInterval(pollingInterval);
+            pollingInterval = null;
+          }
+
+          // Listen to leaving to trigger checking again if they come back
+          window.addEventListener("visibilitychange", handleVisibilityChange);
+        };
+
+        const deactivateDashboardUI = () => {
+          dashBtn.classList.remove("active");
+          dashBtn.setAttribute("disabled", "true");
+          dashBtn.removeAttribute("href");
+          statusBar.style.display = "none";
+        };
+
+        const handleVisibilityChange = () => {
+          if (document.visibilityState === "visible" && !pollingInterval) {
+            // they came back, restart polling to make sure it's still alive
+            checkDashboardStatus();
+            pollingInterval = setInterval(
+              checkDashboardStatus,
+              HEALTH_CHECK_INTERVAL,
+            );
+          }
+        };
+
+        // Initial check & interval start
+        checkDashboardStatus();
+        pollingInterval = setInterval(
+          checkDashboardStatus,
+          HEALTH_CHECK_INTERVAL,
+        );
+
+        /* === TAB INTERFACE LOGIC === */
+        const tabBtns = document.querySelectorAll(".tab-btn");
+        const tabContents = document.querySelectorAll(".tab-content");
+
+        tabBtns.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            // Remove active classes
+            tabBtns.forEach((b) => b.classList.remove("active"));
+            tabContents.forEach((c) => c.classList.remove("active"));
+
+            // Add active class to clicked
+            btn.classList.add("active");
+            document.getElementById(btn.dataset.target).classList.add("active");
           });
-        }, observerOptions);
-
-        document.querySelectorAll('.animate-on-scroll').forEach(el => {
-          observer.observe(el);
         });
-      }
 
-    });
-  </script>
-</body>
+        /* === COPY TO CLIPBOARD === */
+        const copyBtns = document.querySelectorAll(".copy-btn");
+        copyBtns.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const text = btn.dataset.text.replace(/\\n/g, "\n");
+            navigator.clipboard.writeText(text).then(() => {
+              const originalText = btn.textContent;
+              btn.textContent = "Copied!";
+              setTimeout(() => {
+                btn.textContent = originalText;
+              }, 2000);
+            });
+          });
+        });
+
+        /* === MOBILE MENU TOGGLE === */
+        const mobileToggle = document.getElementById("mobile-toggle");
+        const navMenu = document.getElementById("nav-menu");
+
+        mobileToggle.addEventListener("click", () => {
+          navMenu.classList.toggle("active");
+        });
+
+        // Close mobile menu on click link
+        navMenu.querySelectorAll("a").forEach((link) => {
+          link.addEventListener("click", () => {
+            navMenu.classList.remove("active");
+          });
+        });
+
+        /* === SCROLL ANIMATIONS (Intersection Observer) === */
+        // Respect prefers-reduced-motion
+        const prefersReducedMotion = window.matchMedia(
+          "(prefers-reduced-motion: reduce)",
+        );
+
+        if (!prefersReducedMotion.matches) {
+          const observerOptions = {
+            root: null,
+            rootMargin: "0px",
+            threshold: 0.1,
+          };
+
+          const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add("visible");
+                observer.unobserve(entry.target); // Only animate once
+              }
+            });
+          }, observerOptions);
+
+          document.querySelectorAll(".animate-on-scroll").forEach((el) => {
+            observer.observe(el);
+          });
+        }
+      });
+    </script>
+  </body>
 </html>
