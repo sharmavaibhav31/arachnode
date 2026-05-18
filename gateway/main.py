@@ -189,6 +189,11 @@ async def proxy_generate(request: Request):
     return await proxy.proxy_request(request, f"{proxy.EMAIL_GEN_URL}/generate")
 
 
+@app.api_route("/api/digest", methods=["POST"], tags=["proxy"])
+async def proxy_digest(request: Request):
+    return await proxy.proxy_request(request, f"{proxy.EMAIL_GEN_URL}/digest")
+
+
 # ---------------------------------------------------------------------------
 # Composite endpoint — POST /api/workflow/apply
 # ---------------------------------------------------------------------------
