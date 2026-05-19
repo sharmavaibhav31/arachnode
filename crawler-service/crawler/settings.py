@@ -22,10 +22,19 @@ AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0
 # --------------------------------------------------------------------------
 DOWNLOADER_MIDDLEWARES = {
     "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": None,
+    "scrapy.downloadermiddlewares.retry.RetryMiddleware": None,
     "crawler.middlewares.RotateUserAgentMiddleware": 400,
+    "crawler.middlewares.ExponentialBackoffRetryMiddleware": 550,
     "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler": 585,
 }
 
+# --------------------------------------------------------------------------
+# Retry settings
+# --------------------------------------------------------------------------
+RETRY_ENABLED = True
+RETRY_TIMES = 3
+RETRY_HTTP_CODES = [500, 502, 503, 504, 408, 429]
+FAILED_URLS_KEY = "arachnode:failed_urls"
 DOWNLOAD_HANDLERS = {
     "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
     "http":  "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
