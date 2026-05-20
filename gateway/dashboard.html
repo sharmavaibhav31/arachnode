@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  JobHunter Dashboard — single-file SPA served by FastAPI gateway at GET /
+  Arachnode Dashboard — single-file SPA served by FastAPI gateway at GET /
   =========================================================================
   API dependencies per view:
     Jobs:     GET /api/jobs, PATCH /api/jobs/{id}/status, POST /api/workflow/apply
@@ -11,12 +11,10 @@
 
   To change the backend URL: edit API_BASE constant at the top of the <script> block.
 
-  To add a new tab view:
-    1. Add a nav button: <button data-tab="mytab">My Tab</button>
-    2. Add a section: <section id="tab-mytab" class="tab-view">...</section>
-    3. In ROUTER section: add case 'mytab' to switchTab(), implement loadMyTab()
+  Theme: toggled via data-theme="dark"|"light" on <html>, persisted to localStorage.
+  Background: Canvas particle web — GPU-accelerated, theme-aware, non-distracting.
 -->
-<html lang="en">
+<html lang="en" data-theme="dark">
 
 <head>
   <meta charset="UTF-8" />
@@ -24,68 +22,128 @@
   <title>Arachnode</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
   <style>
-    /* === DESIGN TOKENS === */
-    :root {
-      --accent: #6c47ff;
-      --accent-low: rgba(108, 71, 255, .10);
-      --bg: #ffffff;
-      --surface: #f5f4f2;
-      --border: rgba(15, 15, 15, .15);
-      --text: #0f0f0f;
-      --muted: #6b7280;
-      --green: #16a34a;
-      --amber: #d97706;
-      --red: #dc2626;
-      --blue: #2563eb;
-      --radius: 8px;
-      --n-h: 52px;
-      --trans: 150ms ease;
-      --font: 'SF Mono', 'Fira Code', monospace;
+    /* ============================================================
+       DESIGN TOKENS
+    ============================================================ */
+    :root,
+    [data-theme="dark"] {
+      --accent:       #7c5cfc;
+      --accent-2:     #4f9eff;
+      --accent-low:   rgba(124, 92, 252, .12);
+      --accent-glow:  rgba(124, 92, 252, .25);
+      --bg:           #0a0a0f;
+      --bg-2:         #0f0f18;
+      --surface:      #13131f;
+      --surface-2:    #1a1a2e;
+      --border:       rgba(255, 255, 255, .08);
+      --border-hover: rgba(255, 255, 255, .16);
+      --text:         #e8e8f0;
+      --text-dim:     #a0a0b8;
+      --muted:        #5a5a78;
+      --green:        #22c55e;
+      --green-low:    rgba(34, 197, 94, .12);
+      --amber:        #f59e0b;
+      --amber-low:    rgba(245, 158, 11, .12);
+      --red:          #ef4444;
+      --red-low:      rgba(239, 68, 68, .12);
+      --blue:         #3b82f6;
+      --blue-low:     rgba(59, 130, 246, .12);
+      --radius:       10px;
+      --radius-sm:    6px;
+      --n-h:          54px;
+      --trans:        200ms cubic-bezier(.4,0,.2,1);
+      --font-mono:    'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      --shadow:       0 4px 24px rgba(0,0,0,.4);
+      --shadow-sm:    0 2px 8px rgba(0,0,0,.3);
+      --glass:        rgba(19, 19, 31, .8);
+      --glass-border: rgba(255,255,255,.06);
+      --particle-rgb: 124, 92, 252;
     }
 
-    *,
-    *::before,
-    *::after {
+    [data-theme="light"] {
+      --accent:       #6c47ff;
+      --accent-2:     #2563eb;
+      --accent-low:   rgba(108, 71, 255, .08);
+      --accent-glow:  rgba(108, 71, 255, .15);
+      --bg:           #f8f7ff;
+      --bg-2:         #f0eeff;
+      --surface:      #ffffff;
+      --surface-2:    #f3f0ff;
+      --border:       rgba(0, 0, 0, .08);
+      --border-hover: rgba(0, 0, 0, .16);
+      --text:         #0f0f1a;
+      --text-dim:     #4a4a6a;
+      --muted:        #8a8aaa;
+      --green:        #16a34a;
+      --green-low:    rgba(22, 163, 74, .08);
+      --amber:        #d97706;
+      --amber-low:    rgba(217, 119, 6, .08);
+      --red:          #dc2626;
+      --red-low:      rgba(220, 38, 38, .08);
+      --blue:         #2563eb;
+      --blue-low:     rgba(37, 99, 235, .08);
+      --shadow:       0 4px 24px rgba(108,71,255,.08);
+      --shadow-sm:    0 2px 8px rgba(0,0,0,.06);
+      --glass:        rgba(255, 255, 255, .85);
+      --glass-border: rgba(108,71,255,.1);
+      --particle-rgb: 108, 71, 255;
+    }
+
+    /* ============================================================
+       GLOBAL RESET & BASE
+    ============================================================ */
+    *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
-      padding: 0
+      padding: 0;
+      transition:
+        background-color var(--trans),
+        color var(--trans),
+        border-color var(--trans);
     }
 
     body {
-      font-family: system-ui, -apple-system, sans-serif;
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
       font-size: 14px;
       color: var(--text);
       background: var(--bg);
-      line-height: 1.5
+      line-height: 1.5;
+      min-height: 100vh;
+      overflow-x: hidden;
     }
 
-    button {
-      cursor: pointer;
-      font: inherit;
-      border: none;
-      background: none
+    button { cursor: pointer; font: inherit; border: none; background: none; }
+    input, select { font: inherit; color: inherit; }
+    a { color: inherit; text-decoration: none; }
+
+    /* ============================================================
+       PARTICLE CANVAS BACKGROUND
+    ============================================================ */
+    #arachnode-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
     }
 
-    input,
-    select {
-      font: inherit;
-      color: inherit
+    /* Everything above particles */
+    #navbar, #main, #detail-panel, #panel-backdrop,
+    .modal-backdrop, #toasts, #offline-banner {
+      position: relative;
+      z-index: 10;
     }
 
-    a {
-      color: inherit;
-      text-decoration: none
-    }
-
-    /* === NAVBAR === */
+    /* ============================================================
+       NAVBAR
+    ============================================================ */
     #navbar {
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
+      top: 0; left: 0; right: 0;
       height: var(--n-h);
-      background: var(--bg);
-      border-bottom: 1px solid var(--border);
+      background: var(--glass);
+      border-bottom: 1px solid var(--glass-border);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -95,19 +153,40 @@
     }
 
     .brand {
-      font-size: 15px;
-      font-weight: 600;
-      letter-spacing: -.02em
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -.03em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    .brand span {
-      color: var(--accent)
+    .brand-icon {
+      width: 26px;
+      height: 26px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .brand-name { color: var(--text); }
+    .brand-name em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
     .nav-tabs {
       display: flex;
       gap: 0;
-      margin-left: 24px
+      margin-left: 20px;
     }
 
     .nav-tab {
@@ -119,35 +198,85 @@
       font-weight: 500;
       color: var(--muted);
       border-bottom: 2px solid transparent;
-      transition: var(--trans);
+      transition: color var(--trans), border-color var(--trans);
     }
 
-    .nav-tab:hover {
-      color: var(--text)
-    }
+    .nav-tab:hover { color: var(--text-dim); }
 
     .nav-tab.active {
       color: var(--accent);
-      border-bottom-color: var(--accent)
+      border-bottom-color: var(--accent);
     }
 
-    .nav-left {
+    .nav-left { display: flex; align-items: center; }
+
+    .nav-right {
       display: flex;
-      align-items: center
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Theme toggle button */
+    #btn-theme {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 36px;
+      padding: 0 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-dim);
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    #btn-theme:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-low);
     }
 
     #btn-scrape {
-      padding: 7px 14px;
-      background: var(--accent);
+      padding: 7px 16px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
       color: #fff;
-      border-radius: var(--radius);
+      border-radius: var(--radius-sm);
       font-size: 13px;
       font-weight: 500;
-      transition: var(--trans);
+      transition: opacity var(--trans), box-shadow var(--trans);
     }
 
     #btn-scrape:hover {
-      opacity: .88
+      opacity: .9;
+      box-shadow: 0 4px 16px var(--accent-glow);
+    }
+
+    /* ============================================================
+       OFFLINE BANNER
+    ============================================================ */
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    #btn-shortcuts {
+      width: 38px;
+      height: 38px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--fg);
+      font-size: 18px;
+      font-weight: 700;
+      transition: var(--trans)
+    }
+
+    #btn-shortcuts:hover {
+      background: var(--surface)
     }
 
     /* === OFFLINE BANNER === */
@@ -155,178 +284,192 @@
       display: none;
       position: fixed;
       top: var(--n-h);
-      left: 0;
-      right: 0;
+      left: 0; right: 0;
       z-index: 190;
-      background: #fff3cd;
-      border-bottom: 1px solid #ffc107;
+      background: var(--amber-low);
+      border-bottom: 1px solid var(--amber);
       padding: 10px 24px;
       font-size: 13px;
       align-items: center;
       justify-content: space-between;
       gap: 8px;
+      color: var(--amber);
     }
 
-    #offline-banner.show {
-      display: flex
-    }
+    #offline-banner.show { display: flex; }
 
-    /* === MAIN === */
+    /* ============================================================
+       MAIN CONTENT
+    ============================================================ */
     #main {
       margin-top: var(--n-h);
       padding: 24px;
       max-width: 1280px;
       margin-left: auto;
-      margin-right: auto
+      margin-right: auto;
     }
 
-    .tab-view {
-      display: none
-    }
+    .tab-view { display: none; }
+    .tab-view.active { display: block; }
 
-    .tab-view.active {
-      display: block
-    }
-
-    /* === FILTER BAR === */
+    /* ============================================================
+       FILTER BAR
+    ============================================================ */
     .filter-bar {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
       margin-bottom: 20px;
-      align-items: center
+      align-items: center;
     }
 
     .filter-bar input,
     .filter-bar select {
-      height: 34px;
-      padding: 0 10px;
+      height: 36px;
+      padding: 0 12px;
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background: var(--bg);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
       font-size: 13px;
       outline: none;
-      transition: var(--trans);
+      color: var(--text);
     }
 
     .filter-bar input:focus,
     .filter-bar select:focus {
-      border-color: var(--accent)
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-low);
     }
 
-    .filter-bar input {
-      flex: 1;
-      min-width: 180px
+    .filter-bar input { flex: 1; min-width: 180px; }
+
+    .filter-bar select option {
+      background: var(--surface);
+      color: var(--text);
     }
 
     .btn-outline {
-      height: 34px;
-      padding: 0 12px;
+      height: 36px;
+      padding: 0 14px;
       border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border-radius: var(--radius-sm);
       font-size: 13px;
       font-weight: 500;
-      background: var(--bg);
-      transition: var(--trans);
+      background: var(--surface);
+      color: var(--text-dim);
     }
 
     .btn-outline:hover {
-      background: var(--surface)
+      background: var(--surface-2);
+      border-color: var(--border-hover);
+      color: var(--text);
     }
 
     .btn-accent {
-      height: 34px;
-      padding: 0 14px;
-      background: var(--accent);
+      height: 36px;
+      padding: 0 16px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
       color: #fff;
-      border-radius: var(--radius);
+      border-radius: var(--radius-sm);
       font-size: 13px;
       font-weight: 500;
-      transition: var(--trans);
     }
 
     .btn-accent:hover {
-      opacity: .88
+      opacity: .9;
+      box-shadow: 0 4px 16px var(--accent-glow);
     }
 
-    /* === CARD GRID === */
+    /* ============================================================
+       JOB CARD GRID
+    ============================================================ */
     .card-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 12px
+      gap: 14px;
     }
 
-    @media(max-width:1024px) {
-      .card-grid {
-        grid-template-columns: repeat(2, 1fr)
-      }
-    }
-
-    @media(max-width:768px) {
-      .card-grid {
-        grid-template-columns: 1fr
-      }
-    }
+    @media (max-width:1024px) { .card-grid { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width:640px)  { .card-grid { grid-template-columns: 1fr; } }
 
     .job-card {
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      background: var(--bg);
-      padding: 16px;
+      background: var(--glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 18px;
       cursor: pointer;
-      transition: var(--trans);
       position: relative;
       border-left: 3px solid var(--border);
+      overflow: hidden;
+    }
+
+    .job-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--accent-low) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity var(--trans);
+      pointer-events: none;
     }
 
     .job-card:hover {
-      background: var(--surface)
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    .job-card.keyboard-focused {
+      outline: 3px solid rgba(37, 99, 235, .55);
+      outline-offset: 3px;
+      box-shadow: 0 0 0 6px rgba(37, 99, 235, .12)
     }
 
     .job-card.status-new {
       border-left-color: var(--amber)
     }
 
-    .job-card.status-applied {
-      border-left-color: var(--green)
-    }
+    .job-card:hover::before { opacity: 1; }
 
-    .job-card.status-ignored {
-      border-left-color: var(--red)
-    }
+    .job-card.status-new     { border-left-color: var(--amber); }
+    .job-card.status-applied { border-left-color: var(--green); }
+    .job-card.status-ignored { border-left-color: var(--red); }
 
     .card-company {
       font-size: 15px;
-      font-weight: 500;
-      margin-bottom: 2px
+      font-weight: 600;
+      margin-bottom: 2px;
+      color: var(--text);
     }
 
     .card-role {
       font-size: 13px;
-      color: var(--muted);
-      margin-bottom: 10px
+      color: var(--text-dim);
+      margin-bottom: 12px;
     }
 
     .card-tags {
       display: flex;
       flex-wrap: wrap;
       gap: 5px;
-      margin-bottom: 12px;
-      min-height: 20px
+      margin-bottom: 14px;
+      min-height: 22px;
     }
 
     .tag {
       font-size: 11px;
-      padding: 2px 8px;
+      padding: 2px 9px;
       border-radius: 99px;
       background: var(--accent-low);
       color: var(--accent);
       font-weight: 500;
+      border: 1px solid rgba(124,92,252,.15);
     }
 
     .tag-gray {
-      background: var(--surface);
-      color: var(--muted)
+      background: var(--surface-2);
+      color: var(--text-dim);
+      border-color: var(--border);
     }
 
     .card-footer {
@@ -334,223 +477,180 @@
       justify-content: space-between;
       align-items: center;
       font-size: 12px;
-      color: var(--muted)
+      color: var(--muted);
     }
 
     .card-actions {
       position: absolute;
-      top: 12px;
-      right: 12px;
+      top: 14px;
+      right: 14px;
       display: flex;
-      gap: 4px;
+      gap: 5px;
       opacity: 0;
-      transition: var(--trans);
+      transition: opacity var(--trans);
     }
 
-    .job-card:hover .card-actions {
-      opacity: 1
-    }
+    .job-card:hover .card-actions { opacity: 1; }
 
     .icon-btn {
-      width: 28px;
-      height: 28px;
-      border-radius: 6px;
+      width: 30px;
+      height: 30px;
+      border-radius: var(--radius-sm);
       display: flex;
       align-items: center;
       justify-content: center;
-      background: var(--surface);
+      background: var(--surface-2);
       border: 1px solid var(--border);
-      font-size: 14px;
-      transition: var(--trans);
+      font-size: 13px;
       flex-shrink: 0;
     }
 
     .icon-btn:hover {
       background: var(--accent);
       color: #fff;
-      border-color: var(--accent)
+      border-color: var(--accent);
+      box-shadow: 0 4px 12px var(--accent-glow);
     }
 
-    /* === SKELETON/SHIMMER === */
+    /* ============================================================
+       SKELETON / SHIMMER
+    ============================================================ */
     @keyframes shimmer {
-      0% {
-        background-position: -400px 0
-      }
-
-      100% {
-        background-position: 400px 0
-      }
+      0%   { background-position: -400px 0; }
+      100% { background-position:  400px 0; }
     }
 
-    .skel {
-      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    [data-theme="dark"] .skel {
+      background: linear-gradient(90deg, #1a1a2e 25%, #22223a 50%, #1a1a2e 75%);
       background-size: 800px 100%;
-      animation: shimmer 1.4s infinite;
+      animation: shimmer 1.6s infinite;
       border-radius: 6px;
     }
 
-    .skel-card {
-      height: 140px;
-      border-radius: var(--radius)
+    [data-theme="light"] .skel {
+      background: linear-gradient(90deg, #ece9ff 25%, #ddd9ff 50%, #ece9ff 75%);
+      background-size: 800px 100%;
+      animation: shimmer 1.6s infinite;
+      border-radius: 6px;
     }
 
-    .skel-row {
-      height: 44px;
-      border-radius: 4px
-    }
+    .skel-card { height: 148px; border-radius: var(--radius); }
+    .skel-row  { height: 44px; border-radius: 4px; }
 
-    /* === EMPTY STATE === */
+    /* ============================================================
+       EMPTY STATE
+    ============================================================ */
     .empty {
       text-align: center;
       padding: 60px 24px;
-      color: var(--muted)
+      color: var(--muted);
     }
 
-    .empty-icon {
-      font-size: 36px;
-      margin-bottom: 12px
-    }
+    .empty-icon { font-size: 36px; margin-bottom: 12px; }
+    .empty p { font-size: 14px; }
 
-    .empty p {
-      font-size: 14px
-    }
-
-    /* === TABLE === */
+    /* ============================================================
+       TABLE
+    ============================================================ */
     .table-wrap {
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      overflow: hidden
+      overflow: hidden;
+      background: var(--glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px
-    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
 
-    thead {
-      background: var(--surface)
-    }
+    thead { background: var(--surface-2); }
 
     th {
       padding: 10px 14px;
       text-align: left;
-      font-weight: 500;
-      font-size: 12px;
+      font-weight: 600;
+      font-size: 11px;
       color: var(--muted);
       white-space: nowrap;
       cursor: pointer;
       user-select: none;
       border-bottom: 1px solid var(--border);
+      text-transform: uppercase;
+      letter-spacing: .05em;
     }
 
-    th:hover {
-      color: var(--text)
-    }
-
-    th .sort-icon {
-      margin-left: 4px;
-      font-size: 10px;
-      opacity: .5
-    }
+    th:hover { color: var(--text-dim); }
+    th .sort-icon { margin-left: 4px; font-size: 10px; opacity: .5; }
 
     td {
-      padding: 10px 14px;
+      padding: 11px 14px;
       border-bottom: 1px solid var(--border);
-      vertical-align: middle
+      vertical-align: middle;
+      color: var(--text);
     }
 
-    tbody tr:last-child td {
-      border-bottom: none
-    }
-
-    tbody tr:hover td {
-      background: var(--surface)
-    }
-
-    tbody tr.expanded-parent td {
-      background: var(--surface)
-    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: var(--surface-2); }
+    tbody tr.expanded-parent td { background: var(--surface-2); }
 
     .expand-row td {
       background: var(--surface);
-      padding: 12px 20px;
-      font-family: var(--font);
+      padding: 14px 20px;
+      font-family: var(--font-mono);
       font-size: 12px;
       line-height: 1.7;
       border-bottom: 1px solid var(--border);
+      color: var(--text-dim);
     }
 
-    /* === BADGES === */
+    /* ============================================================
+       BADGES
+    ============================================================ */
     .badge {
       display: inline-block;
       font-size: 11px;
-      font-weight: 500;
-      padding: 2px 8px;
+      font-weight: 600;
+      padding: 2px 9px;
       border-radius: 99px;
       letter-spacing: .02em;
     }
 
-    .badge-green {
-      background: #dcfce7;
-      color: var(--green)
-    }
+    .badge-green  { background: var(--green-low);  color: var(--green); }
+    .badge-amber  { background: var(--amber-low);  color: var(--amber); }
+    .badge-red    { background: var(--red-low);    color: var(--red); }
+    .badge-blue   { background: var(--blue-low);   color: var(--blue); }
+    .badge-gray   { background: var(--surface-2);  color: var(--text-dim); border: 1px solid var(--border); }
+    .badge-purple { background: var(--accent-low); color: var(--accent); }
 
-    .badge-amber {
-      background: #fef3c7;
-      color: var(--amber)
-    }
-
-    .badge-red {
-      background: #fee2e2;
-      color: var(--red)
-    }
-
-    .badge-blue {
-      background: #dbeafe;
-      color: var(--blue)
-    }
-
-    .badge-gray {
-      background: var(--surface);
-      color: var(--muted);
-      border: 1px solid var(--border)
-    }
-
-    .badge-purple {
-      background: var(--accent-low);
-      color: var(--accent)
-    }
-
-    /* === DETAIL PANEL === */
+    /* ============================================================
+       DETAIL PANEL
+    ============================================================ */
     #detail-panel {
       position: fixed;
-      top: var(--n-h);
-      right: 0;
-      bottom: 0;
+      top: var(--n-h); right: 0; bottom: 0;
       width: 420px;
-      background: var(--bg);
-      border-left: 1px solid var(--border);
+      background: var(--glass);
+      backdrop-filter: blur(20px) saturate(160%);
+      -webkit-backdrop-filter: blur(20px) saturate(160%);
+      border-left: 1px solid var(--glass-border);
       overflow-y: auto;
       z-index: 150;
       transform: translateX(100%);
-      transition: transform var(--trans);
+      transition: transform 300ms cubic-bezier(.4,0,.2,1);
     }
 
-    #detail-panel.open {
-      transform: translateX(0)
-    }
+    #detail-panel.open { transform: translateX(0); }
 
     #panel-backdrop {
       display: none;
       position: fixed;
       inset: 0;
       z-index: 140;
+      background: rgba(0,0,0,.3);
+      backdrop-filter: blur(2px);
     }
 
-    #panel-backdrop.open {
-      display: block
-    }
+    #panel-backdrop.open { display: block; }
 
     .panel-header {
       display: flex;
@@ -561,111 +661,132 @@
       gap: 8px;
       position: sticky;
       top: 0;
-      background: var(--bg);
+      background: var(--glass);
+      backdrop-filter: blur(20px);
       z-index: 1;
     }
 
     .panel-section {
       padding: 16px 20px;
-      border-bottom: 1px solid var(--border)
+      border-bottom: 1px solid var(--border);
     }
 
     .panel-section h4 {
-      font-size: 11px;
-      font-weight: 600;
+      font-size: 10px;
+      font-weight: 700;
       color: var(--muted);
       text-transform: uppercase;
-      letter-spacing: .06em;
-      margin-bottom: 10px
+      letter-spacing: .08em;
+      margin-bottom: 12px;
     }
 
     .detail-field {
       display: flex;
-      gap: 6px;
-      margin-bottom: 6px;
-      font-size: 13px
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 13px;
     }
 
     .detail-label {
       color: var(--muted);
       min-width: 80px;
-      flex-shrink: 0
+      flex-shrink: 0;
     }
 
-    /* === STATS === */
+    /* ============================================================
+       STATS / METRICS
+    ============================================================ */
     .metric-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      margin-bottom: 24px
+      gap: 14px;
+      margin-bottom: 24px;
     }
 
-    @media(max-width:900px) {
-      .metric-grid {
-        grid-template-columns: repeat(2, 1fr)
-      }
-    }
-
-    @media(max-width:768px) {
-      .metric-grid {
-        grid-template-columns: 1fr 1fr
-      }
-    }
+    @media (max-width:900px) { .metric-grid { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width:480px) { .metric-grid { grid-template-columns: 1fr 1fr; } }
 
     .metric-card {
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 18px 20px;
-      background: var(--bg)
+      padding: 20px;
+      background: var(--glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      position: relative;
+      overflow: hidden;
     }
 
+    .metric-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      opacity: 0;
+      transition: opacity var(--trans);
+    }
+
+    .metric-card:hover::after { opacity: 1; }
+    .metric-card:hover { border-color: var(--border-hover); }
+
     .metric-label {
-      font-size: 12px;
+      font-size: 11px;
+      font-weight: 600;
       color: var(--muted);
-      margin-bottom: 6px
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 8px;
     }
 
     .metric-value {
-      font-size: 32px;
-      font-weight: 500;
-      line-height: 1
+      font-size: 36px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -.02em;
     }
 
     .metric-trend {
       font-size: 12px;
       color: var(--muted);
-      margin-top: 4px
+      margin-top: 6px;
     }
 
     .chart-wrap {
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 20px;
-      margin-bottom: 16px
+      margin-bottom: 16px;
+      background: var(--glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
     }
 
     .chart-wrap h4 {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--muted);
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: .05em;
-      margin-bottom: 14px
+      letter-spacing: .06em;
+      margin-bottom: 16px;
     }
 
     .summary-card {
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 16px 20px
+      padding: 20px;
+      background: var(--glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
     }
 
     .summary-card h4 {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--muted);
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: .05em;
-      margin-bottom: 12px
+      letter-spacing: .06em;
+      margin-bottom: 14px;
     }
 
     .summary-row {
@@ -673,117 +794,146 @@
       justify-content: space-between;
       align-items: center;
       font-size: 13px;
-      padding: 4px 0
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border);
     }
 
-    .summary-row span:first-child {
-      color: var(--muted)
-    }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-row span:first-child { color: var(--text-dim); }
 
-    /* === MODAL === */
+    /* ============================================================
+       MODAL
+    ============================================================ */
     .modal-backdrop {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, .5);
+      background: rgba(0,0,0,.6);
+      backdrop-filter: blur(4px);
       z-index: 300;
       align-items: center;
       justify-content: center;
     }
 
-    .modal-backdrop.open {
-      display: flex
-    }
+    .modal-backdrop.open { display: flex; }
 
     .modal {
-      background: var(--bg);
-      border-radius: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
       max-width: 420px;
       width: 90%;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, .2);
-      animation: modalIn .15s ease;
+      box-shadow: var(--shadow);
+      animation: modalIn .18s cubic-bezier(.34,1.56,.64,1);
     }
 
     @keyframes modalIn {
-      from {
-        opacity: 0;
-        transform: scale(.96)
-      }
+      from { opacity: 0; transform: scale(.94) translateY(8px); }
     }
 
     .modal-header {
-      padding: 18px 20px 0;
+      padding: 20px 20px 0;
       display: flex;
       justify-content: space-between;
-      align-items: center
+      align-items: center;
     }
 
     .modal-header h3 {
-      font-size: 15px;
-      font-weight: 500
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
     }
 
-    .modal-body {
-      padding: 20px
-    }
+    .modal-body { padding: 20px; }
 
-    .field-group {
-      margin-bottom: 14px
-    }
+    .field-group { margin-bottom: 16px; }
 
     .field-group label {
       display: block;
-      font-size: 12px;
-      font-weight: 500;
+      font-size: 11px;
+      font-weight: 700;
       color: var(--muted);
-      margin-bottom: 5px;
+      margin-bottom: 6px;
       text-transform: uppercase;
-      letter-spacing: .04em
+      letter-spacing: .06em;
     }
 
     .field-group input,
     .field-group select {
       width: 100%;
-      height: 36px;
-      padding: 0 10px;
+      height: 38px;
+      padding: 0 12px;
       border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border-radius: var(--radius-sm);
       font-size: 13px;
       outline: none;
       background: var(--bg);
-      transition: var(--trans)
+      color: var(--text);
     }
 
     .field-group input:focus,
     .field-group select:focus {
-      border-color: var(--accent)
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-low);
     }
 
     .modal-footer {
       padding: 0 20px 20px;
       display: flex;
       gap: 8px;
-      justify-content: flex-end
+      justify-content: flex-end;
+    }
+
+    .shortcut-grid {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px 18px;
+      align-items: center
+    }
+
+    .shortcut-key {
+      min-width: 34px;
+      height: 28px;
+      padding: 0 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      border-bottom-width: 2px;
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--fg);
+      font-size: 12px;
+      font-weight: 700
+    }
+
+    .shortcut-desc {
+      color: var(--muted);
+      font-size: 13px
     }
 
     .btn-close-x {
-      width: 28px;
-      height: 28px;
-      border-radius: 6px;
-      background: none;
+      width: 30px;
+      height: 30px;
+      border-radius: var(--radius-sm);
+      background: var(--surface-2);
       border: 1px solid var(--border);
-      font-size: 16px;
+      font-size: 15px;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: var(--trans)
+      color: var(--muted);
     }
 
     .btn-close-x:hover {
-      background: var(--surface)
+      background: var(--red-low);
+      border-color: var(--red);
+      color: var(--red);
     }
 
-    /* === TOASTS === */
+    /* ============================================================
+       TOASTS
+    ============================================================ */
     #toasts {
       position: fixed;
       bottom: 20px;
@@ -792,54 +942,157 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      align-items: flex-end
+      align-items: flex-end;
+      pointer-events: none;
     }
 
     .toast {
-      background: var(--bg);
+      background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border-radius: var(--radius-sm);
       padding: 12px 16px;
       font-size: 13px;
       max-width: 320px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, .12);
+      box-shadow: var(--shadow);
       border-left: 3px solid var(--muted);
-      animation: toastIn .15s ease;
+      animation: toastIn .2s cubic-bezier(.34,1.56,.64,1);
       pointer-events: auto;
+      color: var(--text);
     }
 
     @keyframes toastIn {
-      from {
-        opacity: 0;
-        transform: translateY(8px)
-      }
+      from { opacity: 0; transform: translateY(12px) scale(.96); }
     }
 
-    .toast.info {
-      border-left-color: var(--accent)
-    }
-
-    .toast.success {
-      border-left-color: var(--green)
-    }
-
-    .toast.error {
-      border-left-color: var(--red)
-    }
+    .toast.info    { border-left-color: var(--accent); }
+    .toast.success { border-left-color: var(--green); }
+    .toast.error   { border-left-color: var(--red); }
 
     .toast.fade-out {
       opacity: 0;
-      transition: opacity .3s ease
+      transform: translateY(4px);
+      transition: opacity .3s ease, transform .3s ease;
+    }
+
+    /* ============================================================
+       SCROLLBAR
+    ============================================================ */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+    /* ============================================================
+       MOBILE
+    ============================================================ */
+    @media (max-width: 600px) {
+      .nav-tabs { margin-left: 8px; }
+      .nav-tab  { padding: 0 10px; font-size: 12px; }
+      .brand-name { display: none; }
+    }
+      /* === KANBAN === */
+    #kanban-board {
+      display: none;
+      gap: 14px;
+      overflow-x: auto;
+      padding-bottom: 16px;
+      align-items: flex-start;
+    }
+    .kb-col {
+      min-width: 220px;
+      max-width: 240px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .kb-col-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .kb-col-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .kb-col-title { flex: 1; }
+    .kb-col-count {
+      font-size: 11px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 1px 7px;
+      color: var(--muted);
+    }
+    .kb-cards {
+      padding: 10px;
+      min-height: 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: background .15s;
+    }
+    .kb-cards.kb-drag-over {
+      background: var(--accent-low);
+    }
+    .kb-card {
+      cursor: grab;
+      position: relative;
+      user-select: none;
+    }
+    .kb-card.kb-dragging {
+      opacity: .4;
+      cursor: grabbing;
+    }
+    .kb-drop-placeholder {
+      height: 60px;
+      border: 2px dashed var(--accent);
+      border-radius: var(--radius);
+      background: var(--accent-low);
+    }
+    /* === VIEW TOGGLE === */
+    .view-toggle {
+      display: flex;
+      gap: 4px;
+      margin-left: 8px;
+    }
+    .view-toggle button {
+      height: 32px;
+      padding: 0 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      font-size: 13px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: var(--trans);
+    }
+    .view-toggle button.active-view {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
     }
   </style>
 </head>
 
 <body>
 
+  <!-- PARTICLE CANVAS — must be first child of body -->
+  <canvas id="arachnode-bg"></canvas>
+
   <!-- NAVBAR -->
   <nav id="navbar">
     <div class="nav-left">
-      <div class="brand">Job<span>Hunter</span></div>
+      <div class="brand">
+        <div class="brand-icon">🕸</div>
+        <span class="brand-name">Arach<em>node</em></span>
+      </div>
       <div class="nav-tabs">
         <button class="nav-tab active" data-tab="jobs">Jobs</button>
         <button class="nav-tab" data-tab="contacts">Contacts</button>
@@ -847,7 +1100,13 @@
         <button class="nav-tab" data-tab="stats">Stats</button>
       </div>
     </div>
-    <button id="btn-scrape">▶ Trigger Scrape</button>
+    <div class="nav-right">
+      <button id="btn-theme" aria-label="Toggle theme">🌙 Dark</button>
+      <button id="btn-scrape">+ Scrape</button>
+    <div class="nav-actions">
+      <button id="btn-shortcuts" title="Keyboard shortcuts">?</button>
+      <button id="btn-scrape">▶ Trigger Scrape</button>
+    </div>
   </nav>
 
   <!-- OFFLINE BANNER -->
@@ -873,9 +1132,14 @@
           <option value="all">All stacks</option>
         </select>
         <button class="btn-outline" id="btn-refresh-jobs">Refresh</button>
+        <div class="view-toggle">
+          <button id="btn-view-grid" onclick="setView('grid')" title="Grid view">⊞ Grid</button>
+          <button id="btn-view-kanban" onclick="setView('kanban')" title="Kanban view">☰ Kanban</button>
+        </div>
         <button class="btn-outline" id="btn-export-jobs">Export CSV</button>
       </div>
       <div id="jobs-grid" class="card-grid"></div>
+      <div id="kanban-board"></div>
     </section>
 
     <!-- CONTACTS TAB -->
@@ -945,7 +1209,8 @@
         </div>
       </div>
       <div class="chart-wrap">
-        <h4>Jobs by Source</h4><canvas id="source-chart" height="120"></canvas>
+        <h4>Jobs by Source</h4>
+        <canvas id="source-chart" height="120"></canvas>
       </div>
       <div class="summary-card">
         <h4>Last Pipeline Run</h4>
@@ -958,15 +1223,15 @@
       </div>
     </section>
 
-  </div>
+  </div><!-- #main -->
 
   <!-- DETAIL PANEL -->
   <div id="panel-backdrop"></div>
   <aside id="detail-panel">
     <div class="panel-header">
       <div>
-        <div id="panel-company" style="font-size:16px;font-weight:500"></div>
-        <div id="panel-role" style="font-size:13px;color:var(--muted);margin-top:2px"></div>
+        <div id="panel-company" style="font-size:16px;font-weight:600;color:var(--text)"></div>
+        <div id="panel-role" style="font-size:13px;color:var(--text-dim);margin-top:3px"></div>
       </div>
       <button class="btn-close-x" id="panel-close">✕</button>
     </div>
@@ -997,32 +1262,158 @@
     </div>
   </div>
 
+  <!-- SHORTCUTS MODAL -->
+  <div class="modal-backdrop" id="shortcuts-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Keyboard Shortcuts</h3>
+        <button class="btn-close-x" id="shortcuts-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="shortcut-grid">
+          <span class="shortcut-key">S</span><span class="shortcut-desc">Trigger scrape</span>
+          <span class="shortcut-key">R</span><span class="shortcut-desc">Refresh jobs</span>
+          <span class="shortcut-key">J</span><span class="shortcut-desc">Move to next job card</span>
+          <span class="shortcut-key">K</span><span class="shortcut-desc">Move to previous job card</span>
+          <span class="shortcut-key">Enter</span><span class="shortcut-desc">Open selected job details</span>
+          <span class="shortcut-key">Esc</span><span class="shortcut-desc">Close panel or modal</span>
+          <span class="shortcut-key">?</span><span class="shortcut-desc">Show this reference</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- TOASTS -->
   <div id="toasts"></div>
 
   <script>
     // ===========================================================================
+    // THEME SYSTEM
+    // ===========================================================================
+    const THEME_KEY = 'arachnode-theme';
+
+    function getTheme() {
+      return localStorage.getItem(THEME_KEY) ||
+        (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      const btn = document.getElementById('btn-theme');
+      if (btn) btn.textContent = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
+      localStorage.setItem(THEME_KEY, theme);
+      // Re-render chart colors if it exists
+      if (state && state.chart) {
+        const gridColor = getComputedStyle(document.documentElement)
+          .getPropertyValue('--border').trim();
+        const textColor = getComputedStyle(document.documentElement)
+          .getPropertyValue('--muted').trim();
+        state.chart.options.scales.x.ticks.color = textColor;
+        state.chart.options.scales.y.ticks.color = textColor;
+        state.chart.options.scales.y.grid.color  = gridColor;
+        state.chart.update();
+      }
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      applyTheme(current === 'dark' ? 'light' : 'dark');
+    }
+
+    // Apply saved theme immediately
+    applyTheme(getTheme());
+
+    // ===========================================================================
+    // PARTICLE BACKGROUND
+    // ===========================================================================
+    (function () {
+      const canvas = document.getElementById('arachnode-bg');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const N = 55, LINK = 140;
+      let W, H, pts = [];
+
+      function resize() {
+        W = canvas.width  = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+      }
+
+      function getColor() {
+        // reads --particle-rgb CSS variable set per theme
+        const raw = getComputedStyle(document.documentElement)
+          .getPropertyValue('--particle-rgb').trim();
+        return raw || '124, 92, 252';
+      }
+
+      function spawn() {
+        return {
+          x:  Math.random() * W,
+          y:  Math.random() * H,
+          vx: (Math.random() - 0.5) * 0.4,
+          vy: (Math.random() - 0.5) * 0.4,
+          r:  Math.random() * 1.5 + 0.5,
+        };
+      }
+
+      resize();
+      window.addEventListener('resize', () => { resize(); pts.forEach(p => { p.x = Math.min(p.x, W); p.y = Math.min(p.y, H); }); });
+      pts = Array.from({ length: N }, spawn);
+
+      (function frame() {
+        ctx.clearRect(0, 0, W, H);
+        const rgb = getColor();
+
+        pts.forEach(p => {
+          p.x += p.vx; p.y += p.vy;
+          if (p.x < 0 || p.x > W) p.vx *= -1;
+          if (p.y < 0 || p.y > H) p.vy *= -1;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${rgb}, 0.5)`;
+          ctx.fill();
+        });
+
+        for (let i = 0; i < N; i++) {
+          for (let j = i + 1; j < N; j++) {
+            const dx = pts[i].x - pts[j].x;
+            const dy = pts[i].y - pts[j].y;
+            const d  = Math.sqrt(dx * dx + dy * dy);
+            if (d < LINK) {
+              ctx.beginPath();
+              ctx.moveTo(pts[i].x, pts[i].y);
+              ctx.lineTo(pts[j].x, pts[j].y);
+              ctx.strokeStyle = `rgba(${rgb}, ${0.18 * (1 - d / LINK)})`;
+              ctx.lineWidth = 0.6;
+              ctx.stroke();
+            }
+          }
+        }
+        requestAnimationFrame(frame);
+      })();
+    })();
+
+    // ===========================================================================
     // CONFIGURATION
     // ===========================================================================
-    const API_BASE = ''; // change this if backend is on a different host
+    const API_BASE = '';
     const API = (p) => `${API_BASE}/api${p}`;
 
-    // === STATE ===
     const state = {
       jobs: [],
-      contacts: {},     // keyed by job_id or company
-      emails: {},       // keyed by job_id
+      contacts: {},
+      emails: {},
       stats: null,
       summary: null,
       activeTab: 'jobs',
       selectedJobId: null,
+      focusedJobIndex: -1,
       filters: { search: '', status: 'all', stack: 'all' },
       contactSort: { col: 'company', dir: 1 },
       chart: null,
     };
 
     // ===========================================================================
-    // === API ===
+    // API
     // ===========================================================================
     async function apiFetch(path, opts = {}) {
       const url = API(path);
@@ -1037,7 +1428,7 @@
         hideBanner();
         if (!res.ok) {
           let msg = `HTTP ${res.status}`;
-          try { const err = await res.json(); msg = err.detail || JSON.stringify(err); } catch { }
+          try { const err = await res.json(); msg = err.detail || JSON.stringify(err); } catch {}
           toast(msg, 'error');
           return null;
         }
@@ -1051,10 +1442,8 @@
     }
 
     // ===========================================================================
-    // === COMPONENTS ===
+    // HELPERS
     // ===========================================================================
-
-    // --- Toast ---
     function toast(msg, type = 'info', duration = 4000) {
       const el = document.createElement('div');
       el.className = `toast ${type}`;
@@ -1066,29 +1455,29 @@
       }, duration);
     }
 
-    // --- Offline banner ---
     function showBanner() { document.getElementById('offline-banner').classList.add('show'); }
     function hideBanner() { document.getElementById('offline-banner').classList.remove('show'); }
 
-    // --- Skeleton ---
     function skelCards(n = 6) {
       return Array.from({ length: n }, () => `<div class="skel skel-card"></div>`).join('');
     }
+
     function skelRows(n = 5, cols = 6) {
       return Array.from({ length: n }, () =>
-        `<tr>${Array.from({ length: cols }, () => `<td><div class="skel skel-row"></div></td>`).join('')}</tr>`
+        `<tr>${Array.from({ length: cols }, () =>
+          `<td><div class="skel skel-row"></div></td>`).join('')}</tr>`
       ).join('');
     }
 
-    // --- Utilities ---
     function esc(s) {
-      return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
+
     function relTime(iso) {
       if (!iso) return '—';
       const diff = Date.now() - new Date(iso).getTime();
       const m = Math.floor(diff / 60000);
-      if (m < 2) return 'just now';
+      if (m < 2)  return 'just now';
       if (m < 60) return `${m}m ago`;
       const h = Math.floor(m / 60);
       if (h < 24) return `${h}h ago`;
@@ -1096,32 +1485,44 @@
       if (d < 30) return `${d}d ago`;
       return new Date(iso).toLocaleDateString();
     }
+
     function fmtDate(iso) {
       if (!iso) return '—';
-      return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      return new Date(iso).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
     }
+
     function verifiedBadge(v) {
       if (v === 'verified') return `<span class="badge badge-green">Verified</span>`;
-      if (v === 'invalid') return `<span class="badge badge-red">Invalid</span>`;
+      if (v === 'invalid')  return `<span class="badge badge-red">Invalid</span>`;
       return `<span class="badge badge-amber">Unverified</span>`;
     }
+
     function statusBadge(s) {
-      const map = { draft: 'badge-gray', sent: 'badge-blue', replied: 'badge-green', new: 'badge-amber', applied: 'badge-green', ignored: 'badge-red' };
+      const map = {
+        draft: 'badge-gray', sent: 'badge-blue', replied: 'badge-green',
+        new: 'badge-amber', applied: 'badge-green', ignored: 'badge-red'
+      };
       return `<span class="badge ${map[s] || 'badge-gray'}">${esc(s)}</span>`;
     }
+
     function copyText(text) {
       navigator.clipboard?.writeText(text).then(() => toast('Copied!', 'success'));
     }
 
     // ===========================================================================
-    // === VIEWS: JOBS ===
+    // JOBS VIEW
     // ===========================================================================
     async function loadJobs(force = false) {
       if (state.jobs.length && !force) { renderJobs(); return; }
-      document.getElementById('jobs-grid').innerHTML = `<div style="grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:12px">${skelCards(6)}</div>`;
+      document.getElementById('jobs-grid').innerHTML =
+        `<div style="grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:14px">${skelCards(6)}</div>`;
       const data = await apiFetch('/jobs?limit=200');
       if (!data) {
-        document.getElementById('jobs-grid').innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">⚠</div><p>Failed to load jobs. <button class="btn-outline" onclick="loadJobs(true)">Retry</button></p></div>`;
+        document.getElementById('jobs-grid').innerHTML =
+          `<div class="empty" style="grid-column:1/-1">
+            <div class="empty-icon">⚠</div>
+            <p>Failed to load jobs. <button class="btn-outline" onclick="loadJobs(true)">Retry</button></p>
+          </div>`;
         return;
       }
       state.jobs = Array.isArray(data) ? data : (data.jobs || []);
@@ -1152,15 +1553,76 @@
       });
     }
 
+    function visibleJobCards() {
+      return [...document.querySelectorAll('#jobs-grid .job-card')];
+    }
+
+    function updateFocusedJobCard({ scroll = false } = {}) {
+      const cards = visibleJobCards();
+      if (!cards.length) {
+        state.focusedJobIndex = -1;
+        return;
+      }
+      if (state.focusedJobIndex < 0) state.focusedJobIndex = 0;
+      if (state.focusedJobIndex >= cards.length) state.focusedJobIndex = cards.length - 1;
+      cards.forEach((card, idx) => {
+        const focused = idx === state.focusedJobIndex;
+        card.classList.toggle('keyboard-focused', focused);
+        card.setAttribute('aria-selected', focused ? 'true' : 'false');
+      });
+      if (scroll) cards[state.focusedJobIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+
+    function moveJobFocus(delta) {
+      if (state.activeTab !== 'jobs') switchTab('jobs');
+      const cards = visibleJobCards();
+      if (!cards.length) {
+        toast('No job cards to navigate', 'info');
+        return;
+      }
+      const next = state.focusedJobIndex < 0 ? 0 : state.focusedJobIndex + delta;
+      state.focusedJobIndex = Math.max(0, Math.min(cards.length - 1, next));
+      updateFocusedJobCard({ scroll: true });
+    }
+
+    function openFocusedJob() {
+      const cards = visibleJobCards();
+      if (!cards.length) return;
+      if (state.focusedJobIndex < 0) state.focusedJobIndex = 0;
+      const card = cards[state.focusedJobIndex];
+      if (card?.dataset.id) openDetailPanel(card.dataset.id);
+    }
+
     function renderJobs() {
       const jobs = filteredJobs();
       const grid = document.getElementById('jobs-grid');
       if (!jobs.length) {
+        grid.innerHTML = `<div class="empty" style="grid-column:1/-1">
+          <div class="empty-icon">🔍</div>
+          <p>No jobs found. Trigger a scrape to get started.</p>
+        </div>`;
+        state.focusedJobIndex = -1;
         grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🕷️</div><p><strong>No jobs yet!</strong><br>Trigger your first scrape to get started.</p><button class="btn" style="margin-top:12px" onclick="document.getElementById('scrape-modal').classList.add('open')">🚀 Start First Scrape</button></div>`;
         return;
       }
       grid.innerHTML = jobs.map(j => `
-    <div class="job-card status-${esc(j.status || 'new')}" data-id="${esc(j.id)}">
+        <div class="job-card status-${esc(j.status || 'new')}" data-id="${esc(j.id)}">
+          <div class="card-actions">
+            <button class="icon-btn" data-action="discover" data-id="${esc(j.id)}" title="Find contacts">👤</button>
+            <button class="icon-btn" data-action="draft"   data-id="${esc(j.id)}" title="Draft email">✉</button>
+            <button class="icon-btn" data-action="apply"   data-id="${esc(j.id)}" title="Mark applied">✓</button>
+          </div>
+          <div class="card-company">${esc(j.company)}</div>
+          <div class="card-role">${esc(j.role)}</div>
+          <div class="card-tags">
+            ${(j.stack || []).slice(0,5).map(t => `<span class="tag">${esc(t)}</span>`).join('')}
+          </div>
+          <div class="card-footer">
+            <span class="tag tag-gray">${esc(j.source || '—')}</span>
+            <span>${relTime(j.posted_at)}</span>
+          </div>
+        </div>`).join('');
+    <div class="job-card status-${esc(j.status || 'new')}" data-id="${esc(j.id)}" tabindex="0" role="button" aria-selected="false">
       <div class="card-actions">
         <button class="icon-btn" data-action="discover" data-id="${esc(j.id)}" title="Find contacts">👤</button>
         <button class="icon-btn" data-action="draft" data-id="${esc(j.id)}" title="Draft email">✉</button>
@@ -1176,6 +1638,7 @@
         <span>${relTime(j.posted_at)}</span>
       </div>
     </div>`).join('');
+      updateFocusedJobCard();
     }
 
     async function discoverForJob(jobId) {
@@ -1192,7 +1655,6 @@
       toast('Generating draft email…', 'info');
       const r = await apiFetch('/workflow/apply', { method: 'POST', body: { job_id: jobId, template: 'cold_outreach' } });
       if (r?.draft_email) {
-        const { subject, body } = r.draft_email;
         openDetailPanel(jobId);
         toast('Draft generated — see panel', 'success');
       }
@@ -1208,7 +1670,7 @@
       }
     }
 
-    // === DETAIL PANEL ===
+    // DETAIL PANEL
     function openDetailPanel(jobId) {
       const job = state.jobs.find(j => j.id === jobId);
       if (!job) return;
@@ -1223,20 +1685,21 @@
 
     function renderPanelContent(job) {
       document.getElementById('panel-content').innerHTML = `
-    <div class="panel-section">
-      <h4>Details</h4>
-      <div class="detail-field"><span class="detail-label">Source</span><span>${esc(job.source || '—')}</span></div>
-      <div class="detail-field"><span class="detail-label">Status</span>${statusBadge(job.status)}</div>
-      <div class="detail-field"><span class="detail-label">Location</span><span>${esc(job.location || '—')}</span></div>
-      <div class="detail-field"><span class="detail-label">Posted</span><span>${fmtDate(job.posted_at)}</span></div>
-      ${job.url ? `<div class="detail-field"><span class="detail-label">URL</span><a href="${esc(job.url)}" target="_blank" style="color:var(--accent)">Open ↗</a></div>` : ''}
-    </div>
-    <div class="panel-section" id="panel-contacts-section">
-      <h4>Contacts</h4><div class="skel skel-row"></div>
-    </div>
-    <div class="panel-section" id="panel-emails-section">
-      <h4>Emails</h4><div class="skel skel-row"></div>
-    </div>`;
+        <div class="panel-section">
+          <h4>Details</h4>
+          <div class="detail-field"><span class="detail-label">Source</span><span>${esc(job.source || '—')}</span></div>
+          <div class="detail-field"><span class="detail-label">Status</span>${statusBadge(job.status)}</div>
+          <div class="detail-field"><span class="detail-label">Location</span><span>${esc(job.location || '—')}</span></div>
+          <div class="detail-field"><span class="detail-label">Posted</span><span>${fmtDate(job.posted_at)}</span></div>
+          ${job.url ? `<div class="detail-field"><span class="detail-label">URL</span>
+            <a href="${esc(job.url)}" target="_blank" style="color:var(--accent)">Open ↗</a></div>` : ''}
+        </div>
+        <div class="panel-section" id="panel-contacts-section">
+          <h4>Contacts</h4><div class="skel skel-row"></div>
+        </div>
+        <div class="panel-section" id="panel-emails-section">
+          <h4>Emails</h4><div class="skel skel-row"></div>
+        </div>`;
     }
 
     async function fetchPanelData(job) {
@@ -1248,32 +1711,37 @@
       const cSect = document.getElementById('panel-contacts-section');
       if (cSect) {
         if (!contacts?.length) {
-          cSect.innerHTML = '<h4>Contacts</h4><p style="font-size:13px;color:var(--muted)">No contacts discovered yet for this job.</p>';
+          cSect.innerHTML = '<h4>Contacts</h4><p style="font-size:13px;color:var(--muted)">No contacts discovered yet.</p>';
         } else {
           cSect.innerHTML = `<h4>Contacts</h4>${contacts.map(c => `
-        <div style="margin-bottom:8px;font-size:13px">
-          <div style="font-weight:500">${esc(c.name || '—')}</div>
-          <div style="color:var(--muted)">${esc(c.email || '—')} · ${verifiedBadge(c.verified)}</div>
-        </div>`).join('')}`;
+            <div style="margin-bottom:10px;font-size:13px;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2)">
+              <div style="font-weight:500;margin-bottom:2px">${esc(c.name || '—')}</div>
+              <div style="color:var(--text-dim)">${esc(c.email || '—')} · ${verifiedBadge(c.verified)}</div>
+            </div>`).join('')}`;
         }
       }
 
       const eSect = document.getElementById('panel-emails-section');
       if (eSect) {
-        const tmplSel = `<select id="panel-tmpl" style="height:30px;padding:0 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;margin-right:6px">
-      <option value="cold_outreach">Cold Outreach</option>
-      <option value="recruiter_outreach">Recruiter</option>
-      <option value="followup">Follow-up</option>
-    </select>`;
+        const tmplSel = `<select id="panel-tmpl" style="height:32px;padding:0 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;margin-right:6px;background:var(--surface);color:var(--text)">
+          <option value="cold_outreach">Cold Outreach</option>
+          <option value="recruiter_outreach">Recruiter</option>
+          <option value="followup">Follow-up</option>
+        </select>`;
         if (!emails?.length) {
-          eSect.innerHTML = `<h4>Emails</h4><p style="font-size:13px;color:var(--muted);margin-bottom:10px">No emails drafted. Click 'Draft email' on a job card.</p>${tmplSel}<button class="btn-accent" id="panel-draft-btn" style="height:30px;font-size:12px">Draft Email</button>`;
+          eSect.innerHTML = `<h4>Emails</h4>
+            <p style="font-size:13px;color:var(--muted);margin-bottom:12px">No emails drafted yet.</p>
+            ${tmplSel}
+            <button class="btn-accent" id="panel-draft-btn" style="height:32px;font-size:12px">Draft Email</button>`;
         } else {
-          eSect.innerHTML = `<h4>Emails</h4>${emails.map(e => `
-        <div style="margin-bottom:8px;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:12px">
-          <div style="font-weight:500;margin-bottom:2px">${esc(e.subject)}</div>
-          <div style="color:var(--muted)">${esc(e.template)} · ${statusBadge(e.status)}</div>
-        </div>`).join('')}
-        <div style="margin-top:10px">${tmplSel}<button class="btn-accent" id="panel-draft-btn" style="height:30px;font-size:12px">Draft New</button></div>`;
+          eSect.innerHTML = `<h4>Emails</h4>
+            ${emails.map(e => `
+              <div style="margin-bottom:8px;padding:12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);font-size:12px">
+                <div style="font-weight:500;margin-bottom:4px;color:var(--text)">${esc(e.subject)}</div>
+                <div style="color:var(--muted)">${esc(e.template)} · ${statusBadge(e.status)}</div>
+              </div>`).join('')}
+            <div style="margin-top:10px">${tmplSel}
+            <button class="btn-accent" id="panel-draft-btn" style="height:32px;font-size:12px">Draft New</button></div>`;
         }
         document.getElementById('panel-draft-btn')?.addEventListener('click', async () => {
           const tmpl = document.getElementById('panel-tmpl')?.value || 'cold_outreach';
@@ -1291,7 +1759,7 @@
     }
 
     // ===========================================================================
-    // === VIEWS: CONTACTS ===
+    // CONTACTS VIEW
     // ===========================================================================
     async function loadContacts(force = false) {
       const q = document.getElementById('contact-search').value.trim();
@@ -1300,59 +1768,62 @@
       document.getElementById('contacts-body').innerHTML = skelRows(5, 6);
       const url = q ? `/contacts?company=${encodeURIComponent(q)}` : '/contacts?company=';
       const data = await apiFetch(url);
-      if (!data) { document.getElementById('contacts-body').innerHTML = `<tr><td colspan="6"><div class="empty"><p>Failed to load. <button class="btn-outline" onclick="loadContacts(true)">Retry</button></p></div></td></tr>`; return; }
+      if (!data) {
+        document.getElementById('contacts-body').innerHTML =
+          `<tr><td colspan="6"><div class="empty"><p>Failed to load. <button class="btn-outline" onclick="loadContacts(true)">Retry</button></p></div></td></tr>`;
+        return;
+      }
       state.contacts[cacheKey] = Array.isArray(data) ? data : [];
       renderContacts(state.contacts[cacheKey]);
     }
 
     function sortContacts(rows) {
       const { col, dir } = state.contactSort;
-      return [...rows].sort((a, b) => {
-        const av = a[col] ?? '', bv = b[col] ?? '';
-        return String(av).localeCompare(String(bv)) * dir;
-      });
+      return [...rows].sort((a, b) => String(a[col] ?? '').localeCompare(String(b[col] ?? '')) * dir);
     }
 
     function renderContacts(rows) {
       const sorted = sortContacts(rows);
-      // Update sort icons
       document.querySelectorAll('#contacts-table th .sort-icon').forEach(el => el.textContent = '');
       const th = document.querySelector(`#contacts-table th[data-col="${state.contactSort.col}"] .sort-icon`);
       if (th) th.textContent = state.contactSort.dir === 1 ? '↑' : '↓';
 
       if (!sorted.length) {
-        document.getElementById('contacts-body').innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">👤</div><p>No contacts discovered yet for this job.</p></div></td></tr>`;
+        document.getElementById('contacts-body').innerHTML =
+          `<tr><td colspan="6"><div class="empty"><div class="empty-icon">👤</div><p>No contacts discovered yet.</p></div></td></tr>`;
         return;
       }
       document.getElementById('contacts-body').innerHTML = sorted.map((c, i) => `
-    <tr class="contact-row" data-idx="${i}" style="cursor:pointer">
-      <td>${esc(c.name || '—')}</td>
-      <td>${esc(c.email || '—')}</td>
-      <td>${esc(c.role || '—')}</td>
-      <td>${esc(c.company)}</td>
-      <td>${verifiedBadge(c.verified)}</td>
-      <td>${relTime(c.created_at)}</td>
-    </tr>
-    <tr id="cexpand-${i}" style="display:none">
-      <td colspan="6" class="expand-row">
-        <strong>Source:</strong> ${esc(c.source || '—')} &nbsp;&nbsp;
-        ${c.email ? `<button class="btn-outline" style="height:26px;font-size:12px" onclick="copyText('${esc(c.email)}')">Copy email</button>` : ''}
-      </td>
-    </tr>`).join('');
+        <tr class="contact-row" data-idx="${i}" style="cursor:pointer">
+          <td>${esc(c.name || '—')}</td>
+          <td>${esc(c.email || '—')}</td>
+          <td>${esc(c.role || '—')}</td>
+          <td>${esc(c.company)}</td>
+          <td>${verifiedBadge(c.verified)}</td>
+          <td>${relTime(c.created_at)}</td>
+        </tr>
+        <tr id="cexpand-${i}" style="display:none">
+          <td colspan="6" class="expand-row">
+            <strong>Source:</strong> ${esc(c.source || '—')} &nbsp;&nbsp;
+            ${c.email ? `<button class="btn-outline" style="height:26px;font-size:12px" onclick="copyText('${esc(c.email)}')">Copy email</button>` : ''}
+          </td>
+        </tr>`).join('');
     }
 
     // ===========================================================================
-    // === VIEWS: EMAILS ===
+    // EMAILS VIEW
     // ===========================================================================
     async function loadEmails(force = false) {
-      // Load emails by aggregating across cached jobs
-      const jobs = state.jobs.slice(0, 50); // top 50
+      const jobs = state.jobs.slice(0, 50);
       if (!jobs.length) { await loadJobs(false); return; }
 
       document.getElementById('emails-body').innerHTML = skelRows(5, 6);
       const allEmails = [];
       await Promise.all(jobs.map(async j => {
-        if (state.emails[j.id] && !force) { allEmails.push(...state.emails[j.id].map(e => ({ ...e, _job: j }))); return; }
+        if (state.emails[j.id] && !force) {
+          allEmails.push(...state.emails[j.id].map(e => ({ ...e, _job: j })));
+          return;
+        }
         const data = await apiFetch(`/emails?job_id=${j.id}`);
         if (data?.length) {
           state.emails[j.id] = data;
@@ -1363,31 +1834,34 @@
       allEmails.sort((a, b) => new Date(b.generated_at) - new Date(a.generated_at));
 
       if (!allEmails.length) {
-        document.getElementById('emails-body').innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">✉</div><p>No emails drafted. Click 'Draft email' on a job card.</p></div></td></tr>`;
+        document.getElementById('emails-body').innerHTML =
+          `<tr><td colspan="6"><div class="empty"><div class="empty-icon">✉</div><p>No emails drafted. Click 'Draft email' on a job card.</p></div></td></tr>`;
         return;
       }
 
       document.getElementById('emails-body').innerHTML = allEmails.map((e, i) => `
-    <tr class="email-row" data-i="${i}">
-      <td><div style="font-weight:500">${esc(e._job?.company || '—')}</div><div style="font-size:12px;color:var(--muted)">${esc(e._job?.role || '—')}</div></td>
-      <td style="font-size:12px;color:var(--muted)">${esc(e.contact_id?.slice(0, 8) || '—')}…</td>
-      <td><span class="badge badge-gray">${esc(e.template)}</span></td>
-      <td>${statusBadge(e.status)}</td>
-      <td style="font-size:12px;color:var(--muted)">${relTime(e.generated_at)}</td>
-      <td style="display:flex;gap:6px">
-        <button class="icon-btn email-view-btn" data-i="${i}" title="View">👁</button>
-        <button class="icon-btn email-send-btn" data-id="${esc(e.id)}" data-i="${i}" title="Send">📤</button>
-      </td>
-    </tr>
-    <tr id="eexpand-${i}" style="display:none">
-      <td colspan="6" class="expand-row">
-        <div style="margin-bottom:6px"><strong>Subject:</strong> ${esc(e.subject)}</div>
-        <div style="white-space:pre-wrap;margin-bottom:8px">${esc(e.body)}</div>
-        <button class="btn-outline" style="height:26px;font-size:12px" onclick="copyText(${JSON.stringify(e.body || '')})">Copy to clipboard</button>
-      </td>
-    </tr>`).join('');
+        <tr class="email-row" data-i="${i}">
+          <td>
+            <div style="font-weight:500;color:var(--text)">${esc(e._job?.company || '—')}</div>
+            <div style="font-size:12px;color:var(--text-dim)">${esc(e._job?.role || '—')}</div>
+          </td>
+          <td style="font-size:12px;color:var(--muted)">${esc(e.contact_id?.slice(0,8) || '—')}…</td>
+          <td><span class="badge badge-gray">${esc(e.template)}</span></td>
+          <td>${statusBadge(e.status)}</td>
+          <td style="font-size:12px;color:var(--muted)">${relTime(e.generated_at)}</td>
+          <td style="display:flex;gap:6px">
+            <button class="icon-btn email-view-btn" data-i="${i}" title="View">👁</button>
+            <button class="icon-btn email-send-btn" data-id="${esc(e.id)}" data-i="${i}" title="Send">📤</button>
+          </td>
+        </tr>
+        <tr id="eexpand-${i}" style="display:none">
+          <td colspan="6" class="expand-row">
+            <div style="margin-bottom:6px"><strong>Subject:</strong> ${esc(e.subject)}</div>
+            <div style="white-space:pre-wrap;margin-bottom:10px">${esc(e.body)}</div>
+            <button class="btn-outline" style="height:26px;font-size:12px" onclick="copyText(${JSON.stringify(e.body || '')})">Copy to clipboard</button>
+          </td>
+        </tr>`).join('');
 
-      // Store for send actions
       window._emailRows = allEmails;
     }
 
@@ -1395,7 +1869,6 @@
       const r = await apiFetch(`/emails/${emailId}/send`, { method: 'POST' });
       if (r) {
         toast('Email sent!', 'success');
-        // Optimistically update badge
         const row = document.querySelector(`.email-row[data-i="${rowIdx}"]`);
         if (row) {
           const cells = row.querySelectorAll('td');
@@ -1405,7 +1878,7 @@
     }
 
     // ===========================================================================
-    // === VIEWS: STATS ===
+    // STATS VIEW
     // ===========================================================================
     async function loadStats(force = false) {
       if (state.stats && !force) { renderStats(); return; }
@@ -1417,20 +1890,23 @@
 
     function renderStats() {
       const stats = state.stats || {};
-      const sum = state.summary || {};
+      const sum   = state.summary || {};
       const byStatus = stats.by_status || {};
       const bySource = stats.by_source || {};
 
-      const total = Object.values(byStatus).reduce((a, b) => a + b, 0);
-      document.getElementById('s-total').textContent = total || '—';
-      document.getElementById('s-applied').textContent = byStatus.applied ?? '—';
+      const total = Object.values(byStatus).reduce((a,b) => a+b, 0);
+      document.getElementById('s-total').textContent    = total || '—';
+      document.getElementById('s-applied').textContent  = byStatus.applied ?? '—';
       document.getElementById('s-contacts').textContent = sum.contacts_found ?? '—';
-      document.getElementById('s-emails').textContent = sum.emails_drafted ?? '—';
+      document.getElementById('s-emails').textContent   = sum.emails_drafted ?? '—';
 
-      // Chart
       const labels = Object.keys(bySource);
       const values = Object.values(bySource);
       const canvas = document.getElementById('source-chart');
+      const style  = getComputedStyle(document.documentElement);
+      const gridColor = style.getPropertyValue('--border').trim();
+      const textColor = style.getPropertyValue('--muted').trim();
+
       if (labels.length) {
         if (state.chart) state.chart.destroy();
         state.chart = new Chart(canvas.getContext('2d'), {
@@ -1440,17 +1916,26 @@
             datasets: [{
               label: 'Jobs',
               data: values,
-              backgroundColor: 'rgba(108,71,255,.7)',
-              hoverBackgroundColor: 'rgba(108,71,255,1)',
-              borderRadius: 4,
+              backgroundColor: 'rgba(124,92,252,.65)',
+              hoverBackgroundColor: 'rgba(124,92,252,1)',
+              borderRadius: 6,
             }]
           },
           options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.parsed.y} jobs` } } },
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: { callbacks: { label: (c) => `${c.parsed.y} jobs` } },
+            },
             scales: {
-              x: { grid: { display: false } },
-              y: { grid: { display: false }, border: { display: false }, beginAtZero: true, ticks: { stepSize: 1 } },
+              x: { grid: { display: false }, ticks: { color: textColor } },
+              y: {
+                grid: { color: gridColor },
+                border: { display: false },
+                beginAtZero: true,
+                ticks: { stepSize: 1, color: textColor },
+              },
             }
           }
         });
@@ -1458,28 +1943,93 @@
         canvas.parentElement.innerHTML += '<p style="font-size:13px;color:var(--muted);margin-top:8px">No data yet. Trigger a scrape.</p>';
       }
 
-      // Summary block
       const errCount = (sum.errors || []).length;
       document.getElementById('summary-content').innerHTML = sum.run_at ? `
-    <div class="summary-row"><span>Last run</span><span>${relTime(sum.run_at)}</span></div>
-    <div class="summary-row"><span>Jobs discovered</span><span>${sum.jobs_discovered ?? '—'}</span></div>
-    <div class="summary-row"><span>Contacts found</span><span>${sum.contacts_found ?? '—'}</span></div>
-    <div class="summary-row"><span>Emails drafted</span><span>${sum.emails_drafted ?? '—'}</span></div>
-    <div class="summary-row"><span>Errors</span><span>${errCount > 0 ? `<span class="badge badge-red">${errCount}</span>` : '<span class="badge badge-green">None</span>'}</span></div>
-  ` : `<div class="empty"><div class="empty-icon">🕐</div><p>No run summary yet. Scheduler hasn't completed a cycle.</p></div>`;
+        <div class="summary-row"><span>Last run</span><span>${relTime(sum.run_at)}</span></div>
+        <div class="summary-row"><span>Jobs discovered</span><span>${sum.jobs_discovered ?? '—'}</span></div>
+        <div class="summary-row"><span>Contacts found</span><span>${sum.contacts_found ?? '—'}</span></div>
+        <div class="summary-row"><span>Emails drafted</span><span>${sum.emails_drafted ?? '—'}</span></div>
+        <div class="summary-row"><span>Errors</span><span>${errCount > 0
+          ? `<span class="badge badge-red">${errCount}</span>`
+          : '<span class="badge badge-green">None</span>'}</span></div>
+      ` : `<div class="empty"><div class="empty-icon">🕐</div><p>No run summary yet. Scheduler hasn't completed a cycle.</p></div>`;
     }
 
     // ===========================================================================
-    // === ROUTER ===
+    // ROUTER
     // ===========================================================================
     function switchTab(tab) {
       state.activeTab = tab;
       document.querySelectorAll('.nav-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
       document.querySelectorAll('.tab-view').forEach(s => s.classList.toggle('active', s.id === `tab-${tab}`));
-      if (tab === 'jobs') loadJobs();
+      if (tab === 'jobs')          loadJobs();
       else if (tab === 'contacts') loadContacts();
-      else if (tab === 'emails') loadEmails();
-      else if (tab === 'stats') loadStats();
+      else if (tab === 'emails')   loadEmails();
+      else if (tab === 'stats')    loadStats();
+    }
+
+    function isTypingTarget(target) {
+      const tag = target?.tagName?.toLowerCase();
+      return target?.isContentEditable || ['input', 'textarea', 'select'].includes(tag);
+    }
+
+    function openScrapeModal() {
+      scrapeModal.classList.add('open');
+      document.getElementById('scrape-role')?.focus();
+    }
+
+    function closeScrapeModal() {
+      scrapeModal.classList.remove('open');
+    }
+
+    function openShortcutsModal() {
+      document.getElementById('shortcuts-modal').classList.add('open');
+    }
+
+    function closeShortcutsModal() {
+      document.getElementById('shortcuts-modal').classList.remove('open');
+    }
+
+    function handleGlobalShortcut(e) {
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+      const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+
+      if (key === 'Escape') {
+        closeShortcutsModal();
+        closeScrapeModal();
+        closePanel();
+        return;
+      }
+
+      if (isTypingTarget(e.target)) return;
+
+      if (key === '?' || (e.shiftKey && e.key === '/')) {
+        e.preventDefault();
+        openShortcutsModal();
+        return;
+      }
+
+      if (document.getElementById('shortcuts-modal').classList.contains('open')) return;
+      if (scrapeModal.classList.contains('open')) return;
+
+      if (key === 's') {
+        e.preventDefault();
+        openScrapeModal();
+      } else if (key === 'r') {
+        e.preventDefault();
+        switchTab('jobs');
+        loadJobs(true);
+      } else if (key === 'j') {
+        e.preventDefault();
+        moveJobFocus(1);
+      } else if (key === 'k') {
+        e.preventDefault();
+        moveJobFocus(-1);
+      } else if (key === 'Enter') {
+        e.preventDefault();
+        openFocusedJob();
+      }
     }
 
     function exportJobsCSV() {
@@ -1507,15 +2057,14 @@
     }
 
     // ===========================================================================
-    // === EVENT WIRING ===
+    // EVENT WIRING
     // ===========================================================================
+    document.getElementById('btn-theme').addEventListener('click', toggleTheme);
 
-    // Tabs
     document.querySelectorAll('.nav-tab').forEach(btn => {
       btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
 
-    // Jobs filter bar
     document.getElementById('job-search').addEventListener('input', e => {
       state.filters.search = e.target.value;
       renderJobs();
@@ -1535,7 +2084,6 @@
       loadContacts(true);
     });
 
-    // Jobs grid click delegation
     document.getElementById('jobs-grid').addEventListener('click', e => {
       const actionBtn = e.target.closest('[data-action]');
       if (actionBtn) {
@@ -1547,14 +2095,27 @@
         return;
       }
       const card = e.target.closest('.job-card');
-      if (card) openDetailPanel(card.dataset.id);
+      if (card) {
+        const idx = visibleJobCards().indexOf(card);
+        if (idx >= 0) {
+          state.focusedJobIndex = idx;
+          updateFocusedJobCard();
+        }
+        openDetailPanel(card.dataset.id);
+      }
+    });
+    document.getElementById('jobs-grid').addEventListener('focusin', e => {
+      const card = e.target.closest('.job-card');
+      const idx = card ? visibleJobCards().indexOf(card) : -1;
+      if (idx >= 0) {
+        state.focusedJobIndex = idx;
+        updateFocusedJobCard();
+      }
     });
 
-    // Detail panel close
     document.getElementById('panel-close').addEventListener('click', closePanel);
     document.getElementById('panel-backdrop').addEventListener('click', closePanel);
 
-    // Contacts table: sort headers
     document.getElementById('contacts-table').addEventListener('click', e => {
       const th = e.target.closest('th[data-col]');
       if (th) {
@@ -1564,7 +2125,6 @@
         const q = document.getElementById('contact-search').value.trim();
         renderContacts(state.contacts[q || '__all__'] || []);
       }
-      // Expand row
       const row = e.target.closest('.contact-row');
       if (row) {
         const i = row.dataset.idx;
@@ -1573,12 +2133,10 @@
       }
     });
 
-    // Contact search enter
     document.getElementById('contact-search').addEventListener('keydown', e => {
       if (e.key === 'Enter') { state.contacts = {}; loadContacts(true); }
     });
 
-    // Emails: view & send buttons
     document.getElementById('emails-body').addEventListener('click', e => {
       const viewBtn = e.target.closest('.email-view-btn');
       if (viewBtn) {
@@ -1595,16 +2153,26 @@
       if (sendBtn) sendEmail(sendBtn.dataset.id, sendBtn.dataset.i);
     });
 
-    // Scrape modal
     const scrapeModal = document.getElementById('scrape-modal');
-    document.getElementById('btn-scrape').addEventListener('click', () => scrapeModal.classList.add('open'));
+    document.getElementById('btn-scrape').addEventListener('click',  () => scrapeModal.classList.add('open'));
     document.getElementById('modal-close').addEventListener('click', () => scrapeModal.classList.remove('open'));
-    document.getElementById('modal-cancel').addEventListener('click', () => scrapeModal.classList.remove('open'));
+    document.getElementById('modal-cancel').addEventListener('click',() => scrapeModal.classList.remove('open'));
     scrapeModal.addEventListener('click', e => { if (e.target === scrapeModal) scrapeModal.classList.remove('open'); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') scrapeModal.classList.remove('open'); });
+    document.getElementById('btn-scrape').addEventListener('click', openScrapeModal);
+    document.getElementById('modal-close').addEventListener('click', closeScrapeModal);
+    document.getElementById('modal-cancel').addEventListener('click', closeScrapeModal);
+    scrapeModal.addEventListener('click', e => { if (e.target === scrapeModal) closeScrapeModal(); });
+
+    // Shortcut reference
+    const shortcutsModal = document.getElementById('shortcuts-modal');
+    document.getElementById('btn-shortcuts').addEventListener('click', openShortcutsModal);
+    document.getElementById('shortcuts-close').addEventListener('click', closeShortcutsModal);
+    shortcutsModal.addEventListener('click', e => { if (e.target === shortcutsModal) closeShortcutsModal(); });
+    document.addEventListener('keydown', handleGlobalShortcut);
 
     document.getElementById('modal-submit').addEventListener('click', async () => {
-      const role = document.getElementById('scrape-role').value.trim();
+      const role  = document.getElementById('scrape-role').value.trim();
       const stack = document.getElementById('scrape-stack').value.split(',').map(s => s.trim()).filter(Boolean);
       if (!role) { toast('Enter a role first', 'error'); return; }
       scrapeModal.classList.remove('open');
@@ -1615,16 +2183,33 @@
       if (r !== null) toast('Scraping started — new jobs will appear in ~60 seconds', 'info', 6000);
     });
 
-    // Offline banner dismiss
     document.getElementById('btn-dismiss-banner').addEventListener('click', hideBanner);
 
     // ===========================================================================
-    // === INIT ===
+    // INIT
     // ===========================================================================
     (async () => {
       switchTab('jobs');
     })();
   </script>
+  <script src="/static/kanban.js"></script>
+  <script>
+    // Expose state so kanban.js can sync after drops
+    window._state = state;
+    // Hook into existing renderJobs so kanban auto-updates when jobs reload
+    const _origRenderJobs = renderJobs;
+    function renderJobs() {
+      _origRenderJobs();
+      const board = document.getElementById('kanban-board');
+      if (board && board.style.display !== 'none') renderKanban(state.jobs);
+    }
+    // Init toggle after page load
+    document.addEventListener('DOMContentLoaded', initViewToggle);
+  </script>
 </body>
+</html>
 
 </html>
+
+
+
