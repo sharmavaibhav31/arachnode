@@ -1,6 +1,6 @@
 # Crawler Service
 
-Part of the Arachnode(JobHunter) microservice system. This service crawls startup job
+Part of the Arachnode microservice system. This service crawls startup job
 directories and career pages, filters results by your role and stack, deduplicates
 them via Redis, and emits normalized `JobPosting` events onto a Redis Stream for
 downstream services to consume.
