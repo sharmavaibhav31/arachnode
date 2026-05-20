@@ -7,6 +7,7 @@ pytest-cov>=5.0.0           # coverage reporting
 
 # Layer 2 — integration tests
 testcontainers[postgres,redis]>=4.5.0  # real Postgres + Redis containers
+httpx>=0.25.0                         # HTTP client for testing FastAPI apps
 
 # Service runtime deps (needed so tests can import service modules)
 asyncpg>=0.29.0

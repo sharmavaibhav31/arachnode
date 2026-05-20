@@ -831,6 +831,94 @@
       opacity: 0;
       transition: opacity .3s ease
     }
+      /* === KANBAN === */
+    #kanban-board {
+      display: none;
+      gap: 14px;
+      overflow-x: auto;
+      padding-bottom: 16px;
+      align-items: flex-start;
+    }
+    .kb-col {
+      min-width: 220px;
+      max-width: 240px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .kb-col-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .kb-col-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .kb-col-title { flex: 1; }
+    .kb-col-count {
+      font-size: 11px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 1px 7px;
+      color: var(--muted);
+    }
+    .kb-cards {
+      padding: 10px;
+      min-height: 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: background .15s;
+    }
+    .kb-cards.kb-drag-over {
+      background: var(--accent-low);
+    }
+    .kb-card {
+      cursor: grab;
+      position: relative;
+      user-select: none;
+    }
+    .kb-card.kb-dragging {
+      opacity: .4;
+      cursor: grabbing;
+    }
+    .kb-drop-placeholder {
+      height: 60px;
+      border: 2px dashed var(--accent);
+      border-radius: var(--radius);
+      background: var(--accent-low);
+    }
+    /* === VIEW TOGGLE === */
+    .view-toggle {
+      display: flex;
+      gap: 4px;
+      margin-left: 8px;
+    }
+    .view-toggle button {
+      height: 32px;
+      padding: 0 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      font-size: 13px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: var(--trans);
+    }
+    .view-toggle button.active-view {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
   </style>
 </head>
 
@@ -873,8 +961,14 @@
           <option value="all">All stacks</option>
         </select>
         <button class="btn-outline" id="btn-refresh-jobs">Refresh</button>
+        <div class="view-toggle">
+          <button id="btn-view-grid" onclick="setView('grid')" title="Grid view">⊞ Grid</button>
+          <button id="btn-view-kanban" onclick="setView('kanban')" title="Kanban view">☰ Kanban</button>
+        </div>
+        <button class="btn-outline" id="btn-export-jobs">Export CSV</button>
       </div>
       <div id="jobs-grid" class="card-grid"></div>
+      <div id="kanban-board"></div>
     </section>
 
     <!-- CONTACTS TAB -->
@@ -1155,7 +1249,7 @@
       const jobs = filteredJobs();
       const grid = document.getElementById('jobs-grid');
       if (!jobs.length) {
-        grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><p>No jobs found. Trigger a scrape to get started.</p></div>`;
+        grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🕷️</div><p><strong>No jobs yet!</strong><br>Trigger your first scrape to get started.</p><button class="btn" style="margin-top:12px" onclick="document.getElementById('scrape-modal').classList.add('open')">🚀 Start First Scrape</button></div>`;
         return;
       }
       grid.innerHTML = jobs.map(j => `
@@ -1481,6 +1575,30 @@
       else if (tab === 'stats') loadStats();
     }
 
+    function exportJobsCSV() {
+      const params = new URLSearchParams();
+
+      if (state.filters.search.trim()) {
+        params.set('search', state.filters.search.trim());
+      }
+
+      if (state.filters.status !== 'all') {
+        params.set('status', state.filters.status);
+      }
+
+      if (state.filters.stack !== 'all') {
+        params.set('stack', state.filters.stack);
+      }
+
+      params.set('format', 'csv');
+
+      const exportUrl = API(`/jobs/export?${params.toString()}`);
+
+      window.open(exportUrl, '_blank');
+
+      toast('Preparing CSV export...', 'info');
+    }
+
     // ===========================================================================
     // === EVENT WIRING ===
     // ===========================================================================
@@ -1504,6 +1622,7 @@
       renderJobs();
     });
     document.getElementById('btn-refresh-jobs').addEventListener('click', () => loadJobs(true));
+    document.getElementById('btn-export-jobs').addEventListener('click', exportJobsCSV);
     document.getElementById('btn-refresh-contacts').addEventListener('click', () => {
       state.contacts = {};
       loadContacts(true);
@@ -1599,6 +1718,23 @@
       switchTab('jobs');
     })();
   </script>
+  <script src="/static/kanban.js"></script>
+  <script>
+    // Expose state so kanban.js can sync after drops
+    window._state = state;
+    // Hook into existing renderJobs so kanban auto-updates when jobs reload
+    const _origRenderJobs = renderJobs;
+    function renderJobs() {
+      _origRenderJobs();
+      const board = document.getElementById('kanban-board');
+      if (board && board.style.display !== 'none') renderKanban(state.jobs);
+    }
+    // Init toggle after page load
+    document.addEventListener('DOMContentLoaded', initViewToggle);
+  </script>
 </body>
 
 </html>
+
+
+

@@ -23,6 +23,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
+
+
 # Copy pre-built packages from builder
 COPY --from=builder /install /usr/local
 # Create non-root user early so Playwright browsers can be installed
@@ -30,11 +32,13 @@ COPY --from=builder /install /usr/local
 RUN useradd -m appuser
 
 # Install Playwright browser binaries (chromium only, ~170 MB)
+
 # Set an explicit browsers path inside the appuser home and install
 # browsers there so the non-root `appuser` can access them at runtime.
 ENV PLAYWRIGHT_BROWSERS_PATH=/home/appuser/.cache/ms-playwright
 RUN python -m playwright install chromium \
  && chown -R appuser:appuser /home/appuser/.cache/ms-playwright
+
 
 # Copy source
 COPY . .

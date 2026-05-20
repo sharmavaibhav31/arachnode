@@ -4,6 +4,7 @@ main.py — FastAPI application for the Job Aggregator Service.
 Endpoints
 ---------
 GET  /jobs                   List jobs with optional filters
+GET  /jobs/export?format=csv Export jobs as CSV with optional filters
 GET  /jobs/{id}              Fetch a single job by UUID
 PATCH /jobs/{id}/status      Update a job's status
 GET  /stats                  Aggregate counts by source and status
@@ -13,6 +14,8 @@ GET  /health                 Liveness / readiness probe
 from __future__ import annotations
 
 import asyncio
+import csv
+import io
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -20,7 +23,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 import db as database
 import consumer as stream_consumer
@@ -126,6 +129,86 @@ async def list_jobs(
         limit=limit,
     )
     return [JobOut(**_record_to_dict(r)) for r in rows]
+
+
+@app.get("/jobs/export", tags=["jobs"])
+async def export_jobs_csv(
+    role: Optional[str] = Query(None, description="Substring match on role title"),
+    stack: Optional[str] = Query(
+        None,
+        description="Comma-separated tech tags; returns jobs whose stack contains ALL of them",
+    ),
+    status: Optional[str] = Query(None, description="Filter by status: new | applied | ignored"),
+    sort: str = Query("latest", description="Sort order: latest | oldest"),
+    format: str = Query("csv", description="Export format (only csv supported)"),
+):
+    if format != "csv":
+        raise HTTPException(status_code=400, detail="Only csv format is supported")
+    if sort not in ("latest", "oldest"):
+        raise HTTPException(status_code=400, detail="sort must be 'latest' or 'oldest'")
+    if status and status not in ("new", "applied", "ignored"):
+        raise HTTPException(status_code=400, detail="status must be new | applied | ignored")
+
+    stack_list = [s.strip() for s in stack.split(",")] if stack else None
+
+    pool = await database.get_pool()
+
+    async def generate_csv():
+        buffer = io.StringIO()
+        writer = csv.writer(buffer)
+        
+        # Write header
+        writer.writerow([
+            "id", "company", "role", "source", "url", "stack", "product", 
+            "location", "posted_at", "status", "created_at"
+        ])
+        yield buffer.getvalue()
+        buffer.truncate(0)
+        buffer.seek(0)
+        
+        # Stream data in chunks
+        chunk_size = 1000
+        chunk = []
+        async for record in database.stream_jobs(
+            pool,
+            role=role,
+            stack=stack_list,
+            status=status,
+            sort=sort,
+        ):
+            row = _record_to_dict(record)
+            csv_row = [
+                str(row["id"]),
+                row["company"],
+                row["role"],
+                row["source"] or "",
+                row["url"] or "",
+                ",".join(row["stack"]) if row["stack"] else "",
+                row["product"] or "",
+                row["location"] or "",
+                row["posted_at"].isoformat() if row["posted_at"] else "",
+                row["status"],
+                row["created_at"].isoformat(),
+            ]
+            chunk.append(csv_row)
+            
+            if len(chunk) >= chunk_size:
+                writer.writerows(chunk)
+                yield buffer.getvalue()
+                buffer.truncate(0)
+                buffer.seek(0)
+                chunk = []
+        
+        # Yield remaining rows
+        if chunk:
+            writer.writerows(chunk)
+            yield buffer.getvalue()
+
+    return StreamingResponse(
+        generate_csv(),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=jobs.csv"}
+    )
 
 
 @app.get("/jobs/{job_id}", response_model=JobOut, tags=["jobs"])
