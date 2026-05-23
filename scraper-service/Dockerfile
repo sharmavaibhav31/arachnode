@@ -23,11 +23,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
+# Keep browser binaries in a shared location accessible to the runtime user.
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
 # Copy pre-built packages from builder
 COPY --from=builder /install /usr/local
 
 # Install Playwright browser binaries (chromium only, ~170 MB)
-RUN playwright install chromium
+RUN mkdir -p /ms-playwright && playwright install chromium
 
 # Copy source
 COPY . .
