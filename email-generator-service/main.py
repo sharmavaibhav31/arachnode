@@ -20,12 +20,14 @@ from datetime import datetime
 from typing import List, Literal, Optional
 from uuid import UUID
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 import generator
 import mailer
 import storage
+from resume_parser import parse_resume
 
 logging.basicConfig(
     level=logging.INFO,
@@ -71,6 +73,10 @@ class GenerateRequest(BaseModel):
     github_url:      str = ""
     graduation_year: Optional[int] = None
     availability:    Optional[str] = None
+    # these are optional — only filled in when a resume was uploaded first
+    candidate_skills:     List[str] = []
+    candidate_role:       Optional[str] = None
+    candidate_experience: Optional[int] = None
 
 
 class GenerateResponse(BaseModel):
@@ -130,6 +136,17 @@ async def generate(req: GenerateRequest):
     your_name   = req.your_name   or os.environ.get("YOUR_NAME", "Applicant")
     github_url  = req.github_url  or os.environ.get("YOUR_GITHUB_URL", "")
 
+    # if resume info was passed in, build candidate context
+    # otherwise candidate_context stays None and existing flow is unchanged
+    candidate_context = None
+    if req.candidate_skills or req.candidate_role:
+        from resume_parser import CandidateContext
+        candidate_context = CandidateContext(
+            skills=req.candidate_skills,
+            recent_role=req.candidate_role,
+            years_experience=req.candidate_experience,
+        )
+
     try:
         subject, body = await generator.generate_email(
             template=req.template,
@@ -140,6 +157,8 @@ async def generate(req: GenerateRequest):
             github_url=github_url,
             graduation_year=req.graduation_year,
             availability=req.availability,
+            candidate_context=candidate_context,
+        
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
@@ -221,3 +240,66 @@ async def send_email_endpoint(email_id: UUID):
 
     row = await storage.mark_sent(pool, email_id)
     return EmailOut.from_record(row)
+
+
+# ---------------------------------------------------------------------------
+# Resume Parser Endpoint
+# ---------------------------------------------------------------------------
+
+@app.post("/resume", tags=["resume"])
+async def upload_resume(file: UploadFile = File(...)):
+    """
+    Upload a PDF or plain text resume and get back the
+    parsed candidate context — skills, experience, and role.
+
+    This parsed data can then be passed to /generate to
+    personalize the cold email with the candidate's background.
+
+    Supported formats: PDF, TXT
+    """
+
+    # Check file type — we only support PDF and plain text for now
+    filename = file.filename or ""
+    if filename.endswith(".pdf"):
+        file_type = "pdf"
+    elif filename.endswith(".txt"):
+        file_type = "txt"
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Only PDF and TXT resume files are supported."
+        )
+
+    # Read the file bytes
+    try:
+        file_bytes = await file.read()
+    except Exception as exc:
+        logger.warning("[ResumeUpload] Failed to read file: %s", exc)
+        raise HTTPException(
+            status_code=500,
+            detail="Could not read the uploaded file."
+        )
+
+    # Parse the resume
+    context = parse_resume(file_bytes, file_type=file_type)
+
+    if context.is_empty():
+        return JSONResponse(
+            status_code=200,
+            content={
+                "message": "Resume uploaded but we couldn't extract much. "
+                           "Try a cleaner PDF or plain text file.",
+                "skills": [],
+                "years_experience": None,
+                "recent_role": None,
+            }
+        )
+
+    # Return what we extracted
+    return {
+        "message": "Resume parsed successfully.",
+        "skills": context.skills,
+        "years_experience": context.years_experience,
+        "recent_role": context.recent_role,
+        "prompt_snippet": context.to_prompt_snippet(),
+    }

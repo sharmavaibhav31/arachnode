@@ -127,13 +127,14 @@ def _split_rendered(rendered: str) -> tuple[str, str]:
 async def generate_email(
     *,
     template: str,
-    job: Any,                  # asyncpg Record or dict-like
-    contact: Optional[Any],    # asyncpg Record or None
+    job: Any,
+    contact: Optional[Any],
     your_name: str,
     your_stack: list[str],
     github_url: str,
     graduation_year: Optional[int] = None,
     availability: Optional[str] = None,
+    candidate_context=None,
 ) -> tuple[str, str]:
     """
     Generate a cold email, returning (subject, body).
@@ -157,7 +158,10 @@ async def generate_email(
     # ── 1. Ollama or fallback ────────────────────────────────────────────────
     observation = None
     if template != "followup":   # followup doesn't need a product observation
-        observation = await ollama_client.generate_observation(product_context)
+        observation = await ollama_client.generate_observation(
+    product_context,
+    candidate_context=candidate_context,
+)
         if not observation:
             observation = _select_fallback(product=product, stack=stack_tags or your_stack)
 
