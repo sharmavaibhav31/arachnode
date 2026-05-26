@@ -133,7 +133,7 @@ async def generate_email(
     your_stack: list[str],
     github_url: str,
     graduation_year: Optional[int] = None,
-availability: Optional[str] = None,
+    availability: Optional[str] = None,
     referred_by: Optional[str] = None,
     candidate_context: Optional[str] = None,
 ) -> tuple[str, str]:
