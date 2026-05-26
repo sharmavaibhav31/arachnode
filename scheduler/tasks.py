@@ -18,6 +18,7 @@ import json
 import os
 import subprocess
 import time
+from datetime import timedelta
 from typing import Any
 
 import httpx
@@ -251,3 +252,74 @@ def run_draft_cycle() -> None:
 
     _summary["emails_drafted"] += drafted
     log.info("Draft cycle complete", drafted=drafted)
+
+
+# ---------------------------------------------------------------------------
+# Task 4 — Weekly digest cycle  (every Sunday at 09:00 UTC)
+# ---------------------------------------------------------------------------
+
+def run_digest_cycle() -> None:
+    """
+    Fetch all new jobs from the past 7 days and POST them to the email-generator
+    service's /digest endpoint, which filters for freshness, groups by source,
+    renders the digest template, and sends the email via Gmail SMTP.
+    """
+
+    log.info("Digest cycle starting")
+
+    from datetime import datetime, timezone
+    today = datetime.now(timezone.utc)
+    week_start = today - timedelta(days=today.weekday())
+    week_end = week_start + timedelta(days=6)
+    week_label = f"{week_start.strftime('%d %b')}–{week_end.strftime('%d %b %Y')}"
+
+    try:
+        with httpx.Client(timeout=_HTTP_TIMEOUT) as c:
+            r = c.get(
+                f"{_gw()}/api/jobs",
+                params={
+                    "status": "new",
+                    "limit": 100,
+                    "sort": "latest",
+                },
+            )
+            r.raise_for_status()
+            jobs = r.json()
+
+    except Exception as exc:
+        _record_error("digest_fetch_jobs", str(exc))
+        log.error("Digest cycle aborted — could not fetch jobs", error=str(exc))
+        return
+
+    if not jobs:
+        log.info("Digest cycle: no new jobs found — skipping send")
+        return
+
+    log.info("Digest cycle: fetched %d new jobs", len(jobs))
+
+    try:
+        with httpx.Client(timeout=httpx.Timeout(90.0, connect=10.0)) as c:
+            r = c.post(
+                f"{_gw()}/api/digest",
+                json={
+                    "jobs": jobs,
+                    "week_label": week_label,
+                },
+            )
+            r.raise_for_status()
+            result = r.json()
+
+    except Exception as exc:
+        _record_error("digest_send", str(exc))
+        log.error("Digest cycle: email send failed", error=str(exc))
+        return
+
+    log.info(
+        "Digest cycle complete",
+        sent=result.get("sent"),
+        recipient=result.get("recipient"),
+        job_count=result.get("job_count"),
+        subject=result.get("subject"),
+    )
+
+    _summary["digest_sent"] = result.get("job_count", 0)

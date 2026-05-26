@@ -1,6 +1,6 @@
 Subject: Re: {{ role }} at {{ company }} — Following up
 
-Hi {{ contact_name | default("there") }},
+Hi {{ contact_name or "there" }},
 
 I wanted to follow up on my email from about a week ago regarding the {{ role }} position at {{ company }}.
 

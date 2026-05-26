@@ -1,6 +1,6 @@
 Subject: {{ role }} application — {{ your_name }} ({{ graduation_year }} grad)
 
-Hi {{ contact_name | default("there") }},
+Hi {{ contact_name or "there" }},
 
 I'm {{ your_name }}, a {{ graduation_year }} engineering graduate with hands-on experience in {{ your_stack | join(", ") }}. I'm very interested in the **{{ role }}** role at {{ company }}.
 

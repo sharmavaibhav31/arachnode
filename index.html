@@ -1,5 +1,5 @@
 <!-- 
-  JobHunter Landing Page
+  Arachnode Landing Page
   Deploy: GitHub Pages, Vercel, Netlify (static, no build step)
   Dashboard detection: polls localhost:8080/api/health every 10s
   To update GitHub link: search GITHUB_URL constant
@@ -764,7 +764,7 @@
 
   <!-- DASHBOARD STATUS BAR -->
   <div id="status-bar" class="animate-on-scroll">
-    &#10003; Services detected — your JobHunter dashboard is running
+    &#10003; Services detected — your Arachnode dashboard is running
     <a href="#" id="status-bar-link">Open Dashboard &rarr;</a>
   </div>
 
@@ -843,14 +843,19 @@
             send, nothing goes out automatically.</p>
         </div>
       </div>
-    </div>
-  </section>
+    </nav>
 
-  <!-- FEATURES -->
-  <section id="features">
-    <div class="container">
-      <div class="section-header animate-on-scroll">
-        <h2>Everything you need. Nothing you don't.</h2>
+    <!-- DASHBOARD STATUS BAR -->
+    <div id="status-bar" class="animate-on-scroll">
+      &#10003; Services detected — your JobHunter dashboard is running
+      <a href="#" id="status-bar-link">Open Dashboard &rarr;</a>
+    </div>
+
+    <!-- HERO -->
+    <section class="hero" id="hero">
+      <div class="hero-glow"></div>
+      <div class="pill">
+        ⚡ Built for placement season &middot; Self-hosted &middot; Free forever
       </div>
       <div class="features-split">
         <div class="features-col animate-on-scroll" style="transition-delay: 0ms">
@@ -925,10 +930,10 @@
             <div class="terminal-step-label">Step 1 — Clone</div>
             <div class="terminal-grid" id="code-step-1">
               <div class="terminal-line">git clone https://github.com/sharmavaibhav31/arachnode.git</div>
-              <div class="terminal-line">cd jobhunter</div>
+              <div class="terminal-line">cd arachnode </div>
             </div>
             <button class="copy-btn"
-              data-text="git clone https://github.com/sharmavaibhav31/arachnode.git\ncd jobhunter">Copy</button>
+              data-text="git clone https://github.com/sharmavaibhav31/arachnode.git\ncd arachnode">Copy</button>
           </div>
           <div class="terminal-step">
             <div class="terminal-step-label">Step 2 — Configure</div>
@@ -938,14 +943,12 @@
               <div class="terminal-line terminal-comment"># Required: JOBSEEKER_ROLE, JOBSEEKER_STACK,
                 GMAIL_APP_PASSWORD</div>
             </div>
-            <button class="copy-btn" data-text="cp .env.example .env">Copy</button>
           </div>
           <div class="terminal-step">
             <div class="terminal-step-label">Step 3 — Run</div>
             <div class="terminal-grid" id="code-step-3">
               <div class="terminal-line">docker-compose up -d</div>
             </div>
-            <button class="copy-btn" data-text="docker-compose up -d">Copy</button>
           </div>
           <div class="terminal-step">
             <div class="terminal-step-label">Step 4 — Open</div>
@@ -965,6 +968,18 @@
         <p class="installation-note">Ollama is optional. Without it, email templates still work — just without AI
           personalization.</p>
       </div>
+    </section>
+
+    <!-- CONTRIBUTOR -->
+    <section id="contributor" class="contribute-section">
+      <div class="container">
+        <div class="section-header animate-on-scroll">
+          <h2>Built in the open. Made better together.</h2>
+          <p>
+            JobHunter is open source and actively looking for contributors. All
+            skill levels welcome.
+          </p>
+        </div>
 
       <div class="tab-content" id="tab-manual">
         <div class="terminal">
@@ -983,8 +998,6 @@
             <button class="copy-btn"
               data-text="python -m venv venv\nsource venv/bin/activate\npip install -r requirements.txt\nplaywright install chromium\nscrapy crawl remotive\nuvicorn aggregator.main:app --port 8000">Copy</button>
           </div>
-        </div>
-      </div>
 
       <div class="tab-content" id="tab-config">
         <div class="terminal" style="padding: 0;">
@@ -1030,16 +1043,17 @@
             <div class="arrow"></div>
             <div class="node db">PostgreSQL</div>
           </div>
-          <div style="height: 40px;"></div>
-          <div class="diagram-flow" style="justify-content: center; gap: 40px;">
-            <div class="node">Contact Discovery</div>
-            <div class="arrow" style="flex-grow:0; width: 40px"></div>
-            <div class="node">Email Generator</div>
+          <div class="min-step">
+            <span class="min-step-num">2</span
+            ><span class="min-step-text">Read CONTRIBUTING.md</span>
           </div>
-          <div style="height: 40px;"></div>
-          <div class="diagram-flow" style="justify-content: center; gap: 40px;">
-            <div class="node" style="border-style: dashed;">Scheduler</div>
-            <div class="node" style="border-style: dashed;">Gateway</div>
+          <div class="min-step">
+            <span class="min-step-num">3</span
+            ><span class="min-step-text">Pick an issue or open one</span>
+          </div>
+          <div class="min-step">
+            <span class="min-step-num">4</span
+            ><span class="min-step-text">Submit a PR</span>
           </div>
         </div>
       </div>
@@ -1073,7 +1087,8 @@
     <div class="container">
       <div class="section-header animate-on-scroll">
         <h2>Built in the open. Made better together.</h2>
-        <p>JobHunter is open source and actively looking for contributors. All skill levels welcome.</p>
+        <p>Arachnode is open source and actively looking for contributors. All skill levels welcome.</p>
+        <p>Arachnode is open source and actively looking for contributors. All skill levels welcome.</p>
       </div>
       <div class="contrib-cards">
         <div class="contrib-card c-amber animate-on-scroll" style="transition-delay: 0ms">
@@ -1146,16 +1161,11 @@
             <a href="https://github.com/sharmavaibhav31/arachnode/issues" target="_blank">Report an Issue</a>
           </div>
         </div>
-        <div class="footer-col">
-          <h4>Built with</h4>
-          <div class="footer-links">
-            <a href="https://scrapy.org" target="_blank">Scrapy</a>
-            <a href="https://fastapi.tiangolo.com" target="_blank">FastAPI</a>
-            <a href="https://redis.io" target="_blank">Redis</a>
-            <a href="https://postgresql.org" target="_blank">PostgreSQL</a>
-            <a href="https://ollama.com" target="_blank">Ollama</a>
-            <a href="https://docker.com" target="_blank">Docker</a>
+        <div class="footer-bottom">
+          <div>
+            MIT &copy; 2026 Vaibhav Sharma &middot; Made during placement season
           </div>
+          <div>Deployed on Github Pages</div>
         </div>
       </div>
       <div class="footer-bottom">
@@ -1334,7 +1344,6 @@
           btn.classList.add('active');
           document.getElementById(btn.dataset.target).classList.add('active');
         });
-      });
 
       /* === COPY TO CLIPBOARD === */
       document.querySelectorAll('.copy-btn').forEach(btn => {
@@ -1346,7 +1355,6 @@
             setTimeout(() => { btn.textContent = orig; }, 2000);
           });
         });
-      });
 
       /* === MOBILE MENU === */
       const mobileToggle = document.getElementById('mobile-toggle');

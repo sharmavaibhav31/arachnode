@@ -1,0 +1,32 @@
+Subject: Your weekly job digest — {{ job_count }} new role{% if job_count != 1 %}s{% endif %} ({{ week_label }})
+
+Hi {{ your_name }},
+
+Here is your weekly summary of new engineering roles that match your profile.
+
+{% if jobs_by_source %}
+{% for source, jobs in jobs_by_source.items() %}
+── {{ source | upper }} ({{ jobs | length }} role{% if jobs | length != 1 %}s{% endif %}) ──────────────────────
+
+{% for job in jobs %}
+  {{ loop.index }}. {{ job.company }} — {{ job.role }}
+     {% if job.location %}📍 {{ job.location }}{% endif %}{% if job.stack %}  🛠  {{ job.stack | join(", ") }}{% endif %}
+
+     {% if job.url %}🔗 {{ job.url }}{% endif %}
+
+{% endfor %}
+{% endfor %}
+{% else %}
+No new roles found this week. The pipeline will check again next Sunday.
+{% endif %}
+
+──────────────────────────────────────────────────
+Roles shown: {{ job_count }}  |  Sources: {{ sources_count }}
+Generated: {{ generated_at }}
+──────────────────────────────────────────────────
+
+To apply to any of these, open your dashboard at http://localhost:8080 and
+click "Draft" on a job card to generate a personalized cold email.
+
+Best,
+Arachnode

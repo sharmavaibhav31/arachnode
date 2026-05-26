@@ -1167,6 +1167,20 @@
 
     <!-- EMAILS TAB -->
     <section id="tab-emails" class="tab-view">
+      <div class="filter-bar">
+        <select id="email-job-select">
+          <option value="">Select job to draft email</option>
+        </select>
+        <select id="email-template-select">
+          <option value="cold_outreach">Cold Outreach</option>
+          <option value="recruiter_outreach">Recruiter</option>
+          <option value="referral_outreach">Referral Outreach</option>
+          <option value="followup">Follow-up</option>
+        </select>
+        <input type="text" id="email-referred-by" placeholder="Referred by" style="display:none;max-width:180px" />
+        <button class="btn-accent" id="email-draft-btn">Draft Email</button>
+        <button class="btn-outline" id="btn-refresh-emails">Refresh</button>
+      </div>
       <div id="emails-table-wrap" class="table-wrap">
         <table id="emails-table">
           <thead>
@@ -1726,12 +1740,14 @@
         const tmplSel = `<select id="panel-tmpl" style="height:32px;padding:0 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;margin-right:6px;background:var(--surface);color:var(--text)">
           <option value="cold_outreach">Cold Outreach</option>
           <option value="recruiter_outreach">Recruiter</option>
+          <option value="referral_outreach">Referral Outreach</option>
           <option value="followup">Follow-up</option>
         </select>`;
+        const referralInput = `<input id="panel-referred-by" type="text" placeholder="Referred by" style="display:none;height:32px;padding:0 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;margin-right:6px;min-width:150px;background:var(--surface);color:var(--text)">`;
         if (!emails?.length) {
           eSect.innerHTML = `<h4>Emails</h4>
             <p style="font-size:13px;color:var(--muted);margin-bottom:12px">No emails drafted yet.</p>
-            ${tmplSel}
+            ${tmplSel}${referralInput}
             <button class="btn-accent" id="panel-draft-btn" style="height:32px;font-size:12px">Draft Email</button>`;
         } else {
           eSect.innerHTML = `<h4>Emails</h4>
@@ -1740,13 +1756,24 @@
                 <div style="font-weight:500;margin-bottom:4px;color:var(--text)">${esc(e.subject)}</div>
                 <div style="color:var(--muted)">${esc(e.template)} · ${statusBadge(e.status)}</div>
               </div>`).join('')}
-            <div style="margin-top:10px">${tmplSel}
+            <div style="margin-top:10px">${tmplSel}${referralInput}
             <button class="btn-accent" id="panel-draft-btn" style="height:32px;font-size:12px">Draft New</button></div>`;
         }
+        const tmplEl = document.getElementById('panel-tmpl');
+        const referredByEl = document.getElementById('panel-referred-by');
+        const syncReferralInput = () => {
+          if (referredByEl) referredByEl.style.display = tmplEl?.value === 'referral_outreach' ? 'inline-block' : 'none';
+        };
+        tmplEl?.addEventListener('change', syncReferralInput);
+        syncReferralInput();
         document.getElementById('panel-draft-btn')?.addEventListener('click', async () => {
-          const tmpl = document.getElementById('panel-tmpl')?.value || 'cold_outreach';
+          const tmpl = tmplEl?.value || 'cold_outreach';
+          const payload = { job_id: job.id, template: tmpl };
+          if (tmpl === 'referral_outreach' && referredByEl?.value.trim()) {
+            payload.referred_by = referredByEl.value.trim();
+          }
           toast('Generating…', 'info');
-          const r = await apiFetch('/workflow/apply', { method: 'POST', body: { job_id: job.id, template: tmpl } });
+          const r = await apiFetch('/workflow/apply', { method: 'POST', body: payload });
           if (r) { toast('Draft created!', 'success'); fetchPanelData(job); }
         });
       }
@@ -1813,11 +1840,61 @@
     // ===========================================================================
     // EMAILS VIEW
     // ===========================================================================
+    function populateEmailJobSelect() {
+      const sel = document.getElementById('email-job-select');
+      if (!sel) return;
+      const cur = sel.value;
+      sel.innerHTML = '<option value="">Select job to draft email</option>' + state.jobs.map(j =>
+        `<option value="${esc(j.id)}">${esc(j.company || 'Unknown company')} - ${esc(j.role || 'Unknown role')}</option>`
+      ).join('');
+      if (state.jobs.some(j => String(j.id) === cur)) sel.value = cur;
+    }
+
+    function syncEmailReferralInput() {
+      const tmpl = document.getElementById('email-template-select')?.value;
+      const input = document.getElementById('email-referred-by');
+      if (input) input.style.display = tmpl === 'referral_outreach' ? 'block' : 'none';
+    }
+
+    async function draftEmailFromEmailsTab() {
+      const jobId = document.getElementById('email-job-select')?.value;
+      const tmpl = document.getElementById('email-template-select')?.value || 'cold_outreach';
+      const referredBy = document.getElementById('email-referred-by')?.value.trim();
+      if (!jobId) {
+        toast('Select a job first', 'error');
+        return;
+      }
+      if (tmpl === 'referral_outreach' && !referredBy) {
+        toast('Enter who referred you first', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('email-draft-btn');
+      const payload = { job_id: jobId, template: tmpl };
+      if (tmpl === 'referral_outreach') payload.referred_by = referredBy;
+      if (btn) btn.disabled = true;
+      toast('Generating draft email...', 'info');
+      const r = await apiFetch('/workflow/apply', { method: 'POST', body: payload });
+      if (btn) btn.disabled = false;
+      if (r) {
+        state.emails[jobId] = null;
+        toast('Draft created!', 'success');
+        await loadEmails(true);
+      }
+    }
+
     async function loadEmails(force = false) {
+      if (!state.jobs.length) await loadJobs(false);
       const jobs = state.jobs.slice(0, 50);
-      if (!jobs.length) { await loadJobs(false); return; }
+      populateEmailJobSelect();
+      syncEmailReferralInput();
 
       document.getElementById('emails-body').innerHTML = skelRows(5, 6);
+      if (!jobs.length) {
+        document.getElementById('emails-body').innerHTML =
+          `<tr><td colspan="6"><div class="empty"><div class="empty-icon">âœ‰</div><p>No jobs available. Trigger a scrape to draft emails.</p></div></td></tr>`;
+        return;
+      }
       const allEmails = [];
       await Promise.all(jobs.map(async j => {
         if (state.emails[j.id] && !force) {
@@ -2083,6 +2160,9 @@
       state.contacts = {};
       loadContacts(true);
     });
+    document.getElementById('email-template-select').addEventListener('change', syncEmailReferralInput);
+    document.getElementById('email-draft-btn').addEventListener('click', draftEmailFromEmailsTab);
+    document.getElementById('btn-refresh-emails').addEventListener('click', () => loadEmails(true));
 
     document.getElementById('jobs-grid').addEventListener('click', e => {
       const actionBtn = e.target.closest('[data-action]');

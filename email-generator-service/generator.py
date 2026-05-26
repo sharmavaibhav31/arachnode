@@ -38,7 +38,7 @@ _jinja_env = Environment(
     lstrip_blocks=True,
 )
 
-VALID_TEMPLATES = {"cold_outreach", "recruiter_outreach", "followup"}
+VALID_TEMPLATES = {"cold_outreach", "recruiter_outreach", "referral_outreach", "followup"}
 
 
 # ---------------------------------------------------------------------------
@@ -133,8 +133,9 @@ async def generate_email(
     your_stack: list[str],
     github_url: str,
     graduation_year: Optional[int] = None,
-    availability: Optional[str] = None,
-    candidate_context=None,
+availability: Optional[str] = None,
+    referred_by: Optional[str] = None,
+    candidate_context: Optional[str] = None,
 ) -> tuple[str, str]:
     """
     Generate a cold email, returning (subject, body).
@@ -159,9 +160,9 @@ async def generate_email(
     observation = None
     if template != "followup":   # followup doesn't need a product observation
         observation = await ollama_client.generate_observation(
-    product_context,
-    candidate_context=candidate_context,
-)
+            product_context,
+            candidate_context=candidate_context,
+        )
         if not observation:
             observation = _select_fallback(product=product, stack=stack_tags or your_stack)
 
@@ -186,6 +187,7 @@ async def generate_email(
         "contact_email":       contact_email,
         "graduation_year":     graduation_year or os.environ.get("GRADUATION_YEAR", "2025"),
         "availability":        availability,
+        "referred_by":         referred_by,
     }
 
     rendered = tmpl.render(**ctx)

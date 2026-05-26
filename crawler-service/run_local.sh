@@ -11,7 +11,7 @@ ROLE="${JOBSEEKER_ROLE:-Backend Engineer}"
 STACK="${JOBSEEKER_STACK:-Python,Go,FastAPI,PostgreSQL,Kubernetes}"
 
 echo "=================================================="
-echo " JobHunter Crawler"
+echo " Arachnode Crawler"
 echo " Spider : $SPIDER"
 echo " Role   : $ROLE"
 echo " Stack  : $STACK"
