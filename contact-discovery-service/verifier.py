@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import smtplib
 import socket
 import time
@@ -117,7 +118,7 @@ async def verify_email(email: str) -> VerifyResult:
     Enforces per-domain rate limiting before connecting.
     Returns 'unverified' immediately if rate limit is exceeded.
     """
-    if not email or "@" not in email:
+    if not email or not re.match(r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$", email):
         return "invalid"
 
     domain = email.split("@", 1)[1].lower()

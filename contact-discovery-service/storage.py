@@ -159,7 +159,7 @@ async def _ensure_unique_constraint(pool: asyncpg.Pool) -> None:
         if not row:
             try:
                 await conn.execute(create)
-            except asyncpg.DuplicateTableError:
+            except asyncpg.DuplicateObjectError:
                 pass  # race condition; another instance added it first
 
 

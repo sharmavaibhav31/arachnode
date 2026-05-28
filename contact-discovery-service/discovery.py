@@ -17,7 +17,6 @@ import asyncio
 import logging
 import os
 import re
-import string
 from typing import Any, Optional
 from urllib.parse import quote_plus
 
@@ -376,7 +375,7 @@ def construct_email(name: str, pattern: str) -> Optional[str]:
         if "{" in email or not re.match(r"^[^@]+@[^@]+\.[^@]+$", email):
             return None
         return email
-    except (KeyError, string.Formatter().format):
+    except (KeyError, ValueError):
         return None
 
 
