@@ -10,13 +10,13 @@ Run with:
 
 Requires: pip install pytest pytest-asyncio testcontainers asyncpg httpx
 """
-import os
+import asyncio
 import csv
 import io
 import pytest
 import asyncpg
 import sys
-import asyncio
+import os
 from httpx import AsyncClient
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "aggregator-service"))
