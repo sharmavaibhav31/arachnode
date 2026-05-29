@@ -1,0 +1,16 @@
+Subject: {{ role }} at {{ company }} - {{ your_name }}
+
+Hi {{ contact_name or "there" }},
+
+{{ referred_by or "A mutual connection" }} suggested I reach out about the {{ role }} opening at {{ company }}, so I wanted to introduce myself directly.
+
+{{ product_observation }}
+
+My core stack is {{ your_stack | join(", ") }}, and I have been shipping production systems with these tools. The role looks closely aligned with the kind of backend and product engineering work I enjoy.
+
+You can find my work on GitHub: {{ github_url }}
+
+Would you be open to a short conversation this week or next? I would be glad to work around your schedule.
+
+Best,
+{{ your_name }}

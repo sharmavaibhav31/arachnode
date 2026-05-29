@@ -96,6 +96,7 @@ _DEFAULT_CTX = dict(
     contact_email=None,
     graduation_year="2025",
     availability=None,
+    referred_by="Priya Menon",
 )
 
 
@@ -157,6 +158,29 @@ class TestRecruiterOutreachTemplate:
         assert "{{" not in subject + body
 
 
+class TestReferralOutreachTemplate:
+    def test_subject_contains_role_and_company(self):
+        subject, _ = _render("referral_outreach", **_DEFAULT_CTX)
+        assert "Backend Engineer" in subject
+        assert "Razorpay" in subject
+
+    def test_opening_mentions_referrer(self):
+        _, body = _render("referral_outreach", **_DEFAULT_CTX)
+        assert "Priya Menon" in body
+
+    def test_body_contains_product_observation(self):
+        _, body = _render("referral_outreach", **_DEFAULT_CTX)
+        assert "5M txns/day" in body
+
+    def test_no_jinja_artifacts(self):
+        subject, body = _render("referral_outreach", **_DEFAULT_CTX)
+        assert "{{" not in subject + body
+
+    def test_falls_back_to_mutual_connection_when_no_referrer(self):
+        _, body = _render("referral_outreach", **{**_DEFAULT_CTX, "referred_by": None})
+        assert "mutual connection" in body.lower()
+
+
 class TestFollowupTemplate:
     def test_body_non_empty(self):
         ctx = {**_DEFAULT_CTX, "product_observation": ""}
@@ -176,4 +200,5 @@ def test_valid_templates_set_unchanged():
     """Guard against accidental removals from the template registry."""
     assert "cold_outreach" in VALID_TEMPLATES
     assert "recruiter_outreach" in VALID_TEMPLATES
+    assert "referral_outreach" in VALID_TEMPLATES
     assert "followup" in VALID_TEMPLATES
