@@ -7,9 +7,9 @@
 #   postgres     — shared database
 #   crawler      — Scrapy job crawler (one-shot)
 #   aggregator   — FastAPI stream consumer + jobs REST API  (:8000)
-#   scraper      — Platform scraper (Naukri/LinkedIn/Internshala)  (:8001)
-#   contact      — Contact discovery pipeline  (:8002)
-#   email-gen    — Cold email generator  (:8003)
+#   scraper      — Platform scraper (Naukri/LinkedIn/Internshala)  (:8000)
+#   contact      — Contact discovery pipeline  (:8000)
+#   email-gen    — Cold email generator  (:8000)
 #   gateway      — API gateway + dashboard  (:8080)
 #   scheduler    — APScheduler pipeline automation (background)
 # ─────────────────────────────────────────────────────────────────────────────

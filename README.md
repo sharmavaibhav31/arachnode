@@ -49,7 +49,7 @@ The system uses an event-driven microservice architecture with Python across the
 ┌──────────▼──────────┐                           ┌──────▼────────▼────────┐
 │                     │       Jobs via POST       │                        │
 │  Platform Scraper   ├──────────────────────────►│   Aggregator Service   │
-│      (:8001)        │                           │        (:8000)         │
+│      (:8000)        │                           │        (:8000)         │
 └─────────────────────┘                           └──────┬─────────────────┘
                                                          │        ▲
 ┌─────────────────────┐       Jobs via Stream            │        │ Store
@@ -61,17 +61,17 @@ The system uses an event-driven microservice architecture with Python across the
 ┌─────────────────────┐                           ┌──────▼────────▼────────┐
 │                     │   Trigger via REST POST   │                        │
 │    Email Service    ◄───────────────────────────┤   Contact Discovery    │
-│       (:8003)       │                           │        (:8002)         │
+│       (:8000)       │                           │        (:8000)         │
 └─────────────────────┘                           └────────────────────────┘
 ```
 
 | Service | Language/Framework | Port | Responsibility |
 | --- | --- | --- | --- |
 | Crawler | Python / Scrapy | None | Navigates startup directories, extracts job listings, and publishes items to a Redis stream. |
-| Platform Scraper | Python / FastAPI / Playwright | 8001 | Handles on-demand JavaScript-heavy browser scraping for platforms like LinkedIn. |
+| Platform Scraper | Python / FastAPI / Playwright | 8000 | Handles on-demand JavaScript-heavy browser scraping for platforms like LinkedIn. |
 | Aggregator | Python / FastAPI / asyncpg | 8000 | Consumes the Redis stream, deduplicates entries, saves to Postgres, and serves job queries. |
-| Contact Discovery | Python / FastAPI / httpx | 8002 | Uses OSINT and GitHub APIs to uncover potential recruiter/manager emails per company. |
-| Email Generator | Python / FastAPI / Ollama | 8003 | Renders Jinja2 templates and interfaces with Ollama to draft contextual cold emails. |
+| Contact Discovery | Python / FastAPI / httpx | 8000 | Uses OSINT and GitHub APIs to uncover potential recruiter/manager emails per company. |
+| Email Generator | Python / FastAPI / Ollama | 8000 | Renders Jinja2 templates and interfaces with Ollama to draft contextual cold emails. |
 | Gateway | Python / FastAPI / Vanilla JS | 8080 | Proxies frontend requests, composes complex workflows, and serves the static dashboard. |
 | Scheduler | Python / APScheduler | None | Periodically triggers crawlers, contact discovery, and automated email drafting. |
 

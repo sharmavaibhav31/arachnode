@@ -25,9 +25,9 @@ def _url(env_var: str, default: str) -> str:
     return os.environ.get(env_var, default).rstrip("/")
 
 AGGREGATOR_URL = _url("AGGREGATOR_URL", "http://aggregator:8000")
-SCRAPER_URL    = _url("SCRAPER_URL",    "http://scraper:8001")
-CONTACT_URL    = _url("CONTACT_URL",    "http://contact:8002")
-EMAIL_GEN_URL  = _url("EMAIL_GEN_URL",  "http://email-gen:8003")
+SCRAPER_URL    = _url("SCRAPER_URL",    "http://scraper:8000")
+CONTACT_URL    = _url("CONTACT_URL",    "http://contact:8000")
+EMAIL_GEN_URL  = _url("EMAIL_GEN_URL",  "http://email-gen:8000")
 
 _TIMEOUT = httpx.Timeout(30.0, connect=5.0)
 
