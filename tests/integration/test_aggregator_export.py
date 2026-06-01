@@ -10,7 +10,7 @@ Run with:
 
 Requires: pip install pytest pytest-asyncio testcontainers asyncpg httpx
 """
-
+import asyncio
 import csv
 import io
 import pytest
