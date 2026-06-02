@@ -7,7 +7,7 @@ redis==5.0.4
 python-dotenv==1.0.1
 
 # For the generic parser and ATS utilities
-parsel==1.9.1      # already bundled with Scrapy, pinned explicitly for clarity
+parsel==1.11.0      # already bundled with Scrapy, pinned explicitly for clarity
 
 # Optional: uncomment if you want structured logging
 # python-json-logger==2.0.7
