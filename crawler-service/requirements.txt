@@ -3,7 +3,7 @@ scrapy-playwright==0.0.34
 Twisted==22.10.0
 playwright==1.43.0
 httpx==0.27.0
-redis==5.0.4
+redis==8.0.0
 python-dotenv==1.0.1
 
 # For the generic parser and ATS utilities
