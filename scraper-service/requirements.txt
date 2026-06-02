@@ -4,5 +4,5 @@ beautifulsoup4>=4.12.0
 lxml>=5.2.0
 fastapi>=0.111.0
 uvicorn[standard]>=0.29.0
-redis[asyncio]>=5.0.3
+redis[asyncio]>=8.0.0
 python-dotenv>=1.0.0
