@@ -158,7 +158,12 @@ services:
       SCRAPER_URL:    http://scraper:8000
       CONTACT_URL:    http://contact:8000
       EMAIL_GEN_URL:  http://email-gen:8000
-      SUMMARY_PATH:   /data/run_summary.json
+      SUMMARY_PATH:          /data/run_summary.json
+      NOTIFY_CONFIG_PATH:    /data/notify_config.json
+      SLACK_WEBHOOK_URL:     ${SLACK_WEBHOOK_URL:-}
+      DISCORD_WEBHOOK_URL:   ${DISCORD_WEBHOOK_URL:-}
+      NOTIFICATION_EMAIL:    ${NOTIFICATION_EMAIL:-}
+      NOTIFY_RATE_LIMIT_SECS: ${NOTIFY_RATE_LIMIT_SECS:-300}
     volumes:
       - scheduler_data:/data
     depends_on:
@@ -192,6 +197,12 @@ services:
       SCRAPER_WAIT_SECS:      ${SCRAPER_WAIT_SECS:-60}
       DISCOVER_DELAY_SECS:    ${DISCOVER_DELAY_SECS:-30}
       SUMMARY_PATH:           /data/run_summary.json
+      # Notification / Webhook config
+      SLACK_WEBHOOK_URL:      ${SLACK_WEBHOOK_URL:-}
+      DISCORD_WEBHOOK_URL:    ${DISCORD_WEBHOOK_URL:-}
+      NOTIFICATION_EMAIL:     ${NOTIFICATION_EMAIL:-}
+      NOTIFY_RATE_LIMIT_SECS: ${NOTIFY_RATE_LIMIT_SECS:-300}
+      NOTIFY_EVENTS:          ${NOTIFY_EVENTS:-}
     volumes:
       - scheduler_data:/data   # shared with gateway for GET /api/summary
     depends_on:

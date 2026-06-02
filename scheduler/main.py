@@ -32,6 +32,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 import tasks
 from logger import get_logger
+from notifier import notifier, configure as configure_notifications
 
 log = get_logger("scheduler.main")
 
@@ -79,10 +80,28 @@ def _run(task_fn, task_name: str) -> None:
         task_fn()
         _write_summary()
         log.info("Task complete", task=task_name)
+
+        # Notify on errors that occurred during the cycle
+        errors = tasks._summary.get("errors", [])
+        if errors:
+            notifier(
+                "scrape:error" if task_name == "scrape" else "cycle:complete",
+                f"{task_name.title()} Cycle — Errors Detected",
+                f"The {task_name} cycle completed with {len(errors)} error(s).",
+                fields={"errors": "; ".join(e.get("detail", "?")[:200] for e in errors[:5])},
+                severity="error",
+            )
     except Exception as exc:
         log.exception("Task raised an exception", task=task_name, error=str(exc))
         tasks._summary["errors"].append({"context": task_name, "detail": str(exc)})
         _write_summary()
+        notifier(
+            "scrape:error" if task_name == "scrape" else "cycle:complete",
+            f"{task_name.title()} Cycle Failed",
+            f"The {task_name} cycle raised an unhandled exception.",
+            fields={"error": str(exc)[:300]},
+            severity="error",
+        )
     finally:
         _task_lock.release()
 
@@ -226,6 +245,14 @@ def main() -> None:
         gateway_url=os.environ.get("GATEWAY_URL", "http://gateway:8080"),
         role=os.environ.get("JOBSEEKER_ROLE", "Backend Engineer"),
     )
+
+    # Load notification config
+    enabled_raw = os.environ.get("NOTIFY_EVENTS", "").strip()
+    if enabled_raw:
+        configure_notifications([e.strip() for e in enabled_raw.split(",") if e.strip()])
+        log.info("Notification events filtered", enabled=enabled_raw)
+    else:
+        configure_notifications(None)  # all enabled
 
     _maybe_manual_run()   # exits if MANUAL_TASK is set
 

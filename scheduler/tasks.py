@@ -24,6 +24,7 @@ from typing import Any
 import httpx
 
 from logger import get_logger
+from notifier import notifier, configure as configure_notifications
 
 log = get_logger("scheduler.tasks")
 
@@ -141,6 +142,23 @@ def run_scrape_cycle() -> None:
     _summary["jobs_discovered"] += delta
     log.info("Scrape cycle complete", jobs_before=jobs_before, jobs_after=jobs_after, delta=delta)
 
+    if delta > 0:
+        notifier(
+            "jobs:new",
+            "New Jobs Discovered",
+            f"Scrape cycle found {delta} new matching job(s).",
+            fields={"role": _role(), "stack": ", ".join(_stack()), "total_jobs": str(jobs_after)},
+            severity="success",
+        )
+    else:
+        notifier(
+            "cycle:complete",
+            "Scrape Cycle Complete",
+            "Scrape cycle finished — no new jobs found.",
+            fields={"total_jobs": str(jobs_after)},
+            severity="info",
+        )
+
 
 # ---------------------------------------------------------------------------
 # Task 2 — Discover cycle  (every DISCOVER_INTERVAL_HOURS)
@@ -188,6 +206,15 @@ def run_discover_cycle() -> None:
 
     _summary["contacts_found"] += found
     log.info("Discover cycle complete", triggered=found)
+
+    if found > 0:
+        notifier(
+            "contacts:found",
+            "New Contacts Discovered",
+            f"Discovered {found} new contact(s) across {len(jobs)} job(s).",
+            fields={"companies": ", ".join(j.get("company", "?") for j in jobs[:5])},
+            severity="success",
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -252,6 +279,22 @@ def run_draft_cycle() -> None:
 
     _summary["emails_drafted"] += drafted
     log.info("Draft cycle complete", drafted=drafted)
+
+    if drafted > 0:
+        notifier(
+            "emails:drafted",
+            "Cold Emails Drafted",
+            f"Pre-generated {drafted} cold outreach email draft(s).",
+            fields={"template": "cold_outreach"},
+            severity="success",
+        )
+    else:
+        notifier(
+            "cycle:complete",
+            "Draft Cycle Complete",
+            "Draft cycle finished — no new emails to generate.",
+            severity="info",
+        )
 
 
 
