@@ -1171,15 +1171,10 @@
         <button class="nav-tab" data-tab="settings">⚙ Settings</button>
       </div>
     </div>
-  <button id="btn-scrape">▶ Trigger Scrape</button>
-        <button id="btn-export-csv" style="padding:7px 14px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;" title="Export jobs as CSV">⬇ Export CSV</button>
-      </nav>
     <div class="nav-right">
       <button id="btn-theme" aria-label="Toggle theme">🌙 Dark</button>
-      <button id="btn-scrape">+ Scrape</button>
-    <div class="nav-actions">
+      <button class="btn-accent" id="btn-scrape">▶ Scrape</button>
       <button id="btn-shortcuts" title="Keyboard shortcuts">?</button>
-      <button id="btn-scrape">▶ Trigger Scrape</button>
     </div>
   </nav>
 
@@ -1778,7 +1773,7 @@
       <strong>Step 3</strong> — Use filters above to narrow down by role or stack
     </div>
   </div>
-  <button class="btn-accent" onclick="document.getElementById('btn-scrape').click()">▶ Trigger Scrape</button>
+  <button class="btn-accent" onclick="openScrapeModal()">▶ Trigger Scrape</button>
 </div>`;
           <div class="empty-icon">🔍</div>
           <p>No jobs found. Trigger a scrape to get started.</p>
@@ -2403,37 +2398,11 @@
     });
 
     const scrapeModal = document.getElementById('scrape-modal');
-    document.getElementById('btn-scrape').addEventListener('click',  () => scrapeModal.classList.add('open'));
-    document.getElementById('modal-close').addEventListener('click', () => scrapeModal.classList.remove('open'));
-    document.getElementById('modal-cancel').addEventListener('click',() => scrapeModal.classList.remove('open'));
-    scrapeModal.addEventListener('click', e => { if (e.target === scrapeModal) scrapeModal.classList.remove('open'); });
-    // CSV Export
-  document.getElementById('btn-export-csv').addEventListener('click', async () => {
-    const btn = document.getElementById('btn-export-csv');
-    btn.textContent = '⏳ Exporting...';
-    btn.disabled = true;
-    try {
-      const res = await fetch('/api/jobs/export/csv');
-      if (!res.ok) throw new Error('Export failed');
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `jobs_${new Date().toISOString().slice(0,10)}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      alert('Export failed: ' + e.message);
-    } finally {
-      btn.textContent = '⬇ Export CSV';
-      btn.disabled = false;
-    }
-  });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') scrapeModal.classList.remove('open'); });
     document.getElementById('btn-scrape').addEventListener('click', openScrapeModal);
     document.getElementById('modal-close').addEventListener('click', closeScrapeModal);
     document.getElementById('modal-cancel').addEventListener('click', closeScrapeModal);
     scrapeModal.addEventListener('click', e => { if (e.target === scrapeModal) closeScrapeModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeScrapeModal(); });
 
     // Shortcut reference
     const shortcutsModal = document.getElementById('shortcuts-modal');
