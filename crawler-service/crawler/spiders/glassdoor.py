@@ -1,13 +1,58 @@
+"""
+Glassdoor Job Search Playwright Spider
+
+=========================================
+🛠️ PROXY ROTATION CONFIGURATION GUIDE:
+=========================================
+This spider implements a round-robin `ProxyManager` framework to rotate exit nodes.
+
+1. Via Project Settings (`settings.py`):
+   Add a comma-separated string containing your target proxies:
+   PROXY_LIST = "http://username:password@proxy1.com:8000, http://username:password@proxy2.com:8000"
+
+2. Via Local Environment Variables:
+   Alternatively, you can export it to your runtime context environment:
+   export PROXY_LIST="http://proxy1.com:8000,http://proxy2.com:8000"
+
+3. Graceful Direct Fallback:
+   If `PROXY_LIST` is left empty or omitted entirely from configuration contexts, 
+   the engine will automatically log a message and default to a standard direct network 
+   connection without throwing exceptions or causing engine crashes.
+"""
+
 import logging
 import scrapy
+import itertools
 from scrapy.exceptions import CloseSpider
 from playwright_stealth import Stealth 
+from scrapy_playwright.page import PageMethod
+
+class ProxyManager:
+    def __init__(self, proxy_list=None):
+        """
+        Handles a list of proxies and cycles through them.
+        If no proxy list is provided, it handles fallback elegantly.
+        """
+        if proxy_list:
+            # Splits a comma-separated string from settings into a clean list
+            self.proxies = [p.strip() for p in proxy_list.split(",") if p.strip()]
+            self.cycle = itertools.cycle(self.proxies)
+        else:
+            self.proxies = []
+            self.cycle = None
+
+    def get_next_proxy(self):
+        if self.cycle:
+            return next(self.cycle)
+        return None
+
 
 class GlassdoorJobItem(scrapy.Item):
     company = scrapy.Field()
     role = scrapy.Field()
     url = scrapy.Field()
     description = scrapy.Field()
+
 
 class GlassdoorSpider(scrapy.Spider):
     name = "glassdoor"
@@ -22,7 +67,6 @@ class GlassdoorSpider(scrapy.Spider):
         },
         "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
         "DOWNLOAD_DELAY": 4.0,
-        # Force a genuine user header across standard middleware calls
         "USER_AGENT": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         "DEFAULT_REQUEST_HEADERS": {
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
@@ -32,6 +76,20 @@ class GlassdoorSpider(scrapy.Spider):
             "Sec-Ch-Ua-Platform": '"Windows"',
         }
     }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.proxy_manager = None
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        """
+        Scrapy's native hook to safely grab settings before the spider fully instantiates.
+        """
+        spider = super(GlassdoorSpider, cls).from_crawler(crawler, *args, **kwargs)
+        raw_proxies = crawler.settings.get("PROXY_LIST", "")
+        spider.proxy_manager = ProxyManager(raw_proxies)
+        return spider
 
     async def init_page(self, page, request):
         """
@@ -44,21 +102,20 @@ class GlassdoorSpider(scrapy.Spider):
 
     async def start(self):
         """
-        Updated async start method conforming to modern Scrapy design patterns.
+        Async start initialization loop applying our custom dynamic proxy logic.
         """
-        proxy_server = self.settings.get("PROXY_SERVER")
-        
         context_kwargs = {
             "ignore_https_errors": True,
             "viewport": {"width": 1280, "height": 720},
         }
         
-        if proxy_server:
-            context_kwargs["proxy"] = {"server": proxy_server}
-
-        # NOTE: For local debugging of Cloudflare issues, you can explicitly add 
-        # "playwright_launch_options": {"headless": False} inside the meta dict 
-        # if you want to inspect what the browser sees visually!
+        # Query next proxy node from rotation manager
+        current_proxy = self.proxy_manager.get_next_proxy() if self.proxy_manager else None
+        if current_proxy:
+            context_kwargs["proxy"] = {"server": current_proxy}
+            self.logger.info(f"🔄 Rotating proxy initialized for start view: {current_proxy}")
+        else:
+            self.logger.info("ℹ️ No proxies configured. Defaulting to direct connection.")
 
         for url in self.start_urls:
             yield scrapy.Request(
@@ -74,16 +131,15 @@ class GlassdoorSpider(scrapy.Spider):
     async def parse_job_list(self, response):
         page = response.meta.get("playwright_page")
         
-        # 1. Broaden safety string constraints
+        # Broad anti-bot protection fail-safes
         lowered_text = response.text.lower() if response.text else ""
         if "captcha" in response.url.lower() or response.status in [403, 429] or "cloudflare" in lowered_text or "checking your browser" in lowered_text:
             self.logger.error(f"❌ Spider blocked or CAPTCHA triggered at: {response.url}")
             raise CloseSpider(reason="Anti-bot protection triggered. Exiting gracefully.")
 
-        self.logger.info("📡 Successfully reached Glassdoor job index. Initiating explicit elements check...")
+        self.logger.info(f"📡 Successfully reached index: {response.url}")
 
         try:
-            # Let the browser settle for up to 15 seconds to finish page script calculations
             await page.wait_for_selector(".JobsList_jobsListContainer__9Z9O6", timeout=15000)
         except Exception:
             self.logger.warning("⚠️ Primary job card container did not appear in time. Attempting fallback wait...")
@@ -107,7 +163,7 @@ class GlassdoorSpider(scrapy.Spider):
             item['company'] = company_raw.strip() if company_raw else "Unknown Company"
             
             role_raw = card.css(".JobDetails_jobTitle__Rw_As::text").get() or \
-                        card.css("[data-test='job-title']::text").get()
+                       card.css("[data-test='job-title']::text").get()
             item['role'] = role_raw.strip() if role_raw else "Not Specified"
             
             relative_url = card.css("a.JobCard_jobTitle___79_a::attr(href)").get() or \
@@ -125,11 +181,14 @@ class GlassdoorSpider(scrapy.Spider):
             next_url = response.urljoin(next_page)
             self.logger.info(f"🚀 Moving to page transition -> Targeting: {next_url}")
             
-            proxy_server = self.settings.get("PROXY_SERVER")
             context_kwargs = {"ignore_https_errors": True}
-            if proxy_server:
-                context_kwargs["proxy"] = {"server": proxy_server}
-
+            
+            # Rotate to a fresh proxy node for the pagination jump
+            next_proxy = self.proxy_manager.get_next_proxy() if self.proxy_manager else None
+            if next_proxy:
+                context_kwargs["proxy"] = {"server": next_proxy}
+                self.logger.info(f"🔄 Rotating proxy mapping updated for next page view: {next_proxy}")
+            
             yield scrapy.Request(
                 next_url,
                 meta={
