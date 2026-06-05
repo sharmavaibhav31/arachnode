@@ -14,6 +14,8 @@ from uuid import UUID
 
 import asyncpg
 
+import crypt
+
 logger = logging.getLogger(__name__)
 
 _pool: Optional[asyncpg.Pool] = None

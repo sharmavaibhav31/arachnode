@@ -11,6 +11,8 @@ from uuid import UUID
 
 import asyncpg
 
+import crypt
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -96,6 +98,16 @@ async def _init_schema(pool: asyncpg.Pool) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _decrypt_jobs(rows):
+    """Decrypt url field in-place for every job in the iterable."""
+    out = []
+    for row in rows:
+        d = dict(row)
+        d["url"] = crypt.decrypt_url(d.get("url"))
+        out.append(d)
+    return out
+
+
 async def insert_job(
     pool: asyncpg.Pool,
     *,
@@ -118,9 +130,10 @@ async def insert_job(
         ON CONFLICT DO NOTHING
         RETURNING *
     """
+    encrypted_url = crypt.encrypt_url(url)
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
-            sql, company, role, source, url, stack, product, location, posted_at
+            sql, company, role, source, encrypted_url, stack, product, location, posted_at
         )
     return row
 
@@ -174,23 +187,29 @@ async def get_jobs(
 
     async with pool.acquire() as conn:
         rows = await conn.fetch(sql, *params)
-    return rows
+    return _decrypt_jobs(rows)
 
 
 async def get_job_by_id(pool: asyncpg.Pool, job_id: UUID) -> Optional[asyncpg.Record]:
     async with pool.acquire() as conn:
-        return await conn.fetchrow("SELECT * FROM jobs WHERE id = $1", job_id)
+        row = await conn.fetchrow("SELECT * FROM jobs WHERE id = $1", job_id)
+    if row:
+        return _decrypt_jobs([row])[0]
+    return None
 
 
 async def update_job_status(
     pool: asyncpg.Pool, job_id: UUID, status: str
 ) -> Optional[asyncpg.Record]:
     async with pool.acquire() as conn:
-        return await conn.fetchrow(
+        row = await conn.fetchrow(
             "UPDATE jobs SET status = $1 WHERE id = $2 RETURNING *",
             status,
             job_id,
         )
+    if row:
+        return _decrypt_jobs([row])[0]
+    return None
 
 
 async def get_stats(pool: asyncpg.Pool) -> Dict[str, Any]:
@@ -257,4 +276,4 @@ async def stream_jobs(
     async with pool.acquire() as conn:
         async with conn.transaction():
             async for record in conn.cursor(sql, *params, prefetch=1000):
-                yield record
+                yield _decrypt_jobs([record])[0]
