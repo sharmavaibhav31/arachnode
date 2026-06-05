@@ -28,6 +28,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 import db as database
 import consumer as stream_consumer
 from models import JobOut, StatusUpdate, StatsOut
+from matcher import rank_jobs
 
 logging.basicConfig(
     level=logging.INFO,
@@ -111,6 +112,7 @@ async def list_jobs(
     status: Optional[str] = Query(None, description="Filter by status: new | applied | ignored"),
     sort: str = Query("latest", description="Sort order: latest | oldest"),
     limit: int = Query(50, ge=1, le=500, description="Max results to return"),
+    resume: Optional[str] = Query(None, description="Paste resume text for semantic ranking"),
 ):
     if sort not in ("latest", "oldest"):
         raise HTTPException(status_code=400, detail="sort must be 'latest' or 'oldest'")
@@ -128,7 +130,11 @@ async def list_jobs(
         sort=sort,
         limit=limit,
     )
-    return [JobOut(**_record_to_dict(r)) for r in rows]
+    jobs = [_record_to_dict(r) for r in rows]
+    if resume:
+        jobs = rank_jobs(jobs, resume)
+    return [JobOut(**job) for job in jobs]
+    
 
 
 @app.get("/jobs/export", tags=["jobs"])
@@ -234,3 +240,4 @@ async def get_stats():
     pool = await database.get_pool()
     stats = await database.get_stats(pool)
     return StatsOut(**stats)
+
