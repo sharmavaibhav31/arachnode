@@ -49,6 +49,11 @@ YOUR_GITHUB_URL=https://github.com/yourusername
 # ── Ollama (optional — for AI-personalised emails) ──
 # Leave as-is if Ollama is running locally; delete if not using it
 OLLAMA_BASE_URL=http://host.docker.internal:11434
+
+# ── Encryption (optional — auto-generated if empty) ──
+# Used to encrypt scraped URLs at rest in the database.
+# Generate a strong key: python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+ARACHNODE_ENCRYPTION_KEY=
 ```
 
 > **`GMAIL_APP_PASSWORD`** — Go to [Google Account → Security → App Passwords](https://myaccount.google.com/apppasswords), create a new app password for "Mail", and paste the 16-char code.

@@ -18,6 +18,7 @@ x-common-env: &common-env
   REDIS_HOST: redis
   REDIS_PORT: "6379"
   DATABASE_URL: postgresql://${POSTGRES_USER:-jobuser}:${POSTGRES_PASSWORD:-jobpass}@postgres:5432/${POSTGRES_DB:-jobsdb}
+  ARACHNODE_ENCRYPTION_KEY: ${ARACHNODE_ENCRYPTION_KEY:-}
 
 services:
 

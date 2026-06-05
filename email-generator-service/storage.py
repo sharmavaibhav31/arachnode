@@ -12,6 +12,8 @@ from uuid import UUID
 
 import asyncpg
 
+import crypt
+
 logger = logging.getLogger(__name__)
 
 _pool: Optional[asyncpg.Pool] = None
@@ -168,7 +170,12 @@ async def mark_sent(pool: asyncpg.Pool, email_id: UUID) -> Optional[asyncpg.Reco
 
 async def get_job_by_id(pool: asyncpg.Pool, job_id: UUID) -> Optional[asyncpg.Record]:
     async with pool.acquire() as conn:
-        return await conn.fetchrow("SELECT * FROM jobs WHERE id = $1", job_id)
+        row = await conn.fetchrow("SELECT * FROM jobs WHERE id = $1", job_id)
+    if row:
+        d = dict(row)
+        d["url"] = crypt.decrypt_url(d.get("url"))
+        return d
+    return None
 
 
 async def get_contact_by_id(
