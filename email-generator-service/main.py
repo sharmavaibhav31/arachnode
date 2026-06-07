@@ -74,14 +74,11 @@ class GenerateRequest(BaseModel):
     github_url:      str = ""
     graduation_year: Optional[int] = None
     availability:    Optional[str] = None
-<<<<<<< HEAD
-    # these are optional — only filled in when a resume was uploaded first
+
+    referred_by:          Optional[str] = None
     candidate_skills:     List[str] = []
     candidate_role:       Optional[str] = None
     candidate_experience: Optional[int] = None
-=======
-    referred_by:     Optional[str] = None
->>>>>>> upstream/main
 
 
 class GenerateResponse(BaseModel):
@@ -191,12 +188,8 @@ async def generate(req: GenerateRequest):
             github_url=github_url,
             graduation_year=req.graduation_year,
             availability=req.availability,
-<<<<<<< HEAD
-            candidate_context=candidate_context,
-        
-=======
             referred_by=req.referred_by,
->>>>>>> upstream/main
+            candidate_context=candidate_context,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
@@ -280,7 +273,6 @@ async def send_email_endpoint(email_id: UUID):
     return EmailOut.from_record(row)
 
 
-<<<<<<< HEAD
 # ---------------------------------------------------------------------------
 # Resume Parser Endpoint
 # ---------------------------------------------------------------------------
@@ -309,7 +301,8 @@ async def upload_resume(file: UploadFile = File(...)):
             detail="Only PDF and TXT resume files are supported."
         )
 
-    # Read the file bytes
+    # Read the file bytes — limit to 5MB to handle large inputs safely
+    MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
     try:
         file_bytes = await file.read()
     except Exception as exc:
@@ -317,6 +310,11 @@ async def upload_resume(file: UploadFile = File(...)):
         raise HTTPException(
             status_code=500,
             detail="Could not read the uploaded file."
+        )
+    if len(file_bytes) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail="Resume file too large. Please upload a file smaller than 5MB."
         )
 
     # Parse the resume
@@ -342,7 +340,7 @@ async def upload_resume(file: UploadFile = File(...)):
         "recent_role": context.recent_role,
         "prompt_snippet": context.to_prompt_snippet(),
     }
-=======
+
 @app.post("/digest", tags=["emails"])
 async def send_digest(req: DigestRequest):
     """
@@ -414,4 +412,4 @@ async def send_digest(req: DigestRequest):
         "subject": subject,
         "job_count": len(req.jobs),
     }
->>>>>>> upstream/main
+
