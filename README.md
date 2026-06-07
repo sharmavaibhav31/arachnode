@@ -113,8 +113,8 @@ Note: If you do not install Ollama, the email generator gracefully degrades to s
 
 1. Clone the repository and navigate into the root directory.
 ```bash
-git clone https://github.com/vaibhav-sharma/jobCrawler.git
-cd jobCrawler
+git clone https://github.com/sharmavaibhav31/arachnode.git
+cd arachnode
 ```
 
 2. Copy the example environment file and fill in the required variables.

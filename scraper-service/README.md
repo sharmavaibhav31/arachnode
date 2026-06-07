@@ -50,6 +50,15 @@ docker build -t scraper-service .
 docker run -e REDIS_HOST=host.docker.internal -p 8001:8000 scraper-service
 ```
 
+---
+
+## Unstop (playwright)
+
+The repository includes a Playwright-based scraper for Unstop located at
+`scraper-service/scrapers/unstop.py`. See `UNSTOP.md` for run instructions,
+Docker considerations and parser maintenance notes.
+
+
 ### Local dev
 
 ```bash

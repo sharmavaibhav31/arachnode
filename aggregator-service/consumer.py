@@ -18,6 +18,7 @@ import logging
 import os
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
+from utils.date_utils import normalize_date
 
 import redis.asyncio as aioredis
 
@@ -48,23 +49,6 @@ def _dedup_key(company: str, role: str) -> str:
     raw = _normalise(company) + "|" + _normalise(role)
     md5 = hashlib.md5(raw.encode()).hexdigest()
     return f"dedup:agg:{md5}"
-
-
-def _parse_posted_at(value: Optional[str]) -> Optional[datetime]:
-    if not value:
-        return None
-    for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%d"):
-        try:
-            dt = datetime.strptime(value, fmt)
-            return dt.replace(tzinfo=timezone.utc)
-        except ValueError:
-            continue
-    try:
-        # ISO 8601 with timezone offset
-        return datetime.fromisoformat(value)
-    except ValueError:
-        logger.warning("Cannot parse posted_at=%r — storing NULL", value)
-        return None
 
 
 # ---------------------------------------------------------------------------
@@ -123,7 +107,7 @@ async def _process_message(
     except (json.JSONDecodeError, TypeError):
         stack = None
 
-    posted_at = _parse_posted_at(data.get("posted_at"))
+    posted_at = normalize_date(data.get("posted_at"))
 
     row = await database.insert_job(
         pool,

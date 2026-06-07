@@ -114,7 +114,7 @@ async def insert_job(
     """
     sql = """
         INSERT INTO jobs (company, role, source, url, stack, product, location, posted_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, COALESCE($8, NOW()))
         ON CONFLICT DO NOTHING
         RETURNING *
     """
