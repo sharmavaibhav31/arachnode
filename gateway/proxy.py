@@ -147,6 +147,7 @@ async def generate_email(
     job_id: UUID,
     contact_id: Optional[UUID],
     template: str,
+    referred_by: Optional[str] = None,
 ) -> Dict[str, Any]:
     client = get_client()
     payload: Dict[str, Any] = {
@@ -155,6 +156,8 @@ async def generate_email(
     }
     if contact_id:
         payload["contact_id"] = str(contact_id)
+    if referred_by:
+        payload["referred_by"] = referred_by
 
     resp = await client.post(
         f"{EMAIL_GEN_URL}/generate",

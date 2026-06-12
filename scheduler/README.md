@@ -175,3 +175,52 @@ SIGTERM received
 
 Docker sends `SIGTERM` on `docker compose stop` / `docker compose down`,
 so no data will be lost mid-cycle.
+
+---
+
+## Weekly Digest
+
+Every **Sunday at 09:00 UTC**, the scheduler runs a digest cycle that:
+
+1. Fetches all `status=new` jobs from the aggregator (up to 100, sorted newest-first).
+2. POSTs the raw list to the email-generator's `/digest` endpoint.
+3. The email-generator filters out jobs older than 7 days, groups the remainder
+   by source (Remotive, Naukri, LinkedIn, etc.), renders them into a digest email,
+   and sends it via Gmail SMTP.
+
+---
+
+### New environment variable
+
+| Variable | Default | Description |
+|---|---|---|
+| `DIGEST_RECIPIENT_EMAIL` | `GMAIL_ADDRESS` | Who receives the weekly digest. Defaults to self-send if not set. |
+
+---
+
+### Triggering the digest manually (without waiting for Sunday)
+
+```bash
+# Via docker-compose
+docker compose run --rm \
+  -e MANUAL_TASK=digest \
+  -e GATEWAY_URL=http://gateway:8080 \
+  scheduler
+
+# Via local Python (with venv activated)
+MANUAL_TASK=digest python main.py
+```
+
+This runs the digest cycle immediately and exits, identical to how
+`MANUAL_TASK=scrape` works for the scrape cycle.
+
+---
+
+### Updated schedule summary
+
+| Cycle | Trigger | Offset | What happens |
+|---|---|---|---|
+| **Scrape** | Every 8h (starts on startup) | — | Scrapes all platforms |
+| **Discover** | Every 24h | +4h from startup | Finds contacts for new jobs |
+| **Draft** | Every 24h | +8h from startup | Pre-generates cold email drafts |
+| **Digest** | Every Sunday at 09:00 UTC | — | Sends a weekly summary email |

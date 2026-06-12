@@ -114,7 +114,7 @@ async def insert_job(
     """
     sql = """
         INSERT INTO jobs (company, role, source, url, stack, product, location, posted_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, COALESCE($8, NOW()))
         ON CONFLICT DO NOTHING
         RETURNING *
     """
@@ -211,3 +211,50 @@ async def get_stats(pool: asyncpg.Pool) -> Dict[str, Any]:
         "by_source": {r["key"]: r["cnt"] for r in source_rows},
         "by_status": {r["key"]: r["cnt"] for r in status_rows},
     }
+
+
+async def stream_jobs(
+    pool: asyncpg.Pool,
+    *,
+    role: Optional[str] = None,
+    stack: Optional[List[str]] = None,
+    status: Optional[str] = None,
+    sort: str = "latest",
+):
+    """
+    Stream jobs with optional filters and sorting using server-side cursor.
+
+    Yields chunks of records. Use inside a transaction for cursor stability.
+    """
+    conditions: List[str] = []
+    params: List[Any] = []
+    idx = 1
+
+    if role:
+        conditions.append(f"role ILIKE ${idx}")
+        params.append(f"%{role}%")
+        idx += 1
+
+    if stack:
+        conditions.append(f"stack @> ${idx}::text[]")
+        params.append(stack)
+        idx += 1
+
+    if status:
+        conditions.append(f"status = ${idx}")
+        params.append(status)
+        idx += 1
+
+    where_clause = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+    order = "DESC NULLS LAST" if sort == "latest" else "ASC NULLS LAST"
+
+    sql = f"""
+        SELECT * FROM jobs
+        {where_clause}
+        ORDER BY posted_at {order}
+    """
+
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            async for record in conn.cursor(sql, *params, prefetch=1000):
+                yield record

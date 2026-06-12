@@ -25,6 +25,7 @@ from scrapers.naukri import NaukriScraper
 from scrapers.linkedin import LinkedInScraper
 from scrapers.internshala import IntershalaScraper
 from scrapers.google_dork import GoogleDorkScraper
+from scrapers.unstop import UnstopScraper
 
 logging.basicConfig(
     level=logging.INFO,
@@ -33,6 +34,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 PLATFORMS = ["naukri", "linkedin", "internshala", "google_dork"]
+PLATFORMS = ["naukri", "linkedin", "internshala", "unstop"]
 
 
 # ---------------------------------------------------------------------------
@@ -96,7 +98,7 @@ class DorkDiscoverResponse(BaseModel):
 
 async def _run_all_scrapers(role: str, stack: list[str]) -> None:
     """
-    Run all three scrapers concurrently then emit results to Redis.
+    Run all four scrapers concurrently then emit results to Redis.
     Designed to be launched as a BackgroundTask so /scrape returns immediately.
     """
     scrapers = [
@@ -104,6 +106,7 @@ async def _run_all_scrapers(role: str, stack: list[str]) -> None:
         LinkedInScraper(),
         IntershalaScraper(),
         GoogleDorkScraper(),
+        UnstopScraper(),
     ]
 
     # Run all scrapers in parallel; capture per-scraper exceptions.

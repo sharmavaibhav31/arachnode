@@ -18,6 +18,7 @@ import json
 import os
 import subprocess
 import time
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import httpx
@@ -251,3 +252,152 @@ def run_draft_cycle() -> None:
 
     _summary["emails_drafted"] += drafted
     log.info("Draft cycle complete", drafted=drafted)
+
+
+
+# ---------------------------------------------------------------------------
+# Task 4 — Weekly digest cycle  (every Sunday at 09:00 UTC)
+# ---------------------------------------------------------------------------
+
+def run_digest_cycle() -> None:
+    """
+    Fetch all new jobs from the past 7 days and POST them to the email-generator
+    service's /digest endpoint, which filters for freshness, groups by source,
+    renders the digest template, and sends the email via Gmail SMTP.
+    """
+
+    log.info("Digest cycle starting")
+
+    from datetime import datetime, timezone
+    today = datetime.now(timezone.utc)
+    week_start = today - timedelta(days=today.weekday())
+    week_end = week_start + timedelta(days=6)
+    week_label = f"{week_start.strftime('%d %b')}–{week_end.strftime('%d %b %Y')}"
+
+    try:
+        with httpx.Client(timeout=_HTTP_TIMEOUT) as c:
+            r = c.get(
+                f"{_gw()}/api/jobs",
+                params={
+                    "status": "new",
+                    "limit": 100,
+                    "sort": "latest",
+                },
+            )
+            r.raise_for_status()
+            jobs = r.json()
+
+    except Exception as exc:
+        _record_error("digest_fetch_jobs", str(exc))
+        log.error("Digest cycle aborted — could not fetch jobs", error=str(exc))
+        return
+
+    if not jobs:
+        log.info("Digest cycle: no new jobs found — skipping send")
+        return
+
+    log.info("Digest cycle: fetched %d new jobs", len(jobs))
+
+    try:
+        with httpx.Client(timeout=httpx.Timeout(90.0, connect=10.0)) as c:
+            r = c.post(
+                f"{_gw()}/api/digest",
+                json={
+                    "jobs": jobs,
+                    "week_label": week_label,
+                },
+            )
+            r.raise_for_status()
+            result = r.json()
+
+    except Exception as exc:
+        _record_error("digest_send", str(exc))
+        log.error("Digest cycle: email send failed", error=str(exc))
+        return
+
+    log.info(
+        "Digest cycle complete",
+        sent=result.get("sent"),
+        recipient=result.get("recipient"),
+        job_count=result.get("job_count"),
+        subject=result.get("subject"),
+    )
+
+    _summary["digest_sent"] = result.get("job_count", 0)
+
+
+# --------------------------------------------------------------------------
+# Follow-up scheduling cycle
+# --------------------------------------------------------------------------
+
+FOLLOWUP_DAYS = int(os.getenv("FOLLOWUP_DAYS", 7))
+
+
+def run_followup_cycle() -> None:
+    """
+    Checks for emails marked as 'sent' more than FOLLOWUP_DAYS days ago
+    that have not received a reply. For each, drafts a follow-up using
+    followup.j2 and surfaces it as a pending action in the dashboard.
+    Never sends automatically — always requires manual review.
+    """
+    log.info("Follow-up cycle started", followup_days=FOLLOWUP_DAYS)
+    reminded = 0
+
+    try:
+        with httpx.Client(timeout=httpx.Timeout(30.0, connect=10.0)) as c:
+            r = c.get(
+                f"{_gw()}/api/emails",
+                params={"status": "sent"},
+            )
+            r.raise_for_status()
+            emails = r.json()
+    except Exception as exc:
+        _record_error("followup_fetch", str(exc))
+        log.warning("Follow-up cycle: could not fetch sent emails", error=str(exc))
+        return
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=FOLLOWUP_DAYS)
+
+    for email in emails:
+        sent_at_raw = email.get("sent_at")
+        if not sent_at_raw:
+            log.warning("Follow-up cycle: skipping email with missing sent_at", email_id=email.get("id"))
+            continue
+
+        try:
+            sent_at = datetime.fromisoformat(sent_at_raw.replace("Z", "+00:00"))
+        except ValueError:
+            log.warning("Follow-up cycle: malformed sent_at value", email_id=email.get("id"), sent_at=sent_at_raw)
+            continue
+
+        if sent_at > cutoff:
+            continue
+
+        # Skip if follow-up already drafted — prevents duplicate drafts across scheduler runs
+        if email.get("followup_status") == "pending_followup":
+            log.info("Follow-up already pending, skipping", email_id=email.get("id"))
+            continue
+
+        eid = email.get("id")
+        jid = email.get("job_id")
+
+        log.info("Drafting follow-up", email_id=eid, job_id=jid, sent_at=sent_at_raw)
+
+        payload = {
+            "email_id": eid,
+            "job_id": jid,
+            "template": "followup",
+            "action": "pending_followup",
+        }
+
+        try:
+            with httpx.Client(timeout=httpx.Timeout(90.0, connect=10.0)) as c:
+                r = c.post(f"{_gw()}/api/generate", json=payload)
+                r.raise_for_status()
+                reminded += 1
+                log.info("Follow-up draft created", email_id=eid, job_id=jid)
+        except Exception as exc:
+            _record_error(f"followup_{eid}", str(exc))
+
+    _summary["followups_drafted"] = _summary.get("followups_drafted", 0) + reminded
+    log.info("Follow-up cycle complete", reminded=reminded)

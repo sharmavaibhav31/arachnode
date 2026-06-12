@@ -127,6 +127,11 @@ async def proxy_jobs(request: Request):
     return await proxy.proxy_request(request, f"{proxy.AGGREGATOR_URL}/jobs")
 
 
+@app.api_route("/api/jobs/export", methods=["GET"], tags=["proxy"])
+async def proxy_jobs_export(request: Request):
+    return await proxy.proxy_request(request, f"{proxy.AGGREGATOR_URL}/jobs/export")
+
+
 @app.api_route("/api/jobs/{path:path}", methods=["GET", "POST", "PATCH", "DELETE"], tags=["proxy"])
 async def proxy_jobs_path(path: str, request: Request):
     return await proxy.proxy_request(request, f"{proxy.AGGREGATOR_URL}/jobs/{path}")
@@ -184,13 +189,19 @@ async def proxy_generate(request: Request):
     return await proxy.proxy_request(request, f"{proxy.EMAIL_GEN_URL}/generate")
 
 
+@app.api_route("/api/digest", methods=["POST"], tags=["proxy"])
+async def proxy_digest(request: Request):
+    return await proxy.proxy_request(request, f"{proxy.EMAIL_GEN_URL}/digest")
+
+
 # ---------------------------------------------------------------------------
 # Composite endpoint — POST /api/workflow/apply
 # ---------------------------------------------------------------------------
 
 class WorkflowRequest(BaseModel):
     job_id:   UUID
-    template: Literal["cold_outreach", "recruiter_outreach", "followup"] = "cold_outreach"
+    template: Literal["cold_outreach", "recruiter_outreach", "referral_outreach", "followup"] = "cold_outreach"
+    referred_by: Optional[str] = None
     roles:    list[str] = ["Engineering Manager", "Recruiter"]
 
 
@@ -237,13 +248,15 @@ async def workflow_apply(body: WorkflowRequest):
             job_id=body.job_id,
             contact_id=contact_id,
             template=body.template,
+            referred_by=body.referred_by,
         )
     except Exception as exc:
         logger.warning("Email generation failed: %s", exc)
         email = None
 
-    return {
-        "job":      job,
-        "contacts": contacts,
+   return {
+        "job":         job,
+        "contacts":    contacts,
         "draft_email": email,
     }
+

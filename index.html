@@ -1,12 +1,12 @@
-<!-- 
-  JobHunter Landing Page
+<!--
+  Arachnode Landing Page
   Deploy: GitHub Pages, Vercel, Netlify (static, no build step)
   Dashboard detection: polls localhost:8080/api/health every 10s
   To update GitHub link: search GITHUB_URL constant
   To update your name: search AUTHOR_NAME constant
 -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,8 @@
   <meta name="description" content="Arachnode - a self-hosted, microservice-based job discovery and application tracking system for engineering placements.">
   <style>
     /* === CORE VARIABLES & PREREQUISITES === */
-    :root {
+    :root,
+    [data-theme="dark"] {
       --bg: #0a0a0a;
       --surface: #111111;
       --surface-elevated: #1a1a1a;
@@ -31,20 +32,51 @@
       --red: #ef4444;
       --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       --font-code: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      --nav-bg: rgba(10, 10, 10, 0.85);
+      --particle-rgb: 108, 71, 255;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    [data-theme="light"] {
+      --bg: #f8f7ff;
+      --surface: #ffffff;
+      --surface-elevated: #f0eeff;
+      --border: rgba(0, 0, 0, 0.08);
+      --text-primary: #0f0f1a;
+      --text-secondary: #5a5a7a;
+      --text-muted: #9090b0;
+      --accent-purple: #5a3ce0;
+      --accent-purple-dim: rgba(90, 60, 224, 0.08);
+      --green: #16a34a;
+      --green-dim: rgba(22, 163, 74, 0.08);
+      --amber: #d97706;
+      --amber-dim: rgba(217, 119, 6, 0.08);
+      --red: #dc2626;
+      --nav-bg: rgba(248, 247, 255, 0.9);
+      --particle-rgb: 90, 60, 224;
+    }
+
+    /* === SMOOTH THEME TRANSITIONS === */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      transition:
+        background-color 0.35s ease,
+        color 0.35s ease,
+        border-color 0.35s ease;
+    }
+
     html { scroll-behavior: smooth; }
+
     body {
       background-color: var(--bg);
       color: var(--text-primary);
       font-family: var(--font-body);
       font-size: 16px;
       line-height: 1.7;
-      overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
     }
-    
+
     body::before {
       content: "";
       position: fixed;
@@ -55,15 +87,50 @@
       background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23noise)"/></svg>');
     }
 
-    a { color: inherit; text-decoration: none; transition: color 150ms ease; }
+    a { color: inherit; text-decoration: none; }
     a:hover { color: var(--text-primary); }
     ul { list-style: none; }
     button { font-family: inherit; cursor: pointer; border: none; background: none; }
-    
     h1, h2, h3, h4 { font-weight: 500; line-height: 1.2; }
-    
-    .container { max-width: 1024px; margin: 0 auto; padding: 0 24px; }
-    
+    .container { width: 100%; max-width: 1024px; margin: 0 auto; padding: 0 24px; }
+
+    /* === PARTICLE CANVAS === */
+    #arachnode-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Everything above canvas */
+    nav, section, footer, #status-bar {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* === THEME TOGGLE BUTTON === */
+    #btn-theme {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface-elevated);
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    #btn-theme:hover {
+      border-color: var(--accent-purple);
+      color: var(--accent-purple);
+      background: var(--accent-purple-dim);
+    }
+
     .pill {
       display: inline-flex; align-items: center; justify-content: center;
       padding: 4px 12px; border-radius: 6px; font-size: 13px;
@@ -71,20 +138,24 @@
       color: var(--text-secondary);
     }
     .pill.purple { background: var(--accent-purple-dim); border-color: var(--accent-purple); color: var(--accent-purple); }
-    .pill.amber { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
-    .pill.green { background: var(--green-dim); border-color: var(--green); color: var(--green); }
-    
+    .pill.amber  { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
+    .pill.green  { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+
     .btn {
       display: inline-flex; align-items: center; justify-content: center;
       padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 500;
-      transition: all 150ms ease; text-decoration: none;
+      text-decoration: none;
     }
     .btn-primary { background: var(--accent-purple); color: #fff; }
     .btn-primary:hover { background: #5a3ce0; transform: translateY(-1px); }
     .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-primary); }
     .btn-outline:hover { background: var(--surface-elevated); }
-    
-    code { font-family: var(--font-code); background: var(--surface-elevated); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+
+    code {
+      font-family: var(--font-code);
+      background: var(--surface-elevated);
+      padding: 2px 6px; border-radius: 4px; font-size: 0.9em;
+    }
 
     /* Scrollbar */
     ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -105,26 +176,28 @@
     /* === NAVBAR === */
     nav {
       position: fixed; top: 0; left: 0; right: 0;
-      backdrop-filter: blur(12px); background: rgba(10, 10, 10, 0.8);
+      backdrop-filter: blur(12px);
+      background: var(--nav-bg);
       border-bottom: 1px solid var(--border);
       z-index: 1000; height: 60px; display: flex; align-items: center;
     }
     .nav-inner { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-    .brand { display: flex; align-items: center; gap: 12px; font-weight: 500; color: #fff; }
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 0; font-weight: 500; color: var(--text-primary); }
     .nav-links { display: flex; align-items: center; gap: 24px; font-size: 14px; color: var(--text-secondary); }
-    .nav-ctas { display: flex; align-items: center; gap: 16px; }
-    
+    .nav-ctas { display: flex; align-items: center; gap: 10px; min-width: 0; }
+
     #dashboard-btn {
       padding: 6px 16px; border-radius: 6px; font-size: 14px;
       background: var(--surface-elevated); color: var(--text-muted);
       border: 1px solid var(--border); display: flex; align-items: center; gap: 8px;
       cursor: not-allowed; position: relative;
+      white-space: nowrap;
     }
     #dashboard-btn.active { background: var(--accent-purple); color: #fff; border-color: var(--accent-purple); cursor: pointer; }
     #dashboard-btn.active:hover { background: #5a3ce0; }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); }
     #dashboard-btn.active .status-dot { background: var(--green); margin-right: 4px; box-shadow: 0 0 0 rgba(34, 197, 94, 0.4); animation: pulse 2s infinite; }
-    
+
     #dashboard-btn[disabled]:hover::after {
       content: "Start your services first: docker-compose up -d";
       position: absolute; top: calc(100% + 8px); right: 0; width: 240px;
@@ -137,8 +210,8 @@
     .mobile-menu-btn svg { width: 24px; height: 24px; }
 
     @keyframes pulse {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
-      70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+      0%   { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+      70%  { transform: scale(1);    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
       100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
     }
 
@@ -158,23 +231,31 @@
     }
     .hero-glow {
       position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%);
-      width: 600px; height: 600px; background: radial-gradient(circle, rgba(108,71,255,0.08) 0%, rgba(0,0,0,0) 70%);
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(108,71,255,0.08) 0%, rgba(0,0,0,0) 70%);
       border-radius: 50%; pointer-events: none; z-index: -1;
     }
-    .hero .pill { font-family: var(--font-code); margin-bottom: 32px; margin-top: 40px;}
+    .hero .pill { max-width: 100%; flex-wrap: wrap; font-family: var(--font-code); margin-bottom: 32px; margin-top: 40px; }
     .hero h1 { font-size: clamp(36px, 5vw, 52px); max-width: 720px; margin-bottom: 24px; letter-spacing: -0.02em; }
     .hero p { font-size: 18px; color: var(--text-secondary); max-width: 540px; margin: 0 auto 40px; }
-    .hero-ctas { display: flex; gap: 16px; justify-content: center; margin-bottom: 48px; flex-wrap: wrap;}
-    
-    .tech-pills { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 64px;}
-    .tech-pill { padding: 6px 16px; border-radius: 50px; border: 1px solid var(--border); background: var(--surface); font-size: 13px; color: var(--text-muted); }
+    .hero-ctas { display: flex; gap: 16px; justify-content: center; margin-bottom: 48px; flex-wrap: wrap; }
+
+    .tech-pills { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 64px; }
+    .tech-pill {
+      padding: 6px 16px; border-radius: 50px; border: 1px solid var(--border);
+      background: var(--surface); font-size: 13px; color: var(--text-muted);
+    }
 
     .scroll-indicator {
       position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
       animation: bounce 2s infinite; color: var(--text-muted);
     }
     .scroll-indicator svg { width: 24px; height: 24px; }
-    @keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: translateY(0) translateX(-50%); } 40% { transform: translateY(-10px) translateX(-50%); } 60% { transform: translateY(-5px) translateX(-50%); } }
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateY(0) translateX(-50%); }
+      40% { transform: translateY(-10px) translateX(-50%); }
+      60% { transform: translateY(-5px) translateX(-50%); }
+    }
 
     /* === SECTIONS GENERAL === */
     section { padding: 100px 0; border-top: 1px solid var(--border); }
@@ -186,7 +267,7 @@
     .steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
     .step-card {
       background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
-      padding: 32px; position: relative; overflow: hidden; transition: border-color 150ms ease;
+      padding: 32px; position: relative; overflow: hidden;
     }
     .step-card:hover { border-color: rgba(255,255,255,0.2); background: var(--surface-elevated); }
     .step-number {
@@ -194,7 +275,11 @@
       font-size: 120px; font-weight: 700; color: var(--accent-purple); opacity: 0.05;
       line-height: 1; pointer-events: none;
     }
-    .step-icon { width: 40px; height: 40px; border-radius: 8px; background: var(--surface-elevated); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; margin-bottom: 24px; color: var(--accent-purple); }
+    .step-icon {
+      width: 40px; height: 40px; border-radius: 8px; background: var(--surface-elevated);
+      border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
+      margin-bottom: 24px; color: var(--accent-purple);
+    }
     .step-icon svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .step-card h3 { font-size: 20px; margin-bottom: 12px; }
     .step-card p { color: var(--text-secondary); font-size: 15px; }
@@ -210,63 +295,76 @@
 
     /* === INSTALLATION === */
     .tabs { margin-bottom: 24px; display: flex; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
-    .tab-btn { padding: 12px 24px; color: var(--text-muted); font-size: 15px; font-weight: 500; border-bottom: 2px solid transparent; transition: all 150ms ease; white-space: nowrap; }
+    .tab-btn { padding: 12px 24px; color: var(--text-muted); font-size: 15px; font-weight: 500; border-bottom: 2px solid transparent; white-space: nowrap; }
     .tab-btn:hover { color: var(--text-secondary); }
     .tab-btn.active { color: var(--accent-purple); border-bottom-color: var(--accent-purple); }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    .terminal { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 24px; }
+    .terminal { max-width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 24px; }
     .terminal-header { background: var(--surface-elevated); padding: 12px 16px; display: flex; align-items: center; border-bottom: 1px solid var(--border); }
     .dots { display: flex; gap: 8px; }
     .dot { width: 10px; height: 10px; border-radius: 50%; }
     .dot:nth-child(1) { background: var(--red); }
     .dot:nth-child(2) { background: var(--amber); }
     .dot:nth-child(3) { background: var(--green); }
-    
+
     .terminal-step { position: relative; padding: 20px; border-bottom: 1px solid var(--border); }
     .terminal-step:last-child { border-bottom: none; }
     .terminal-step-label { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
-    .terminal-grid { display: grid; gap: 4px; }
-    .terminal-line { font-family: var(--font-code); font-size: 14px; color: var(--text-primary); }
+    .terminal-grid { display: grid; gap: 4px; min-width: 0; }
+    .terminal-line {
+      min-width: 0;
+      font-family: var(--font-code);
+      font-size: 14px;
+      color: var(--text-primary);
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
     .terminal-comment { color: var(--text-muted); }
-    .copy-btn { position: absolute; top: 16px; right: 16px; background: var(--surface-elevated); border: 1px solid var(--border); color: var(--text-secondary); padding: 4px 8px; border-radius: 4px; font-size: 12px; opacity: 0; transition: opacity 150ms ease; }
+    .copy-btn {
+      position: absolute; top: 16px; right: 16px; background: var(--surface-elevated);
+      border: 1px solid var(--border); color: var(--text-secondary); padding: 4px 8px;
+      border-radius: 4px; font-size: 12px; opacity: 0;
+    }
     .terminal-step:hover .copy-btn { opacity: 1; }
     .copy-btn:hover { color: var(--text-primary); background: var(--border); }
-    
-    .prereq-row { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;}
+
+    .prereq-row { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
     .installation-note { font-size: 14px; color: var(--text-secondary); }
 
-    .config-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+    .table-scroll {
+      max-width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .config-table { width: 100%; min-width: 560px; border-collapse: collapse; text-align: left; font-size: 14px; }
     .config-table th, .config-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); }
     .config-table th { color: var(--text-muted); font-weight: 500; }
     .config-table td:first-child code { background: none; padding: 0; color: var(--accent-purple); }
 
     /* === ARCHITECTURE === */
-    .arch-diagram-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .arch-diagram-wrapper { width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .arch-diagram {
       min-width: 760px; margin: 40px auto; padding: 40px; background: var(--surface);
       border: 1px solid var(--border); border-radius: 8px;
     }
-    
-    /* Using Flexbox for CSS diagram */
     .diagram-flow { display: flex; align-items: center; justify-content: space-between; position: relative; }
     .node {
       background: var(--surface-elevated); border: 1px solid var(--accent-purple);
       padding: 16px 24px; border-radius: 8px; text-align: center; font-size: 14px;
-      z-index: 2; position: relative; width: 140px; font-weight: 500;
+      z-index: 2; position: relative; width: 140px; font-weight: 500; color: var(--text-primary);
     }
     .node.db { border-color: var(--green); }
     .node.queue { border-color: var(--amber); }
-    
     .arrow { height: 2px; flex-grow: 1; background: var(--border); position: relative; z-index: 1; min-width: 30px; }
     .arrow::after { content: ''; position: absolute; right: -2px; top: -4px; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 8px solid var(--border); }
-    
     .diagram-column { display: flex; flex-direction: column; gap: 40px; }
 
-    .services-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; margin-top: 40px; margin-bottom: 32px; }
+    .services-table { width: 100%; min-width: 680px; border-collapse: collapse; text-align: left; font-size: 14px; margin-top: 40px; margin-bottom: 32px; }
     .services-table th, .services-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); }
     .services-table th { color: var(--text-muted); font-weight: 500; }
+    .services-table td { color: var(--text-primary); }
 
     .callout { background: rgba(108,71,255,0.05); border: 1px solid var(--accent-purple-dim); padding: 24px; border-radius: 8px; margin-top: 24px; }
     .callout p { color: var(--text-secondary); font-size: 15px; margin-bottom: 8px; }
@@ -275,15 +373,15 @@
     .contribute-section { background: var(--surface); }
     .contrib-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 64px; }
     .contrib-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 32px; }
-    .contrib-card h3 { font-size: 20px; margin-bottom: 16px; }
+    .contrib-card h3 { font-size: 20px; margin-bottom: 16px; color: var(--text-primary); }
     .contrib-card p { color: var(--text-secondary); font-size: 15px; margin-bottom: 24px; }
-    .contrib-card.c-amber { border-top: 2px solid var(--amber); }
+    .contrib-card.c-amber  { border-top: 2px solid var(--amber); }
     .contrib-card.c-purple { border-top: 2px solid var(--accent-purple); }
-    .contrib-card.c-green { border-top: 2px solid var(--green); }
-    
+    .contrib-card.c-green  { border-top: 2px solid var(--green); }
+
     .contrib-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
     .contrib-tags span { font-size: 12px; padding: 4px 8px; background: var(--surface-elevated); border-radius: 4px; color: var(--text-muted); }
-    
+
     .cta-link { color: var(--text-primary); font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; }
     .cta-link:hover { color: var(--accent-purple); }
 
@@ -299,12 +397,32 @@
     footer { border-top: 1px solid var(--border); padding: 80px 0 40px; background: var(--bg); }
     .footer-cols { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 48px; margin-bottom: 64px; }
     .footer-col h4 { margin-bottom: 24px; font-size: 16px; color: var(--text-primary); }
-    .footer-col p { color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;}
+    .footer-col p { color: var(--text-secondary); font-size: 14px; margin-bottom: 16px; }
     .footer-links { display: flex; flex-direction: column; gap: 12px; }
     .footer-links a { color: var(--text-secondary); font-size: 14px; }
     .footer-links a:hover { color: var(--text-primary); }
-    
     .footer-bottom { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 24px; font-size: 14px; color: var(--text-muted); }
+
+    #backToTop {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 10;
+      display: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    #backToTop:hover {
+      border-color: var(--accent-purple);
+      color: var(--accent-purple);
+    }
 
     /* === RESPONSIVE === */
     @media (max-width: 1024px) {
@@ -316,16 +434,36 @@
       .stats-row span { display: block; margin: 8px 0; }
     }
     @media (max-width: 640px) {
+      .container { padding: 0 16px; }
       .nav-links { display: none; }
       .nav-links.active { display: flex; flex-direction: column; position: absolute; top: 60px; left: 0; right: 0; background: var(--bg); padding: 24px; border-bottom: 1px solid var(--border); }
       .mobile-menu-btn { display: block; }
-      .hero { padding-top: 100px; }
-      .hero h1 { font-size: 36px; }
+      #dashboard-btn { display: none; }
+      .hero { min-height: auto; padding: 100px 16px 72px; }
+      .hero-glow { width: 100%; max-width: 420px; height: 420px; }
+      .hero h1 { font-size: 34px; }
+      .hero-ctas .btn { width: 100%; max-width: 280px; }
+      .features-col h3 { flex-wrap: wrap; gap: 8px; }
+      .terminal-step { padding: 18px 72px 18px 16px; }
+      .copy-btn { opacity: 1; }
+      .arch-diagram { min-width: 680px; padding: 28px; }
+      #backToTop { right: 14px; bottom: 14px; }
       .footer-bottom { flex-direction: column; gap: 16px; text-align: center; }
+      #btn-theme span.theme-label { display: none; }
+    }
+
+    @media (max-width: 420px) {
+      .brand .pill { display: none; }
+      .hero h1 { font-size: 32px; }
+      .tab-btn { padding: 12px 16px; }
+      .config-table { min-width: 500px; }
     }
   </style>
 </head>
 <body>
+
+  <!-- PARTICLE CANVAS -->
+  <canvas id="arachnode-bg"></canvas>
 
   <!-- NAVBAR -->
   <nav>
@@ -340,6 +478,10 @@
         <li><a href="#contributor">Contributors</a></li>
       </ul>
       <div class="nav-ctas">
+        <button id="btn-theme" aria-label="Toggle theme">
+          <span id="theme-icon">☀️</span>
+          <span class="theme-label" id="theme-label">Light</span>
+        </button>
         <a id="dashboard-btn" title="Dashboard">
           <div class="status-dot"></div> Open Dashboard
         </a>
@@ -352,7 +494,7 @@
 
   <!-- DASHBOARD STATUS BAR -->
   <div id="status-bar" class="animate-on-scroll">
-    &#10003; Services detected — your JobHunter dashboard is running
+    &#10003; Services detected — your Arachnode dashboard is running
     <a href="#" id="status-bar-link">Open Dashboard &rarr;</a>
   </div>
 
@@ -425,82 +567,49 @@
       <div class="features-split">
         <div class="features-col animate-on-scroll" style="transition-delay: 0ms">
           <h3><span class="pill purple" style="margin-right: 12px;">For job seekers</span> Use it</h3>
-          
           <div class="feature-row">
             <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-            <div class="feature-content">
-              <h4>Multi-platform crawling</h4>
-              <p>Wellfound, YC, Remotive, Naukri, LinkedIn, Internshala — one command.</p>
-            </div>
+            <div class="feature-content"><h4>Multi-platform crawling</h4><p>Wellfound, YC, Remotive, Naukri, LinkedIn, Internshala — one command.</p></div>
           </div>
           <div class="feature-row">
             <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-            <div class="feature-content">
-              <h4>Smart deduplication</h4>
-              <p>Redis-backed dedup means you never see the same job twice across sources.</p>
-            </div>
+            <div class="feature-content"><h4>Smart deduplication</h4><p>Redis-backed dedup means you never see the same job twice across sources.</p></div>
           </div>
           <div class="feature-row">
             <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-            <div class="feature-content">
-              <h4>Contact discovery</h4>
-              <p>OSINT pipeline finds hiring manager emails from public GitHub and web data.</p>
-            </div>
+            <div class="feature-content"><h4>Contact discovery</h4><p>OSINT pipeline finds hiring manager emails from public GitHub and web data.</p></div>
           </div>
           <div class="feature-row">
             <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-            <div class="feature-content">
-              <h4>AI-personalized emails</h4>
-              <p>Ollama runs locally; no OpenAI key needed, no usage costs.</p>
-            </div>
+            <div class="feature-content"><h4>AI-personalized emails</h4><p>Ollama runs locally; no OpenAI key needed, no usage costs.</p></div>
           </div>
           <div class="feature-row">
             <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-            <div class="feature-content">
-              <h4>One-click Docker setup</h4>
-              <p>docker-compose up. That's it. Everything starts in the right order.</p>
-            </div>
+            <div class="feature-content"><h4>One-click Docker setup</h4><p>docker-compose up. That's it. Everything starts in the right order.</p></div>
           </div>
-
         </div>
 
         <div class="features-col animate-on-scroll" style="transition-delay: 80ms">
           <h3><span class="pill amber" style="margin-right: 12px;">For contributors</span> Build it</h3>
-          
           <div class="feature-row">
             <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-            <div class="feature-content">
-              <h4>Microservice architecture</h4>
-              <p>Seven independent services. Pick one, understand it fully, improve it.</p>
-            </div>
+            <div class="feature-content"><h4>Microservice architecture</h4><p>Seven independent services. Pick one, understand it fully, improve it.</p></div>
           </div>
           <div class="feature-row">
             <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-            <div class="feature-content">
-              <h4>AI-assisted development</h4>
-              <p>Agent instruction files for Claude Code, Cursor, Blackbox, and AntiGravity are already in the repo. The context is written for you.</p>
-            </div>
+            <div class="feature-content"><h4>AI-assisted development</h4><p>Agent instruction files for Claude Code, Cursor, Blackbox, and AntiGravity are already in the repo. The context is written for you.</p></div>
           </div>
           <div class="feature-row">
             <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-            <div class="feature-content">
-              <h4>Event-driven core</h4>
-              <p>Redis Streams connect every service. Add a new data source without touching existing code.</p>
-            </div>
+            <div class="feature-content"><h4>Event-driven core</h4><p>Redis Streams connect every service. Add a new data source without touching existing code.</p></div>
           </div>
           <div class="feature-row">
             <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-            <div class="feature-content">
-              <h4>Full test suite</h4>
-              <p>Four-layer testing: unit, integration, contract, and E2E. testcontainers handles infrastructure.</p>
-            </div>
+            <div class="feature-content"><h4>Full test suite</h4><p>Four-layer testing: unit, integration, contract, and E2E. testcontainers handles infrastructure.</p></div>
           </div>
           <div class="feature-row">
             <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-            <div class="feature-content">
-              <h4>Extensible by design</h4>
-              <p>Adding a new job platform is three files and a class. The pipeline picks it up automatically.</p>
-            </div>
+            <div class="feature-content"><h4>Extensible by design</h4><p>Adding a new job platform is three files and a class. The pipeline picks it up automatically.</p></div>
           </div>
         </div>
       </div>
@@ -514,7 +623,7 @@
         <h2>Up and running in 5 minutes</h2>
         <p>If you have Docker installed, this is the entire process.</p>
       </div>
-      
+
       <div class="tabs">
         <button class="tab-btn active" data-target="tab-quick">Quick start</button>
         <button class="tab-btn" data-target="tab-manual">Manual setup</button>
@@ -523,19 +632,15 @@
 
       <div class="tab-content active" id="tab-quick">
         <div class="terminal">
-          <div class="terminal-header">
-            <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
-          </div>
-          
+          <div class="terminal-header"><div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>
           <div class="terminal-step">
             <div class="terminal-step-label">Step 1 — Clone</div>
             <div class="terminal-grid" id="code-step-1">
               <div class="terminal-line">git clone https://github.com/sharmavaibhav31/arachnode.git</div>
-              <div class="terminal-line">cd jobhunter</div>
+              <div class="terminal-line">cd arachnode</div>
             </div>
-            <button class="copy-btn" data-text="git clone https://github.com/sharmavaibhav31/arachnode.git\ncd jobhunter">Copy</button>
+            <button class="copy-btn" data-text="git clone https://github.com/sharmavaibhav31/arachnode.git\ncd arachnode">Copy</button>
           </div>
-          
           <div class="terminal-step">
             <div class="terminal-step-label">Step 2 — Configure</div>
             <div class="terminal-grid" id="code-step-2">
@@ -545,7 +650,6 @@
             </div>
             <button class="copy-btn" data-text="cp .env.example .env">Copy</button>
           </div>
-          
           <div class="terminal-step">
             <div class="terminal-step-label">Step 3 — Run</div>
             <div class="terminal-grid" id="code-step-3">
@@ -553,7 +657,6 @@
             </div>
             <button class="copy-btn" data-text="docker-compose up -d">Copy</button>
           </div>
-          
           <div class="terminal-step">
             <div class="terminal-step-label">Step 4 — Open</div>
             <div class="terminal-grid" id="code-step-4">
@@ -562,7 +665,6 @@
             </div>
           </div>
         </div>
-        
         <div class="prereq-row">
           <div class="pill">Docker 24+</div>
           <div class="pill">docker-compose v2</div>
@@ -574,9 +676,7 @@
 
       <div class="tab-content" id="tab-manual">
         <div class="terminal">
-          <div class="terminal-header">
-            <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
-          </div>
+          <div class="terminal-header"><div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>
           <div class="terminal-step" style="padding: 24px;">
             <div class="terminal-grid">
               <div class="terminal-line">python -m venv venv</div>
@@ -595,48 +695,23 @@
 
       <div class="tab-content" id="tab-config">
         <div class="terminal" style="padding: 0;">
-          <div style="overflow-x: auto;">
+          <div class="table-scroll">
             <table class="config-table">
               <thead>
-                <tr>
-                  <th>Variable</th>
-                  <th>Required</th>
-                  <th>Description</th>
-                </tr>
+                <tr><th>Variable</th><th>Required</th><th>Description</th></tr>
               </thead>
               <tbody>
-                <tr>
-                  <td><code>JOBSEEKER_ROLE</code></td>
-                  <td>Yes</td>
-                  <td>e.g. "Backend Engineer"</td>
-                </tr>
-                <tr>
-                  <td><code>JOBSEEKER_STACK</code></td>
-                  <td>Yes</td>
-                  <td>e.g. "Python,Go,FastAPI"</td>
-                </tr>
-                <tr>
-                  <td><code>GMAIL_ADDRESS</code></td>
-                  <td>For sending</td>
-                  <td>Your Gmail address</td>
-                </tr>
-                <tr>
-                  <td><code>GMAIL_APP_PASSWORD</code></td>
-                  <td>For sending</td>
-                  <td>Gmail app password (not your main password)</td>
-                </tr>
-                <tr>
-                  <td><code>OLLAMA_BASE_URL</code></td>
-                  <td>Optional</td>
-                  <td>Default: http://localhost:11434</td>
-                </tr>
+                <tr><td><code>JOBSEEKER_ROLE</code></td><td>Yes</td><td>e.g. "Backend Engineer"</td></tr>
+                <tr><td><code>JOBSEEKER_STACK</code></td><td>Yes</td><td>e.g. "Python,Go,FastAPI"</td></tr>
+                <tr><td><code>GMAIL_ADDRESS</code></td><td>For sending</td><td>Your Gmail address</td></tr>
+                <tr><td><code>GMAIL_APP_PASSWORD</code></td><td>For sending</td><td>Gmail app password (not your main password)</td></tr>
+                <tr><td><code>OLLAMA_BASE_URL</code></td><td>Optional</td><td>Default: http://localhost:11434</td></tr>
               </tbody>
             </table>
           </div>
         </div>
         <a href="https://github.com/sharmavaibhav31/arachnode#configuration" target="_blank" class="cta-link">Full configuration reference &rarr;</a>
       </div>
-
     </div>
   </section>
 
@@ -647,7 +722,6 @@
         <h2>Seven services. One pipeline.</h2>
         <p>Each service does one thing. All of them together do everything.</p>
       </div>
-      
       <div class="arch-diagram-wrapper animate-on-scroll" style="transition-delay: 80ms">
         <div class="arch-diagram">
           <div class="diagram-flow">
@@ -675,49 +749,26 @@
           </div>
         </div>
       </div>
-        
-      <div class="animate-on-scroll" style="transition-delay: 160ms; overflow-x: auto;">
+      <div class="table-scroll animate-on-scroll" style="transition-delay: 160ms">
         <table class="services-table">
           <thead>
-            <tr>
-              <th>Service</th>
-              <th>Language</th>
-              <th>Port</th>
-              <th>Key dependency</th>
-              <th>Status</th>
-            </tr>
+            <tr><th>Service</th><th>Language</th><th>Port</th><th>Key dependency</th><th>Status</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td>Crawler</td><td>Python</td><td>-</td><td>Scrapy</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td>
-            </tr>
-            <tr>
-              <td>Platform Scraper</td><td>Python</td><td>8002</td><td>Playwright</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td>
-            </tr>
-            <tr>
-              <td>Aggregator</td><td>Python</td><td>8000</td><td>FastAPI</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td>
-            </tr>
-            <tr>
-              <td>Contact Discovery</td><td>Python</td><td>8003</td><td>GitHub API</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td>
-            </tr>
-            <tr>
-              <td>Email Generator</td><td>Python</td><td>8004</td><td>Ollama</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td>
-            </tr>
-            <tr>
-              <td>Scheduler</td><td>Python</td><td>-</td><td>Celery/Cron</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td>
-            </tr>
-            <tr>
-              <td>Gateway</td><td>JavaScript</td><td>8080</td><td>Express</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td>
-            </tr>
+            <tr><td>Crawler</td><td>Python</td><td>-</td><td>Scrapy</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td></tr>
+            <tr><td>Platform Scraper</td><td>Python</td><td>8001</td><td>Playwright</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td></tr>
+            <tr><td>Aggregator</td><td>Python</td><td>8000</td><td>FastAPI</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td></tr>
+            <tr><td>Contact Discovery</td><td>Python</td><td>8002</td><td>GitHub API</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td></tr>
+            <tr><td>Email Generator</td><td>Python</td><td>8003</td><td>Ollama</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td></tr>
+            <tr><td>Scheduler</td><td>Python</td><td>-</td><td>APScheduler</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td></tr>
+            <tr><td>Gateway</td><td>Python</td><td>8080</td><td>FastAPI</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td></tr>
           </tbody>
         </table>
       </div>
-
       <div class="callout animate-on-scroll" style="transition-delay: 240ms">
         <p><strong>Why not agentic workflows?</strong></p>
-        <p>AI agents are the automation scripts of their era - impressive until a webpage changes its navbar. JobHunter uses deterministic microservices as the foundation. Agentic orchestration is on the roadmap, built on top of reliable infrastructure rather than instead of it.</p>
+        <p>AI agents are the automation scripts of their era - impressive until a webpage changes its navbar. Arachnode uses deterministic microservices as the foundation. Agentic orchestration is on the roadmap, built on top of reliable infrastructure rather than instead of it.</p>
       </div>
-
     </div>
   </section>
 
@@ -726,16 +777,14 @@
     <div class="container">
       <div class="section-header animate-on-scroll">
         <h2>Built in the open. Made better together.</h2>
-        <p>JobHunter is open source and actively looking for contributors. All skill levels welcome.</p>
+        <p>Arachnode is open source and actively looking for contributors. All skill levels welcome.</p>
       </div>
-      
       <div class="contrib-cards">
         <div class="contrib-card c-amber animate-on-scroll" style="transition-delay: 0ms">
           <h3>AI-assisted contributions</h3>
           <p>Agent instruction files for Claude Code, Cursor, Blackbox, and AntiGravity are already in the repo under ai_assistance/. An orchestrator manages specialised subagents for code auditing, bug detection, security review, DB schema analysis, and more. Point your AI editor at the repo; the context is already written.</p>
           <a href="#" class="cta-link">View agent files &rarr;</a>
         </div>
-        
         <div class="contrib-card c-purple animate-on-scroll" style="transition-delay: 80ms">
           <h3>Good first issues</h3>
           <p>Each service is independent and well-documented. Pick one you understand and improve it. New job platform? New email template? Better deduplication logic? All of these are scoped, reviewable PRs.</p>
@@ -747,30 +796,28 @@
           </div>
           <a href="https://github.com/sharmavaibhav31/arachnode/issues" target="_blank" class="cta-link">Browse open issues &rarr;</a>
         </div>
-        
         <div class="contrib-card c-green animate-on-scroll" style="transition-delay: 160ms">
           <h3>Non-code contributions</h3>
           <p>Documentation improvements, README translations, testing on different platforms, reporting broken scrapers when sites update their HTML, all of these matter and all are welcome.</p>
           <a href="https://github.com/sharmavaibhav31/arachnode/blob/main/CONTRIBUTING.md" target="_blank" class="cta-link">Contribution guide &rarr;</a>
         </div>
       </div>
-      
       <div class="steps-row animate-on-scroll" style="transition-delay: 240ms">
         <div class="min-step"><span class="min-step-num">1</span><span class="min-step-text">Fork the repo</span></div>
         <div class="min-step"><span class="min-step-num">2</span><span class="min-step-text">Read CONTRIBUTING.md</span></div>
         <div class="min-step"><span class="min-step-num">3</span><span class="min-step-text">Pick an issue or open one</span></div>
         <div class="min-step"><span class="min-step-num">4</span><span class="min-step-text">Submit a PR</span></div>
       </div>
-      
       <div class="stats-row animate-on-scroll" style="transition-delay: 320ms">
         <span>&#9733; Stars: 128</span> | <span>Forks: 32</span> | <span>Open issues: 14</span> | <span>Contributors: 7</span>
       </div>
-      
       <div class="text-center animate-on-scroll" style="transition-delay: 400ms; text-align: center;">
         <p style="color: var(--text-secondary); margin-bottom: 8px;">Open for contributions &middot; MIT Licensed &middot; Built by the community, for the community</p>
       </div>
     </div>
   </section>
+
+  <button id="backToTop" type="button" aria-label="Back to top">↑</button>
 
   <!-- FOOTER -->
   <footer>
@@ -815,39 +862,126 @@
     const AUTHOR_NAME = 'Vaibhav Sharma';
     const DASHBOARD_URL = 'http://localhost:8080';
     const HEALTH_CHECK_INTERVAL = 10000;
+    const THEME_KEY = 'arachnode-theme';
 
-    /* === INITIALIZE UI DYNAMIC ELEMENTS === */
+    /* ================================================================
+       THEME SYSTEM
+    ================================================================ */
+    function getTheme() {
+      return localStorage.getItem(THEME_KEY) ||
+        (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem(THEME_KEY, theme);
+      const icon  = document.getElementById('theme-icon');
+      const label = document.getElementById('theme-label');
+      if (icon)  icon.textContent  = theme === 'dark' ? '☀️' : '🌙';
+      if (label) label.textContent = theme === 'dark' ? 'Light' : 'Dark';
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      applyTheme(current === 'dark' ? 'light' : 'dark');
+    }
+
+    // Apply immediately — before any paint
+    applyTheme(getTheme());
+
+    /* ================================================================
+       PARTICLE BACKGROUND
+    ================================================================ */
+    (function () {
+      const canvas = document.getElementById('arachnode-bg');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const N = 55, LINK = 140;
+      let W, H, pts = [];
+
+      function resize() {
+        W = canvas.width  = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+      }
+
+      function getRGB() {
+        return getComputedStyle(document.documentElement)
+          .getPropertyValue('--particle-rgb').trim() || '108, 71, 255';
+      }
+
+      function spawn() {
+        return {
+          x:  Math.random() * W,
+          y:  Math.random() * H,
+          vx: (Math.random() - 0.5) * 0.35,
+          vy: (Math.random() - 0.5) * 0.35,
+          r:  Math.random() * 1.5 + 0.5,
+        };
+      }
+
+      resize();
+      window.addEventListener('resize', resize);
+      pts = Array.from({ length: N }, spawn);
+
+      (function frame() {
+        ctx.clearRect(0, 0, W, H);
+        const rgb = getRGB();
+
+        pts.forEach(p => {
+          p.x += p.vx; p.y += p.vy;
+          if (p.x < 0 || p.x > W) p.vx *= -1;
+          if (p.y < 0 || p.y > H) p.vy *= -1;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${rgb}, 0.45)`;
+          ctx.fill();
+        });
+
+        for (let i = 0; i < N; i++) {
+          for (let j = i + 1; j < N; j++) {
+            const dx = pts[i].x - pts[j].x;
+            const dy = pts[i].y - pts[j].y;
+            const d  = Math.sqrt(dx * dx + dy * dy);
+            if (d < LINK) {
+              ctx.beginPath();
+              ctx.moveTo(pts[i].x, pts[i].y);
+              ctx.lineTo(pts[j].x, pts[j].y);
+              ctx.strokeStyle = `rgba(${rgb}, ${0.15 * (1 - d / LINK)})`;
+              ctx.lineWidth = 0.6;
+              ctx.stroke();
+            }
+          }
+        }
+        requestAnimationFrame(frame);
+      })();
+    })();
+
+    /* ================================================================
+       DOM-DEPENDENT INIT
+    ================================================================ */
     document.addEventListener('DOMContentLoaded', () => {
-      
+
+      // Wire theme button
+      document.getElementById('btn-theme').addEventListener('click', toggleTheme);
+
       // Setup dynamic links based on constants
-      document.getElementById('gh-link-nav').href = GITHUB_URL;
+      document.getElementById('gh-link-nav').href  = GITHUB_URL;
       document.getElementById('gh-link-hero').href = GITHUB_URL;
       document.getElementById('status-bar-link').href = DASHBOARD_URL;
 
       /* === DASHBOARD DETECTION LOGIC === */
-      const dashBtn = document.getElementById('dashboard-btn');
+      const dashBtn   = document.getElementById('dashboard-btn');
       const statusBar = document.getElementById('status-bar');
       let pollingInterval;
 
       const checkDashboardStatus = async () => {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
-
+        const timeoutId  = setTimeout(() => controller.abort(), 2000);
         try {
-          // Attempting request with no-cors to bypass CORS error on static deployment
-          const response = await fetch(`${DASHBOARD_URL}/api/health`, {
-            method: 'GET',
-            mode: 'no-cors',
-            signal: controller.signal
-          });
-          
-          // If fetch completed without throwing (even opaque response), success!
+          await fetch(`${DASHBOARD_URL}/api/health`, { method: 'GET', mode: 'no-cors', signal: controller.signal });
           clearTimeout(timeoutId);
           activateDashboardUI();
-          
         } catch (error) {
-          // Failure (timeout, network error, connection refused)
-          // Silent failure per requirements, disable UI features if previously active
           clearTimeout(timeoutId);
           deactivateDashboardUI();
         }
@@ -857,14 +991,9 @@
         dashBtn.classList.add('active');
         dashBtn.removeAttribute('disabled');
         dashBtn.title = "";
-        dashBtn.href = DASHBOARD_URL;
+        dashBtn.href  = DASHBOARD_URL;
         statusBar.style.display = 'block';
-        if (pollingInterval) {
-           clearInterval(pollingInterval);
-           pollingInterval = null;
-        }
-        
-        // Listen to leaving to trigger checking again if they come back
+        if (pollingInterval) { clearInterval(pollingInterval); pollingInterval = null; }
         window.addEventListener('visibilitychange', handleVisibilityChange);
       };
 
@@ -876,87 +1005,74 @@
       };
 
       const handleVisibilityChange = () => {
-         if(document.visibilityState === 'visible' && !pollingInterval) {
-             // they came back, restart polling to make sure it's still alive
-             checkDashboardStatus();
-             pollingInterval = setInterval(checkDashboardStatus, HEALTH_CHECK_INTERVAL);
-         }
+        if (document.visibilityState === 'visible' && !pollingInterval) {
+          checkDashboardStatus();
+          pollingInterval = setInterval(checkDashboardStatus, HEALTH_CHECK_INTERVAL);
+        }
       };
 
-      // Initial check & interval start
       checkDashboardStatus();
       pollingInterval = setInterval(checkDashboardStatus, HEALTH_CHECK_INTERVAL);
 
-      /* === TAB INTERFACE LOGIC === */
-      const tabBtns = document.querySelectorAll('.tab-btn');
+      /* === TAB INTERFACE === */
+      const tabBtns     = document.querySelectorAll('.tab-btn');
       const tabContents = document.querySelectorAll('.tab-content');
 
       tabBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-          // Remove active classes
           tabBtns.forEach(b => b.classList.remove('active'));
           tabContents.forEach(c => c.classList.remove('active'));
-          
-          // Add active class to clicked
           btn.classList.add('active');
           document.getElementById(btn.dataset.target).classList.add('active');
         });
       });
 
       /* === COPY TO CLIPBOARD === */
-      const copyBtns = document.querySelectorAll('.copy-btn');
-      copyBtns.forEach(btn => {
+      document.querySelectorAll('.copy-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const text = btn.dataset.text.replace(/\\n/g, '\n');
           navigator.clipboard.writeText(text).then(() => {
-            const originalText = btn.textContent;
+            const orig = btn.textContent;
             btn.textContent = 'Copied!';
-            setTimeout(() => { btn.textContent = originalText; }, 2000);
+            setTimeout(() => { btn.textContent = orig; }, 2000);
           });
         });
       });
 
-      /* === MOBILE MENU TOGGLE === */
+      /* === MOBILE MENU === */
       const mobileToggle = document.getElementById('mobile-toggle');
-      const navMenu = document.getElementById('nav-menu');
-      
-      mobileToggle.addEventListener('click', () => {
-        navMenu.classList.toggle('active');
-      });
+      const navMenu      = document.getElementById('nav-menu');
 
-      // Close mobile menu on click link
+      mobileToggle.addEventListener('click', () => navMenu.classList.toggle('active'));
       navMenu.querySelectorAll('a').forEach(link => {
-        link.addEventListener('click', () => {
-          navMenu.classList.remove('active');
-        });
+        link.addEventListener('click', () => navMenu.classList.remove('active'));
       });
 
-      /* === SCROLL ANIMATIONS (Intersection Observer) === */
-      // Respect prefers-reduced-motion
-      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-      
-      if (!prefersReducedMotion.matches) {
-        const observerOptions = {
-          root: null,
-          rootMargin: '0px',
-          threshold: 0.1
-        };
-
-        const observer = new IntersectionObserver((entries, observer) => {
+      /* === SCROLL ANIMATIONS === */
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        const observer = new IntersectionObserver((entries, obs) => {
           entries.forEach(entry => {
             if (entry.isIntersecting) {
               entry.target.classList.add('visible');
-              observer.unobserve(entry.target); // Only animate once
+              obs.unobserve(entry.target);
             }
           });
-        }, observerOptions);
+        }, { root: null, rootMargin: '0px', threshold: 0.1 });
 
-        document.querySelectorAll('.animate-on-scroll').forEach(el => {
-          observer.observe(el);
-        });
+        document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
       }
 
     });
+
+    const backToTopBtn = document.getElementById('backToTop');
+    if (backToTopBtn) {
+      window.addEventListener('scroll', () => {
+        backToTopBtn.style.display = window.scrollY > 300 ? 'block' : 'none';
+      });
+      backToTopBtn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
   </script>
 </body>
 </html>

@@ -150,6 +150,28 @@ def build_scheduler() -> BackgroundScheduler:
         start_date=_offset_start(hours=8),
     )
 
+    # ── Job 4: Weekly digest every Sunday at 09:00 UTC ────────────────────
+    scheduler.add_job(
+        func=lambda: _run(tasks.run_digest_cycle, "digest"),
+        trigger="cron",
+        day_of_week="sun",
+        hour=9,
+        minute=0,
+        timezone="UTC",
+        id="digest",
+        name="Weekly job digest email",
+    )
+
+
+    # -- Job 4: Check for follow-ups every 24 hours --
+    scheduler.add_job(
+        func=lambda: _run(tasks.run_followup_cycle, "followup"),
+        trigger="interval",
+        hours=24,
+        id="followup",
+        name="Follow-up reminder drafting",
+        start_date=_offset_start(hours=12),
+    )
     return scheduler
 
 
@@ -166,7 +188,7 @@ def _offset_start(hours: int) -> datetime:
 def _maybe_manual_run() -> None:
     """
     If MANUAL_TASK env var is set, run that task immediately and exit.
-    Valid values: scrape | discover | draft | all
+    Valid values: scrape | discover | draft | digest | followup | all
     """
     task_name = os.environ.get("MANUAL_TASK", "").strip().lower()
     if not task_name:
@@ -177,6 +199,8 @@ def _maybe_manual_run() -> None:
         "scrape":   tasks.run_scrape_cycle,
         "discover": tasks.run_discover_cycle,
         "draft":    tasks.run_draft_cycle,
+        "digest":   tasks.run_digest_cycle,
+        "followup": tasks.run_followup_cycle,
     }
 
     if task_name == "all":
@@ -220,3 +244,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

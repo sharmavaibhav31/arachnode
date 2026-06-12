@@ -113,8 +113,8 @@ Note: If you do not install Ollama, the email generator gracefully degrades to s
 
 1. Clone the repository and navigate into the root directory.
 ```bash
-git clone https://github.com/vaibhav-sharma/jobCrawler.git
-cd jobCrawler
+git clone https://github.com/sharmavaibhav31/arachnode.git
+cd arachnode
 ```
 
 2. Copy the example environment file and fill in the required variables.
@@ -133,6 +133,43 @@ docker compose up --build -d
 ```
 
 Visit `http://localhost:8080` to open the dashboard.
+
+### Resetting local development state
+
+When local data gets stale during development, reset only Arachnode-owned
+Postgres and Redis state with:
+
+```bash
+make reset
+```
+
+or directly:
+
+```bash
+./scripts/reset.sh
+```
+
+The reset command asks for confirmation before changing anything. It truncates
+the local `emails`, `contacts`, and `jobs` tables if they exist, deletes the
+`jobs:raw` Redis stream, and removes Arachnode dedup keys matching `dedup:*`
+and `dedup:agg:*`. It does not remove Docker volumes and does not run Redis
+`FLUSHALL`, so unrelated local Redis data is left alone.
+
+For non-interactive local use:
+
+```bash
+./scripts/reset.sh --yes
+```
+
+To reset state without restarting the full Docker stack:
+
+```bash
+./scripts/reset.sh --no-restart
+```
+
+With `--no-restart`, the database and Redis reset still run, but the shared
+scheduler summary file is left untouched because the gateway/scheduler
+containers are not restarted.
 
 ### Configuration
 

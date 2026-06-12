@@ -42,7 +42,11 @@ async def _detect_available_model(client: httpx.AsyncClient) -> Optional[str]:
                 if model in available:
                     return model
     except Exception:
-        pass
+        logger.warning(
+            "[Ollama] Could not reach Ollama at %s. "
+            "Is Ollama installed and running? Install it from https://ollama.com",
+            OLLAMA_BASE_URL,
+        )
     return None
 
 
@@ -64,7 +68,10 @@ async def generate_observation(product_description: str) -> Optional[str]:
     async with httpx.AsyncClient() as client:
         model = await _detect_available_model(client)
         if model is None:
-            logger.info("[Ollama] No models available or Ollama not running.")
+            logger.warning(
+                "[Ollama] No models available. Run 'ollama pull mistral' to install one, "
+                "or visit https://ollama.com to set up Ollama. Falling back to static observations."
+            )
             return None
 
         logger.info("[Ollama] Using model '%s' for observation generation.", model)
