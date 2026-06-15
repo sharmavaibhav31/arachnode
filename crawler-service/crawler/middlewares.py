@@ -24,11 +24,24 @@ class RotateUserAgentMiddleware:
 
 class ExponentialBackoffRetryMiddleware(RetryMiddleware):
     """
-    Replaces Scrapy's default RetryMiddleware with:
-    - Configurable exponential backoff via RETRY_BACKOFF_BASE and RETRY_BACKOFF_MAX settings
-    - Skips retry for non-idempotent methods (POST, PUT, DELETE)
-    - Logs failed URLs to Redis key defined by FAILED_URLS_KEY setting
-    - Redis failures are caught silently so the crawler is never interrupted
+    Replaces Scrapy's default RetryMiddleware with exponential backoff retry logic.
+
+    How it integrates with the crawler pipeline:
+    - Registered at priority 550 in DOWNLOADER_MIDDLEWARES, after RotateUserAgentMiddleware (400)
+      but before ScrapyPlaywrightDownloadHandler (585)
+    - Scrapy's built-in RetryMiddleware is disabled (set to None) to avoid conflicts
+    - On failure, returns a new request copy with retry_times incremented
+    - Backoff is implemented by setting DOWNLOAD_DELAY on the per-domain slot via
+      crawler.engine, keeping retry behavior non-blocking and Twisted-compatible
+    - POST/PUT/DELETE requests are never retried (non-idempotent safety)
+    - Redis logging failures are silently caught so crawler flow is never interrupted
+
+    Settings:
+    - RETRY_TIMES: max retry attempts (default: 3)
+    - RETRY_HTTP_CODES: HTTP codes that trigger retry
+    - RETRY_BACKOFF_BASE: base for exponential backoff in seconds (default: 2.0)
+    - RETRY_BACKOFF_MAX: max backoff cap in seconds (default: 60.0)
+    - FAILED_URLS_KEY: Redis key for logging exhausted URLs
     """
 
     def __init__(self, settings):
@@ -76,9 +89,15 @@ class ExponentialBackoffRetryMiddleware(RetryMiddleware):
                 "[Retry] %s | attempt %d/%d | reason: %s | backoff: %.1fs",
                 request.url, retry_count + 1, self.max_retry_times, reason, backoff,
             )
+            # Apply backoff via per-domain slot delay — Twisted-compatible, non-blocking
+            try:
+                slot = spider.crawler.engine.downloader.slots.get(request.meta.get("download_slot"))
+                if slot:
+                    slot.delay = backoff
+            except Exception:
+                pass  # silently skip if slot not accessible
             retryreq = request.copy()
             retryreq.meta["retry_times"] = retry_count + 1
-            retryreq.meta["download_latency"] = backoff
             retryreq.dont_filter = True
             return retryreq
         else:

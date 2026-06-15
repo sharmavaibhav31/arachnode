@@ -113,8 +113,8 @@ Note: If you do not install Ollama, the email generator gracefully degrades to s
 
 1. Clone the repository and navigate into the root directory.
 ```bash
-git clone https://github.com/vaibhav-sharma/jobCrawler.git
-cd jobCrawler
+git clone https://github.com/sharmavaibhav31/arachnode.git
+cd arachnode
 ```
 
 2. Copy the example environment file and fill in the required variables.
@@ -269,7 +269,11 @@ The APScheduler mechanism triggers unattended sweeps continually without manual 
 ├── email-generator-service/     # Local LLM drafting integrations
 │   ├── main.py
 │   ├── ollama_client.py         # Interfaces locally configured Mistral
+│   ├── resume_parser.py         # Parses PDF/text resumes to extract candidate context
+│   ├── generator.py             # Builds personalized emails using candidate context
 │   ├── templates/               # Contains structured Jinja2 text templates
+│   ├── test_resume_parser.py    # Unit tests for resume parser
+│   ├── RESUME_PARSER_EXAMPLES.md # Before/after email personalization examples
 │   └── Dockerfile
 ├── gateway/                     # Application proxy endpoints and user interface
 │   ├── main.py                  # API fanout routers linking isolated tasks
@@ -501,7 +505,7 @@ Processes target templates into rendered string blobs utilizing configured LLM h
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| (Body) | JSON | `Required` | Targets `job_id`, `contact_id`, and `template` properties configuring response rendering inputs. |
+| (Body) | JSON | `Required` | Targets `job_id`, `contact_id`, `template`, and optional `candidate_skills`, `candidate_role`, `candidate_experience` properties for resume-aware personalization. |
 
 ```bash
 curl -X POST "http://localhost:8080/api/generate" \
@@ -554,7 +558,7 @@ Built:
 - [x] Automated scheduling
 
 Planned:
-- [ ] Add resume parsing module adapting outbound email drafting according to distinct required keywords mapped off CV text profiles.
+- [x] Add resume parsing module adapting outbound email drafting according to distinct required keywords mapped off CV text profiles.
 - [ ] Incorporate asynchronous outgoing SMTP workflows validating automated delivery logic bypassing local Gmail browser access steps.
 - [ ] Construct generic containerized application form completion agents accessing target URLs executing headless submission steps via LLM mapping properties.
 - [ ] Extend dashboard layout capturing historical metric trend data visualizations scaling historical outreach efforts correctly.

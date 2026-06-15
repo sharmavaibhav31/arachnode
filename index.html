@@ -1,4 +1,4 @@
-<!-- 
+<!--
   Arachnode Landing Page
   Deploy: GitHub Pages, Vercel, Netlify (static, no build step)
   Dashboard detection: polls localhost:8080/api/health every 10s
@@ -11,8 +11,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Arachnode - Automated Job Hunt</title>
-  <meta name="description"
-    content="Arachnode - a self-hosted, microservice-based job discovery and application tracking system for engineering placements.">
+  <meta name="description" content="Arachnode - a self-hosted, microservice-based job discovery and application tracking system for engineering placements.">
   <style>
     /* === CORE VARIABLES & PREREQUISITES === */
     :root,
@@ -75,17 +74,13 @@
       font-family: var(--font-body);
       font-size: 16px;
       line-height: 1.7;
-      overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
     }
 
     body::before {
       content: "";
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
+      top: 0; left: 0; width: 100vw; height: 100vh;
       pointer-events: none;
       z-index: 9999;
       opacity: 0.03;
@@ -97,7 +92,7 @@
     ul { list-style: none; }
     button { font-family: inherit; cursor: pointer; border: none; background: none; }
     h1, h2, h3, h4 { font-weight: 500; line-height: 1.2; }
-    .container { max-width: 1024px; margin: 0 auto; padding: 0 24px; }
+    .container { width: 100%; max-width: 1024px; margin: 0 auto; padding: 0 24px; }
 
     /* === PARTICLE CANVAS === */
     #arachnode-bg {
@@ -137,77 +132,15 @@
     }
 
     .pill {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 4px 12px;
-      border-radius: 6px;
-      font-size: 13px;
-      background: var(--surface);
-      border: 1px solid var(--border);
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 4px 12px; border-radius: 6px; font-size: 13px;
+      background: var(--surface); border: 1px solid var(--border);
       color: var(--text-secondary);
-    }
-    .pill.purple {
-      background: var(--accent-purple-dim);
-      border-color: var(--accent-purple);
-      color: var(--accent-purple);
-    }
-
-    .pill.amber {
-      background: var(--amber-dim);
-      border-color: var(--amber);
-      color: var(--amber);
-    }
-
-    .pill.green {
-      background: var(--green-dim);
-      border-color: var(--green);
-      color: var(--green);
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 10px 20px;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: 500;
-      transition: all 150ms ease;
-      text-decoration: none;
-    }
-
-    .btn-primary {
-      background: var(--accent-purple);
-      color: #fff;
-    }
-
-    .btn-primary:hover {
-      background: #5a3ce0;
-      transform: translateY(-1px);
-    }
-
-    .btn-outline {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text-primary);
-    }
-
-    .btn-outline:hover {
-      background: var(--surface-elevated);
-    }
-
-    code {
-      font-family: var(--font-code);
-      background: var(--surface-elevated);
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 0.9em;
     }
     .pill.purple { background: var(--accent-purple-dim); border-color: var(--accent-purple); color: var(--accent-purple); }
     .pill.amber  { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
     .pill.green  { background: var(--green-dim); border-color: var(--green); color: var(--green); }
-    
+
     .btn {
       display: inline-flex; align-items: center; justify-content: center;
       padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 500;
@@ -217,7 +150,7 @@
     .btn-primary:hover { background: #5a3ce0; transform: translateY(-1px); }
     .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-primary); }
     .btn-outline:hover { background: var(--surface-elevated); }
-    
+
     code {
       font-family: var(--font-code);
       background: var(--surface-elevated);
@@ -225,23 +158,10 @@
     }
 
     /* Scrollbar */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: var(--bg);
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: var(--surface-elevated);
-      border-radius: 4px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: var(--text-muted);
-    }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface-elevated); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
     /* Animations */
     @media (prefers-reduced-motion: no-preference) {
@@ -250,11 +170,7 @@
         transform: translateY(20px);
         transition: opacity 400ms ease, transform 400ms ease;
       }
-
-      .animate-on-scroll.visible {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      .animate-on-scroll.visible { opacity: 1; transform: translateY(0); }
     }
 
     /* === NAVBAR === */
@@ -263,98 +179,35 @@
       backdrop-filter: blur(12px);
       background: var(--nav-bg);
       border-bottom: 1px solid var(--border);
-      z-index: 1000;
-      height: 60px;
-      display: flex;
-      align-items: center;
-    }
-
-    .nav-inner {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      width: 100%;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-weight: 500;
-      color: #fff;
+      z-index: 1000; height: 60px; display: flex; align-items: center;
     }
     .nav-inner { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-    .brand { display: flex; align-items: center; gap: 12px; font-weight: 500; color: var(--text-primary); }
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 0; font-weight: 500; color: var(--text-primary); }
     .nav-links { display: flex; align-items: center; gap: 24px; font-size: 14px; color: var(--text-secondary); }
-    .nav-ctas { display: flex; align-items: center; gap: 10px; }
-    
+    .nav-ctas { display: flex; align-items: center; gap: 10px; min-width: 0; }
+
     #dashboard-btn {
-      padding: 6px 16px;
-      border-radius: 6px;
-      font-size: 14px;
-      background: var(--surface-elevated);
-      color: var(--text-muted);
-      border: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: not-allowed;
-      position: relative;
+      padding: 6px 16px; border-radius: 6px; font-size: 14px;
+      background: var(--surface-elevated); color: var(--text-muted);
+      border: 1px solid var(--border); display: flex; align-items: center; gap: 8px;
+      cursor: not-allowed; position: relative;
+      white-space: nowrap;
     }
-
-    #dashboard-btn.active {
-      background: var(--accent-purple);
-      color: #fff;
-      border-color: var(--accent-purple);
-      cursor: pointer;
-    }
-
-    #dashboard-btn.active:hover {
-      background: #5a3ce0;
-    }
-
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--text-muted);
-    }
-
-    #dashboard-btn.active .status-dot {
-      background: var(--green);
-      margin-right: 4px;
-      box-shadow: 0 0 0 rgba(34, 197, 94, 0.4);
-      animation: pulse 2s infinite;
-    }
+    #dashboard-btn.active { background: var(--accent-purple); color: #fff; border-color: var(--accent-purple); cursor: pointer; }
+    #dashboard-btn.active:hover { background: #5a3ce0; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); }
+    #dashboard-btn.active .status-dot { background: var(--green); margin-right: 4px; box-shadow: 0 0 0 rgba(34, 197, 94, 0.4); animation: pulse 2s infinite; }
 
     #dashboard-btn[disabled]:hover::after {
       content: "Start your services first: docker-compose up -d";
-      position: absolute;
-      top: calc(100% + 8px);
-      right: 0;
-      width: 240px;
-      padding: 8px 12px;
-      background: var(--surface-elevated);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 12px;
-      color: var(--text-primary);
+      position: absolute; top: calc(100% + 8px); right: 0; width: 240px;
+      padding: 8px 12px; background: var(--surface-elevated); border: 1px solid var(--border);
+      border-radius: 6px; font-size: 12px; color: var(--text-primary);
       z-index: 100;
     }
 
-    .mobile-menu-btn {
-      display: none;
-      background: none;
-      border: none;
-      color: var(--text-primary);
-      cursor: pointer;
-      padding: 4px;
-    }
-
-    .mobile-menu-btn svg {
-      width: 24px;
-      height: 24px;
-    }
+    .mobile-menu-btn { display: none; background: none; border: none; color: var(--text-primary); cursor: pointer; padding: 4px; }
+    .mobile-menu-btn svg { width: 24px; height: 24px; }
 
     @keyframes pulse {
       0%   { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
@@ -364,47 +217,29 @@
 
     /* === DASHBOARD STATUS BAR === */
     #status-bar {
-      display: none;
-      padding: 12px 16px;
-      margin: 80px auto 0 auto;
-      max-width: 600px;
-      background: var(--green-dim);
-      border: 1px solid var(--green);
-      border-radius: 8px;
-      font-size: 14px;
-      color: var(--green);
-      text-align: center;
+      display: none; padding: 12px 16px; margin: 80px auto 0 auto; max-width: 600px;
+      background: var(--green-dim); border: 1px solid var(--green); border-radius: 8px;
+      font-size: 14px; color: var(--green); text-align: center;
     }
-
-    #status-bar a {
-      text-decoration: underline;
-      margin-left: 8px;
-      font-weight: 500;
-    }
+    #status-bar a { text-decoration: underline; margin-left: 8px; font-weight: 500; }
 
     /* === HERO === */
     .hero {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      padding: 120px 24px 80px;
-      position: relative;
+      min-height: 100vh; display: flex; flex-direction: column;
+      justify-content: center; align-items: center; text-align: center;
+      padding: 120px 24px 80px; position: relative;
     }
-
     .hero-glow {
       position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%);
       width: 600px; height: 600px;
       background: radial-gradient(circle, rgba(108,71,255,0.08) 0%, rgba(0,0,0,0) 70%);
       border-radius: 50%; pointer-events: none; z-index: -1;
     }
-    .hero .pill { font-family: var(--font-code); margin-bottom: 32px; margin-top: 40px; }
+    .hero .pill { max-width: 100%; flex-wrap: wrap; font-family: var(--font-code); margin-bottom: 32px; margin-top: 40px; }
     .hero h1 { font-size: clamp(36px, 5vw, 52px); max-width: 720px; margin-bottom: 24px; letter-spacing: -0.02em; }
     .hero p { font-size: 18px; color: var(--text-secondary); max-width: 540px; margin: 0 auto 40px; }
     .hero-ctas { display: flex; gap: 16px; justify-content: center; margin-bottom: 48px; flex-wrap: wrap; }
-    
+
     .tech-pills { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 64px; }
     .tech-pill {
       padding: 6px 16px; border-radius: 50px; border: 1px solid var(--border);
@@ -412,36 +247,8 @@
     }
 
     .scroll-indicator {
-      position: absolute;
-      bottom: 40px;
-      left: 50%;
-      transform: translateX(-50%);
-      animation: bounce 2s infinite;
-      color: var(--text-muted);
-    }
-
-    .scroll-indicator svg {
-      width: 24px;
-      height: 24px;
-    }
-
-    @keyframes bounce {
-
-      0%,
-      20%,
-      50%,
-      80%,
-      100% {
-        transform: translateY(0) translateX(-50%);
-      }
-
-      40% {
-        transform: translateY(-10px) translateX(-50%);
-      }
-
-      60% {
-        transform: translateY(-5px) translateX(-50%);
-      }
+      position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+      animation: bounce 2s infinite; color: var(--text-muted);
     }
     .scroll-indicator svg { width: 24px; height: 24px; }
     @keyframes bounce {
@@ -451,82 +258,22 @@
     }
 
     /* === SECTIONS GENERAL === */
-    section {
-      padding: 100px 0;
-      border-top: 1px solid var(--border);
-    }
-
-    .section-header {
-      text-align: center;
-      margin-bottom: 64px;
-    }
-
-    .section-header h2 {
-      font-size: 32px;
-      margin-bottom: 16px;
-    }
-
-    .section-header p {
-      color: var(--text-secondary);
-      font-size: 18px;
-    }
+    section { padding: 100px 0; border-top: 1px solid var(--border); }
+    .section-header { text-align: center; margin-bottom: 64px; }
+    .section-header h2 { font-size: 32px; margin-bottom: 16px; }
+    .section-header p { color: var(--text-secondary); font-size: 18px; }
 
     /* === HOW IT WORKS === */
-    .steps-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 24px;
-    }
-
+    .steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
     .step-card {
       background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
       padding: 32px; position: relative; overflow: hidden;
     }
-
+    .step-card:hover { border-color: rgba(255,255,255,0.2); background: var(--surface-elevated); }
     .step-number {
-      position: absolute;
-      top: -10px;
-      right: -10px;
-      font-family: var(--font-code);
-      font-size: 120px;
-      font-weight: 700;
-      color: var(--accent-purple);
-      opacity: 0.05;
-      line-height: 1;
-      pointer-events: none;
-    }
-
-    .step-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 8px;
-      background: var(--surface-elevated);
-      border: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 24px;
-      color: var(--accent-purple);
-    }
-
-    .step-icon svg {
-      width: 20px;
-      height: 20px;
-      stroke: currentColor;
-      fill: none;
-      stroke-width: 2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-
-    .step-card h3 {
-      font-size: 20px;
-      margin-bottom: 12px;
-    }
-
-    .step-card p {
-      color: var(--text-secondary);
-      font-size: 15px;
+      position: absolute; top: -10px; right: -10px; font-family: var(--font-code);
+      font-size: 120px; font-weight: 700; color: var(--accent-purple); opacity: 0.05;
+      line-height: 1; pointer-events: none;
     }
     .step-icon {
       width: 40px; height: 40px; border-radius: 8px; background: var(--surface-elevated);
@@ -538,45 +285,13 @@
     .step-card p { color: var(--text-secondary); font-size: 15px; }
 
     /* === FEATURES === */
-    .features-split {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 48px;
-    }
-
-    .features-col h3 {
-      margin-bottom: 32px;
-      display: flex;
-      align-items: center;
-    }
-
-    .feature-row {
-      display: flex;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .feature-icon {
-      color: var(--green);
-      margin-top: 4px;
-      flex-shrink: 0;
-    }
-
-    .feature-icon svg {
-      width: 20px;
-      height: 20px;
-    }
-
-    .feature-content h4 {
-      font-size: 16px;
-      margin-bottom: 4px;
-      color: var(--text-primary);
-    }
-
-    .feature-content p {
-      font-size: 14px;
-      color: var(--text-secondary);
-    }
+    .features-split { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
+    .features-col h3 { margin-bottom: 32px; display: flex; align-items: center; }
+    .feature-row { display: flex; gap: 16px; margin-bottom: 24px; }
+    .feature-icon { color: var(--green); margin-top: 4px; flex-shrink: 0; }
+    .feature-icon svg { width: 20px; height: 20px; }
+    .feature-content h4 { font-size: 16px; margin-bottom: 4px; color: var(--text-primary); }
+    .feature-content p { font-size: 14px; color: var(--text-secondary); }
 
     /* === INSTALLATION === */
     .tabs { margin-bottom: 24px; display: flex; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
@@ -586,19 +301,26 @@
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    .terminal { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 24px; }
+    .terminal { max-width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 24px; }
     .terminal-header { background: var(--surface-elevated); padding: 12px 16px; display: flex; align-items: center; border-bottom: 1px solid var(--border); }
     .dots { display: flex; gap: 8px; }
     .dot { width: 10px; height: 10px; border-radius: 50%; }
     .dot:nth-child(1) { background: var(--red); }
     .dot:nth-child(2) { background: var(--amber); }
     .dot:nth-child(3) { background: var(--green); }
-    
+
     .terminal-step { position: relative; padding: 20px; border-bottom: 1px solid var(--border); }
     .terminal-step:last-child { border-bottom: none; }
     .terminal-step-label { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
-    .terminal-grid { display: grid; gap: 4px; }
-    .terminal-line { font-family: var(--font-code); font-size: 14px; color: var(--text-primary); }
+    .terminal-grid { display: grid; gap: 4px; min-width: 0; }
+    .terminal-line {
+      min-width: 0;
+      font-family: var(--font-code);
+      font-size: 14px;
+      color: var(--text-primary);
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
     .terminal-comment { color: var(--text-muted); }
     .copy-btn {
       position: absolute; top: 16px; right: 16px; background: var(--surface-elevated);
@@ -607,29 +329,25 @@
     }
     .terminal-step:hover .copy-btn { opacity: 1; }
     .copy-btn:hover { color: var(--text-primary); background: var(--border); }
-    
+
     .prereq-row { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
     .installation-note { font-size: 14px; color: var(--text-secondary); }
 
-    .config-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+    .table-scroll {
+      max-width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .config-table { width: 100%; min-width: 560px; border-collapse: collapse; text-align: left; font-size: 14px; }
     .config-table th, .config-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); }
     .config-table th { color: var(--text-muted); font-weight: 500; }
     .config-table td:first-child code { background: none; padding: 0; color: var(--accent-purple); }
 
     /* === ARCHITECTURE === */
-    .arch-diagram-wrapper {
-      width: 100%;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-
+    .arch-diagram-wrapper { width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .arch-diagram {
-      min-width: 760px;
-      margin: 40px auto;
-      padding: 40px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
+      min-width: 760px; margin: 40px auto; padding: 40px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 8px;
     }
     .diagram-flow { display: flex; align-items: center; justify-content: space-between; position: relative; }
     .node {
@@ -643,16 +361,13 @@
     .arrow::after { content: ''; position: absolute; right: -2px; top: -4px; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 8px solid var(--border); }
     .diagram-column { display: flex; flex-direction: column; gap: 40px; }
 
-    .services-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; margin-top: 40px; margin-bottom: 32px; }
+    .services-table { width: 100%; min-width: 680px; border-collapse: collapse; text-align: left; font-size: 14px; margin-top: 40px; margin-bottom: 32px; }
     .services-table th, .services-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); }
     .services-table th { color: var(--text-muted); font-weight: 500; }
     .services-table td { color: var(--text-primary); }
 
-    .callout p {
-      color: var(--text-secondary);
-      font-size: 15px;
-      margin-bottom: 8px;
-    }
+    .callout { background: rgba(108,71,255,0.05); border: 1px solid var(--accent-purple-dim); padding: 24px; border-radius: 8px; margin-top: 24px; }
+    .callout p { color: var(--text-secondary); font-size: 15px; margin-bottom: 8px; }
 
     /* === CONTRIBUTOR === */
     .contribute-section { background: var(--surface); }
@@ -663,10 +378,10 @@
     .contrib-card.c-amber  { border-top: 2px solid var(--amber); }
     .contrib-card.c-purple { border-top: 2px solid var(--accent-purple); }
     .contrib-card.c-green  { border-top: 2px solid var(--green); }
-    
+
     .contrib-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
     .contrib-tags span { font-size: 12px; padding: 4px 8px; background: var(--surface-elevated); border-radius: 4px; color: var(--text-muted); }
-    
+
     .cta-link { color: var(--text-primary); font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; }
     .cta-link:hover { color: var(--accent-purple); }
 
@@ -688,43 +403,63 @@
     .footer-links a:hover { color: var(--text-primary); }
     .footer-bottom { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 24px; font-size: 14px; color: var(--text-muted); }
 
+    #backToTop {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 10;
+      display: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    #backToTop:hover {
+      border-color: var(--accent-purple);
+      color: var(--accent-purple);
+    }
+
     /* === RESPONSIVE === */
     @media (max-width: 1024px) {
-      .features-split {
-        grid-template-columns: 1fr;
-        gap: 64px;
-      }
+      .features-split { grid-template-columns: 1fr; gap: 64px; }
     }
-
     @media (max-width: 768px) {
-      .footer-cols {
-        grid-template-columns: 1fr;
-        text-align: center;
-      }
-
-      .steps-row {
-        flex-direction: column;
-        gap: 24px;
-      }
-
-      .stats-row span {
-        display: block;
-        margin: 8px 0;
-      }
+      .footer-cols { grid-template-columns: 1fr; text-align: center; }
+      .steps-row { flex-direction: column; gap: 24px; }
+      .stats-row span { display: block; margin: 8px 0; }
     }
-
     @media (max-width: 640px) {
+      .container { padding: 0 16px; }
       .nav-links { display: none; }
       .nav-links.active { display: flex; flex-direction: column; position: absolute; top: 60px; left: 0; right: 0; background: var(--bg); padding: 24px; border-bottom: 1px solid var(--border); }
       .mobile-menu-btn { display: block; }
-      .hero { padding-top: 100px; }
-      .hero h1 { font-size: 36px; }
+      #dashboard-btn { display: none; }
+      .hero { min-height: auto; padding: 100px 16px 72px; }
+      .hero-glow { width: 100%; max-width: 420px; height: 420px; }
+      .hero h1 { font-size: 34px; }
+      .hero-ctas .btn { width: 100%; max-width: 280px; }
+      .features-col h3 { flex-wrap: wrap; gap: 8px; }
+      .terminal-step { padding: 18px 72px 18px 16px; }
+      .copy-btn { opacity: 1; }
+      .arch-diagram { min-width: 680px; padding: 28px; }
+      #backToTop { right: 14px; bottom: 14px; }
       .footer-bottom { flex-direction: column; gap: 16px; text-align: center; }
       #btn-theme span.theme-label { display: none; }
     }
+
+    @media (max-width: 420px) {
+      .brand .pill { display: none; }
+      .hero h1 { font-size: 32px; }
+      .tab-btn { padding: 12px 16px; }
+      .config-table { min-width: 500px; }
+    }
   </style>
 </head>
-
 <body>
 
   <!-- PARTICLE CANVAS -->
@@ -751,12 +486,7 @@
           <div class="status-dot"></div> Open Dashboard
         </a>
         <button class="mobile-menu-btn" id="mobile-toggle" aria-label="Toggle menu">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-            stroke-linejoin="round">
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
-          </svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
         </button>
       </div>
     </div>
@@ -774,13 +504,11 @@
     <div class="pill">⚡ Built for placement season &middot; Self-hosted &middot; Free forever</div>
     <h1 class="animate-on-scroll">Stop applying manually.<br>Automate your entire<br>job hunt.</h1>
     <p class="animate-on-scroll" style="transition-delay: 80ms">
-      Arachnode crawls startup job boards, finds hiring manager contacts, and drafts cold emails, running entirely on
-      your machine. No subscriptions. No API bills. No black-box agents.
+      Arachnode crawls startup job boards, finds hiring manager contacts, and drafts cold emails, running entirely on your machine. No subscriptions. No API bills. No black-box agents.
     </p>
     <div class="hero-ctas animate-on-scroll" style="transition-delay: 160ms">
       <a href="#installation" class="btn btn-primary">Get started in 5 minutes</a>
-      <a href="https://github.com/sharmavaibhav31/arachnode" target="_blank" class="btn btn-outline"
-        id="gh-link-hero">View on GitHub</a>
+      <a href="https://github.com/sharmavaibhav31/arachnode" target="_blank" class="btn btn-outline" id="gh-link-hero">View on GitHub</a>
     </div>
     <div class="tech-pills animate-on-scroll" style="transition-delay: 240ms">
       <div class="tech-pill">Scrapy</div>
@@ -790,10 +518,7 @@
       <div class="tech-pill">Ollama</div>
     </div>
     <div class="scroll-indicator">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-        stroke-linejoin="round">
-        <polyline points="6 9 12 15 18 9"></polyline>
-      </svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
     </div>
   </section>
 
@@ -808,54 +533,36 @@
         <div class="step-card animate-on-scroll" style="transition-delay: 0ms">
           <div class="step-number">01</div>
           <div class="step-icon">
-            <svg viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10"></circle>
-              <circle cx="12" cy="12" r="6"></circle>
-              <circle cx="12" cy="12" r="2"></circle>
-            </svg>
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
           </div>
           <h3>Crawl every relevant job</h3>
-          <p>Arachnode scans Wellfound, YC Jobs, Remotive, Naukri, and LinkedIn continuously. New roles matching your
-            stack appear in your dashboard within minutes.</p>
+          <p>Arachnode scans Wellfound, YC Jobs, Remotive, Naukri, and LinkedIn continuously. New roles matching your stack appear in your dashboard within minutes.</p>
         </div>
         <div class="step-card animate-on-scroll" style="transition-delay: 80ms">
           <div class="step-number">02</div>
           <div class="step-icon">
-            <svg viewBox="0 0 24 24">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
           </div>
           <h3>Find who to contact</h3>
-          <p>The contact discovery service finds publicly available emails and LinkedIn profiles for hiring managers and
-            engineers at target companies using OSINT and the GitHub API.</p>
+          <p>The contact discovery service finds publicly available emails and LinkedIn profiles for hiring managers and engineers at target companies using OSINT and the GitHub API.</p>
         </div>
         <div class="step-card animate-on-scroll" style="transition-delay: 160ms">
           <div class="step-number">03</div>
           <div class="step-icon">
-            <svg viewBox="0 0 24 24">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-              <polyline points="22,6 12,13 2,6"></polyline>
-            </svg>
+            <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
           </div>
           <h3>Send emails that get replies</h3>
-          <p>A local LLM (Ollama + Mistral) personalizes cold emails based on each company's product. You review and
-            send, nothing goes out automatically.</p>
+          <p>A local LLM (Ollama + Mistral) personalizes cold emails based on each company's product. You review and send, nothing goes out automatically.</p>
         </div>
       </div>
-    </nav>
-
-    <!-- DASHBOARD STATUS BAR -->
-    <div id="status-bar" class="animate-on-scroll">
-      &#10003; Services detected — your JobHunter dashboard is running
-      <a href="#" id="status-bar-link">Open Dashboard &rarr;</a>
     </div>
+  </section>
 
-    <!-- HERO -->
-    <section class="hero" id="hero">
-      <div class="hero-glow"></div>
-      <div class="pill">
-        ⚡ Built for placement season &middot; Self-hosted &middot; Free forever
+  <!-- FEATURES -->
+  <section id="features">
+    <div class="container">
+      <div class="section-header animate-on-scroll">
+        <h2>Everything you need. Nothing you don't.</h2>
       </div>
       <div class="features-split">
         <div class="features-col animate-on-scroll" style="transition-delay: 0ms">
@@ -930,32 +637,31 @@
             <div class="terminal-step-label">Step 1 — Clone</div>
             <div class="terminal-grid" id="code-step-1">
               <div class="terminal-line">git clone https://github.com/sharmavaibhav31/arachnode.git</div>
-              <div class="terminal-line">cd arachnode </div>
+              <div class="terminal-line">cd arachnode</div>
             </div>
-            <button class="copy-btn"
-              data-text="git clone https://github.com/sharmavaibhav31/arachnode.git\ncd arachnode">Copy</button>
+            <button class="copy-btn" data-text="git clone https://github.com/sharmavaibhav31/arachnode.git\ncd arachnode">Copy</button>
           </div>
           <div class="terminal-step">
             <div class="terminal-step-label">Step 2 — Configure</div>
             <div class="terminal-grid" id="code-step-2">
               <div class="terminal-line">cp .env.example .env</div>
               <div class="terminal-line terminal-comment"># Edit .env with your details (takes 2 minutes)</div>
-              <div class="terminal-line terminal-comment"># Required: JOBSEEKER_ROLE, JOBSEEKER_STACK,
-                GMAIL_APP_PASSWORD</div>
+              <div class="terminal-line terminal-comment"># Required: JOBSEEKER_ROLE, JOBSEEKER_STACK, GMAIL_APP_PASSWORD</div>
             </div>
+            <button class="copy-btn" data-text="cp .env.example .env">Copy</button>
           </div>
           <div class="terminal-step">
             <div class="terminal-step-label">Step 3 — Run</div>
             <div class="terminal-grid" id="code-step-3">
               <div class="terminal-line">docker-compose up -d</div>
             </div>
+            <button class="copy-btn" data-text="docker-compose up -d">Copy</button>
           </div>
           <div class="terminal-step">
             <div class="terminal-step-label">Step 4 — Open</div>
             <div class="terminal-grid" id="code-step-4">
               <div class="terminal-line terminal-comment"># Visit http://localhost:8080</div>
-              <div class="terminal-line terminal-comment"># Or click "Open Dashboard" in the navbar above (activates
-                automatically)</div>
+              <div class="terminal-line terminal-comment"># Or click "Open Dashboard" in the navbar above (activates automatically)</div>
             </div>
           </div>
         </div>
@@ -965,21 +671,8 @@
           <div class="pill">4GB RAM</div>
           <div class="pill">Git</div>
         </div>
-        <p class="installation-note">Ollama is optional. Without it, email templates still work — just without AI
-          personalization.</p>
+        <p class="installation-note">Ollama is optional. Without it, email templates still work — just without AI personalization.</p>
       </div>
-    </section>
-
-    <!-- CONTRIBUTOR -->
-    <section id="contributor" class="contribute-section">
-      <div class="container">
-        <div class="section-header animate-on-scroll">
-          <h2>Built in the open. Made better together.</h2>
-          <p>
-            JobHunter is open source and actively looking for contributors. All
-            skill levels welcome.
-          </p>
-        </div>
 
       <div class="tab-content" id="tab-manual">
         <div class="terminal">
@@ -995,13 +688,14 @@
               <div class="terminal-line">scrapy crawl remotive</div>
               <div class="terminal-line">uvicorn aggregator.main:app --port 8000</div>
             </div>
-            <button class="copy-btn"
-              data-text="python -m venv venv\nsource venv/bin/activate\npip install -r requirements.txt\nplaywright install chromium\nscrapy crawl remotive\nuvicorn aggregator.main:app --port 8000">Copy</button>
+            <button class="copy-btn" data-text="python -m venv venv\nsource venv/bin/activate\npip install -r requirements.txt\nplaywright install chromium\nscrapy crawl remotive\nuvicorn aggregator.main:app --port 8000">Copy</button>
           </div>
+        </div>
+      </div>
 
       <div class="tab-content" id="tab-config">
         <div class="terminal" style="padding: 0;">
-          <div style="overflow-x: auto;">
+          <div class="table-scroll">
             <table class="config-table">
               <thead>
                 <tr><th>Variable</th><th>Required</th><th>Description</th></tr>
@@ -1016,8 +710,7 @@
             </table>
           </div>
         </div>
-        <a href="https://github.com/sharmavaibhav31/arachnode#configuration" target="_blank" class="cta-link">Full
-          configuration reference &rarr;</a>
+        <a href="https://github.com/sharmavaibhav31/arachnode#configuration" target="_blank" class="cta-link">Full configuration reference &rarr;</a>
       </div>
     </div>
   </section>
@@ -1043,41 +736,38 @@
             <div class="arrow"></div>
             <div class="node db">PostgreSQL</div>
           </div>
-          <div class="min-step">
-            <span class="min-step-num">2</span
-            ><span class="min-step-text">Read CONTRIBUTING.md</span>
+          <div style="height: 40px;"></div>
+          <div class="diagram-flow" style="justify-content: center; gap: 40px;">
+            <div class="node">Contact Discovery</div>
+            <div class="arrow" style="flex-grow:0; width: 40px"></div>
+            <div class="node">Email Generator</div>
           </div>
-          <div class="min-step">
-            <span class="min-step-num">3</span
-            ><span class="min-step-text">Pick an issue or open one</span>
-          </div>
-          <div class="min-step">
-            <span class="min-step-num">4</span
-            ><span class="min-step-text">Submit a PR</span>
+          <div style="height: 40px;"></div>
+          <div class="diagram-flow" style="justify-content: center; gap: 40px;">
+            <div class="node" style="border-style: dashed;">Scheduler</div>
+            <div class="node" style="border-style: dashed;">Gateway</div>
           </div>
         </div>
       </div>
-      <div class="animate-on-scroll" style="transition-delay: 160ms; overflow-x: auto;">
+      <div class="table-scroll animate-on-scroll" style="transition-delay: 160ms">
         <table class="services-table">
           <thead>
             <tr><th>Service</th><th>Language</th><th>Port</th><th>Key dependency</th><th>Status</th></tr>
           </thead>
           <tbody>
             <tr><td>Crawler</td><td>Python</td><td>-</td><td>Scrapy</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td></tr>
-            <tr><td>Platform Scraper</td><td>Python</td><td>8002</td><td>Playwright</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td></tr>
+            <tr><td>Platform Scraper</td><td>Python</td><td>8001</td><td>Playwright</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td></tr>
             <tr><td>Aggregator</td><td>Python</td><td>8000</td><td>FastAPI</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td></tr>
-            <tr><td>Contact Discovery</td><td>Python</td><td>8003</td><td>GitHub API</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td></tr>
-            <tr><td>Email Generator</td><td>Python</td><td>8004</td><td>Ollama</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td></tr>
-            <tr><td>Scheduler</td><td>Python</td><td>-</td><td>Celery/Cron</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td></tr>
-            <tr><td>Gateway</td><td>JavaScript</td><td>8080</td><td>Express</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td></tr>
+            <tr><td>Contact Discovery</td><td>Python</td><td>8002</td><td>GitHub API</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td></tr>
+            <tr><td>Email Generator</td><td>Python</td><td>8003</td><td>Ollama</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td></tr>
+            <tr><td>Scheduler</td><td>Python</td><td>-</td><td>APScheduler</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td></tr>
+            <tr><td>Gateway</td><td>Python</td><td>8080</td><td>FastAPI</td><td><span class="pill green" style="padding: 2px 8px;">stable</span></td></tr>
           </tbody>
         </table>
       </div>
       <div class="callout animate-on-scroll" style="transition-delay: 240ms">
         <p><strong>Why not agentic workflows?</strong></p>
-        <p>AI agents are the automation scripts of their era - impressive until a webpage changes its navbar. JobHunter
-          uses deterministic microservices as the foundation. Agentic orchestration is on the roadmap, built on top of
-          reliable infrastructure rather than instead of it.</p>
+        <p>AI agents are the automation scripts of their era - impressive until a webpage changes its navbar. Arachnode uses deterministic microservices as the foundation. Agentic orchestration is on the roadmap, built on top of reliable infrastructure rather than instead of it.</p>
       </div>
     </div>
   </section>
@@ -1088,59 +778,46 @@
       <div class="section-header animate-on-scroll">
         <h2>Built in the open. Made better together.</h2>
         <p>Arachnode is open source and actively looking for contributors. All skill levels welcome.</p>
-        <p>Arachnode is open source and actively looking for contributors. All skill levels welcome.</p>
       </div>
       <div class="contrib-cards">
         <div class="contrib-card c-amber animate-on-scroll" style="transition-delay: 0ms">
           <h3>AI-assisted contributions</h3>
-          <p>Agent instruction files for Claude Code, Cursor, Blackbox, and AntiGravity are already in the repo under
-            ai_assistance/. An orchestrator manages specialised subagents for code auditing, bug detection, security
-            review, DB schema analysis, and more. Point your AI editor at the repo; the context is already written.</p>
+          <p>Agent instruction files for Claude Code, Cursor, Blackbox, and AntiGravity are already in the repo under ai_assistance/. An orchestrator manages specialised subagents for code auditing, bug detection, security review, DB schema analysis, and more. Point your AI editor at the repo; the context is already written.</p>
           <a href="#" class="cta-link">View agent files &rarr;</a>
         </div>
         <div class="contrib-card c-purple animate-on-scroll" style="transition-delay: 80ms">
           <h3>Good first issues</h3>
-          <p>Each service is independent and well-documented. Pick one you understand and improve it. New job platform?
-            New email template? Better deduplication logic? All of these are scoped, reviewable PRs.</p>
+          <p>Each service is independent and well-documented. Pick one you understand and improve it. New job platform? New email template? Better deduplication logic? All of these are scoped, reviewable PRs.</p>
           <div class="contrib-tags">
             <span>[Spider] New job platforms</span>
             <span>[ML] Better stack matching</span>
             <span>[UX] Dashboard improvements</span>
             <span>[Infra] Performance & caching</span>
           </div>
-          <a href="https://github.com/sharmavaibhav31/arachnode/issues" target="_blank" class="cta-link">Browse open
-            issues &rarr;</a>
+          <a href="https://github.com/sharmavaibhav31/arachnode/issues" target="_blank" class="cta-link">Browse open issues &rarr;</a>
         </div>
         <div class="contrib-card c-green animate-on-scroll" style="transition-delay: 160ms">
           <h3>Non-code contributions</h3>
-          <p>Documentation improvements, README translations, testing on different platforms, reporting broken scrapers
-            when sites update their HTML, all of these matter and all are welcome.</p>
-          <a href="https://github.com/sharmavaibhav31/arachnode/blob/main/CONTRIBUTING.md" target="_blank"
-            class="cta-link">Contribution guide &rarr;</a>
+          <p>Documentation improvements, README translations, testing on different platforms, reporting broken scrapers when sites update their HTML, all of these matter and all are welcome.</p>
+          <a href="https://github.com/sharmavaibhav31/arachnode/blob/main/CONTRIBUTING.md" target="_blank" class="cta-link">Contribution guide &rarr;</a>
         </div>
       </div>
       <div class="steps-row animate-on-scroll" style="transition-delay: 240ms">
         <div class="min-step"><span class="min-step-num">1</span><span class="min-step-text">Fork the repo</span></div>
-        <div class="min-step"><span class="min-step-num">2</span><span class="min-step-text">Read CONTRIBUTING.md</span>
-        </div>
-        <div class="min-step"><span class="min-step-num">3</span><span class="min-step-text">Pick an issue or open
-            one</span></div>
+        <div class="min-step"><span class="min-step-num">2</span><span class="min-step-text">Read CONTRIBUTING.md</span></div>
+        <div class="min-step"><span class="min-step-num">3</span><span class="min-step-text">Pick an issue or open one</span></div>
         <div class="min-step"><span class="min-step-num">4</span><span class="min-step-text">Submit a PR</span></div>
       </div>
       <div class="stats-row animate-on-scroll" style="transition-delay: 320ms">
-        <span>&#9733; Stars: 128</span> | <span>Forks: 32</span> | <span>Open issues: 14</span> | <span>Contributors:
-          7</span>
+        <span>&#9733; Stars: 128</span> | <span>Forks: 32</span> | <span>Open issues: 14</span> | <span>Contributors: 7</span>
       </div>
       <div class="text-center animate-on-scroll" style="transition-delay: 400ms; text-align: center;">
-        <p style="color: var(--text-secondary); margin-bottom: 8px;">Open for contributions &middot; MIT Licensed
-          &middot; Built by the community, for the community</p>
+        <p style="color: var(--text-secondary); margin-bottom: 8px;">Open for contributions &middot; MIT Licensed &middot; Built by the community, for the community</p>
       </div>
     </div>
   </section>
-  <!-- Back to Top Button -->
-  <button id="backToTop" title="Go to top">
-    <i class="fas fa-arrow-up"></i> ↑
-  </button>
+
+  <button id="backToTop" type="button" aria-label="Back to top">↑</button>
 
   <!-- FOOTER -->
   <footer>
@@ -1156,16 +833,20 @@
           <div class="footer-links">
             <a href="#installation">Documentation</a>
             <a href="https://github.com/sharmavaibhav31/arachnode" target="_blank">GitHub Repository</a>
-            <a href="https://github.com/sharmavaibhav31/arachnode/blob/main/CONTRIBUTING.md"
-              target="_blank">Contributing Guide</a>
+            <a href="https://github.com/sharmavaibhav31/arachnode/blob/main/CONTRIBUTING.md" target="_blank">Contributing Guide</a>
             <a href="https://github.com/sharmavaibhav31/arachnode/issues" target="_blank">Report an Issue</a>
           </div>
         </div>
-        <div class="footer-bottom">
-          <div>
-            MIT &copy; 2026 Vaibhav Sharma &middot; Made during placement season
+        <div class="footer-col">
+          <h4>Built with</h4>
+          <div class="footer-links">
+            <a href="https://scrapy.org" target="_blank">Scrapy</a>
+            <a href="https://fastapi.tiangolo.com" target="_blank">FastAPI</a>
+            <a href="https://redis.io" target="_blank">Redis</a>
+            <a href="https://postgresql.org" target="_blank">PostgreSQL</a>
+            <a href="https://ollama.com" target="_blank">Ollama</a>
+            <a href="https://docker.com" target="_blank">Docker</a>
           </div>
-          <div>Deployed on Github Pages</div>
         </div>
       </div>
       <div class="footer-bottom">
@@ -1344,6 +1025,7 @@
           btn.classList.add('active');
           document.getElementById(btn.dataset.target).classList.add('active');
         });
+      });
 
       /* === COPY TO CLIPBOARD === */
       document.querySelectorAll('.copy-btn').forEach(btn => {
@@ -1355,6 +1037,7 @@
             setTimeout(() => { btn.textContent = orig; }, 2000);
           });
         });
+      });
 
       /* === MOBILE MENU === */
       const mobileToggle = document.getElementById('mobile-toggle');
@@ -1380,25 +1063,16 @@
       }
 
     });
-    // Get the button
-    const backToTopBtn = document.getElementById("backToTop");
 
-    // When the user scrolls down 300px from the top, show the button
-    window.onscroll = function () {
-      if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
-        backToTopBtn.style.display = "block";
-      } else {
-        backToTopBtn.style.display = "none";
-      }
-    };
-
-    // When the user clicks on the button, scroll to the top of the document
-    backToTopBtn.addEventListener("click", function () {
-      window.scrollTo({
-        top: 0,
-        behavior: "smooth" // Smooth scrolling animation
+    const backToTopBtn = document.getElementById('backToTop');
+    if (backToTopBtn) {
+      window.addEventListener('scroll', () => {
+        backToTopBtn.style.display = window.scrollY > 300 ? 'block' : 'none';
       });
-    });
+      backToTopBtn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
   </script>
 </body>
 </html>

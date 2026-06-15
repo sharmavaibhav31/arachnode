@@ -1,5 +1,4 @@
-version: "3.9"
-
+# (Removed obsolete `version:` key — modern Compose ignores it)
 # ─────────────────────────────────────────────────────────────────────────────
 # Job Discovery System — Full Stack
 #
