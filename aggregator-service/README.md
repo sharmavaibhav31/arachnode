@@ -28,6 +28,7 @@ aggregator-service/
 ├── main.py          # FastAPI app, lifespan, endpoints
 ├── db.py            # asyncpg pool, schema init, query helpers
 ├── consumer.py      # Redis Stream consumer loop
+├── matcher.py       # Optional SBERT-based semantic job ranking
 ├── models.py        # Pydantic response schemas
 ├── requirements.txt
 ├── Dockerfile
@@ -48,6 +49,7 @@ aggregator-service/
 | `POSTGRES_USER` | `jobuser` | (docker-compose only) |
 | `POSTGRES_PASSWORD` | `jobpass` | (docker-compose only) |
 | `POSTGRES_DB` | `jobsdb` | (docker-compose only) |
+| `MATCHER_CACHE_DIR` | `/tmp/arachnode_cache` | Directory for resume embedding cache |
 
 ---
 
@@ -108,6 +110,7 @@ curl http://localhost:8000/health
 | `status` | string | — | `new` \| `applied` \| `ignored` |
 | `sort` | string | `latest` | `latest` or `oldest` (by `posted_at`) |
 | `limit` | int | `50` | Max results (1–500) |
+| `resume` | string | — | Resume text; when provided, jobs are ranked by semantic similarity instead of date |
 
 ```bash
 # All new jobs
@@ -118,10 +121,13 @@ curl "http://localhost:8000/jobs?role=backend&stack=Python&sort=oldest&limit=20"
 
 # Jobs that require both FastAPI and PostgreSQL
 curl "http://localhost:8000/jobs?stack=FastAPI,PostgreSQL"
+
+# Jobs ranked by match to a resume
+curl "http://localhost:8000/jobs?resume=NLP%20engineer%20with%20HuggingFace%20Transformers%20and%20PyTorch"
 ```
 
 <details>
-<summary>Example response</summary>
+<summary>Example response — without resume (existing behaviour)</summary>
 
 ```json
 [
@@ -136,10 +142,53 @@ curl "http://localhost:8000/jobs?stack=FastAPI,PostgreSQL"
     "location": "Remote",
     "posted_at": "2026-03-18T10:00:00Z",
     "status": "new",
-    "created_at": "2026-03-19T04:00:00Z"
+    "created_at": "2026-03-19T04:00:00Z",
+    "match_score": null,
+    "match_tier": null
   }
 ]
 ```
+</details>
+
+<details>
+<summary>Example response — with resume (semantic ranking)</summary>
+
+```json
+[
+  {
+    "id": "xyz789",
+    "company": "Sarvam AI",
+    "role": "NLP Engineer - Indic Languages",
+    "source": "remotive",
+    "url": "https://remotive.com/jobs/456",
+    "stack": ["PyTorch", "Transformers"],
+    "product": "Language Models",
+    "location": "Remote",
+    "posted_at": "2026-03-18T10:00:00Z",
+    "status": "new",
+    "created_at": "2026-03-19T04:00:00Z",
+    "match_score": 0.6842,
+    "match_tier": "strong"
+  },
+  {
+    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "company": "Acme Corp",
+    "role": "Senior Backend Engineer",
+    "source": "remotive",
+    "url": "https://remotive.com/jobs/123",
+    "stack": ["Python", "FastAPI", "PostgreSQL"],
+    "product": "Platform",
+    "location": "Remote",
+    "posted_at": "2026-03-18T10:00:00Z",
+    "status": "new",
+    "created_at": "2026-03-19T04:00:00Z",
+    "match_score": 0.3201,
+    "match_tier": "weak"
+  }
+]
+```
+
+Jobs are sorted by `match_score` descending. `match_tier` is one of `strong` (≥ 0.55), `moderate` (0.40–0.54), or `weak` (< 0.40).
 </details>
 
 ---
@@ -192,6 +241,91 @@ curl http://localhost:8000/stats
   }
 }
 ```
+
+---
+
+## Semantic Job Matching
+
+When a `resume` query param is passed to `GET /jobs`, the aggregator ranks jobs by semantic similarity to the resume using Sentence-BERT instead of returning them by date. When no resume is passed, behaviour is identical to before.
+
+### How it works
+
+```
+resume text (query param)
+        │
+        ▼
+resume embedding: disk cache check
+        │ hit: load pickle       miss: encode + cache to disk
+        ▼
+JD text built per job: role + company + stack + product
+        │
+        ▼
+all JDs batch-encoded in one model.encode() call (batch_size=32)
+        │
+        ▼
+cosine similarity computed per job
+        │
+        ▼
+jobs sorted descending by match_score, match_tier attached
+```
+
+### Model — all-MiniLM-L6-v2
+
+| Property | Detail |
+|---|---|
+| Size | ~80MB |
+| GPU required | No |
+| Loading strategy | Lazy — loads on first request that includes a resume param |
+| Strength | Captures semantic meaning, not just keyword overlap |
+
+**Why SBERT over TF-IDF?** TF-IDF only matches on shared words. A resume mentioning "HuggingFace Transformers and PyTorch" would score zero against "NLP Engineer — Indic Languages" because there is no word overlap, even though it is the correct top match. SBERT encodes meaning and ranks it correctly.
+
+### Installation
+
+Semantic matching requires one additional package not in the base `requirements.txt`:
+
+```bash
+pip install sentence-transformers
+```
+
+If `sentence-transformers` is not installed, the matcher silently disables itself and `GET /jobs` continues to work normally — jobs are returned unranked and no error is thrown.
+
+### Caching
+
+Resume embeddings are cached to disk so the same resume text is never encoded twice, even across app restarts.
+
+| Property | Detail |
+|---|---|
+| Location | `/tmp/arachnode_cache` (override with `MATCHER_CACHE_DIR`) |
+| Key | MD5 hash of resume text |
+| Format | Pickle — `resume_<hash>.pkl` |
+| Invalidation | Different resume text → different hash → new file. No TTL. |
+
+Only resume embeddings are cached. JD embeddings are recomputed per request via batch encoding.
+
+To clear the cache manually:
+```bash
+rm -rf /tmp/arachnode_cache
+```
+
+### Fallback behaviour
+
+| Condition | Result |
+|---|---|
+| No `resume` param | Date-ordered response, `match_score`/`match_tier` null |
+| Empty or whitespace resume | Jobs returned unranked, warning logged |
+| `sentence-transformers` not installed | Jobs returned unranked, warning logged |
+
+The endpoint never returns a 500 due to matcher failure.
+
+### Running matcher tests
+
+```bash
+cd aggregator-service
+python test_matcher_final.py
+```
+
+Covers: ranking output, cache hit behaviour, empty resume handling, top match accuracy, worst match accuracy.
 
 ---
 
