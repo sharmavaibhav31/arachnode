@@ -178,6 +178,28 @@ class MySiteSpider(BaseStartupSpider):
                     stack=[],
                 )
 ```
+## Cutshort Spider
+
+The `cutshort` spider extracts startup job listings from Cutshort.io and follows the same architecture as the existing spiders in the crawler.
+
+### Integration
+
+The spider subclasses `BaseStartupSpider` and emits standard `JobItem` objects. Extracted jobs automatically pass through the existing filtering, deduplication, and processing pipelines without requiring additional configuration.
+
+### Selector Strategy
+
+- Job titles are extracted from JSON-LD `ItemList` data when available.
+- HTML title extraction is used as a fallback.
+- URLs are normalized using `response.urljoin()`.
+- Company names are extracted from image `alt` text with an `h3` fallback.
+- Location and stack fields use class-based selectors because no stable attributes such as `data-testid`, `aria-label`, or semantic tags were available during investigation.
+- Inline comments have been added around selectors that may require updates if the Cutshort UI changes.
+
+### Pagination / Infinite Scroll
+
+Traditional pagination links were not found during investigation.
+
+The spider currently extracts all job cards available in the loaded page response. Additional pagination or infinite-scroll endpoints were not exposed during testing.
 
 ---
 
