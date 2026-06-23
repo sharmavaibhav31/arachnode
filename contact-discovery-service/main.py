@@ -17,8 +17,10 @@ from contextlib import asynccontextmanager
 from typing import Optional
 from uuid import UUID
 
-from fastapi import FastAPI, HTTPException, Query, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Query, BackgroundTasks, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from playwright.async_api import async_playwright
 
 import storage
 import discovery as disc
@@ -29,6 +31,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+PLAYWRIGHT_AVAILABLE = True
 
 # ---------------------------------------------------------------------------
 # Lifespan
@@ -36,8 +39,19 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global PLAYWRIGHT_AVAILABLE
     await storage.create_pool()
     logger.info("Contact Discovery Service ready.")
+    
+    # Startup check for Playwright
+    try:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(args=["--no-sandbox", "--disable-setuid-sandbox"])
+            await browser.close()
+    except Exception as exc:
+        logger.critical(f"Playwright unavailable: {exc}")
+        PLAYWRIGHT_AVAILABLE = False
+
     yield
     await storage.close_pool()
     logger.info("Contact Discovery Service shut down.")
@@ -53,6 +67,17 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception on {request.url}: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "An internal error occurred",
+            "path": str(request.url.path),
+            "hint": "Check service logs for details"
+        }
+    )
 
 # ---------------------------------------------------------------------------
 # Models
@@ -94,7 +119,12 @@ async def _discover_and_store(
     job_id: Optional[UUID],
     domain: Optional[str],
 ) -> list[dict]:
-    contacts = await disc.run_pipeline(company, roles, provided_domain=domain)
+    try:
+        contacts = await disc.run_pipeline(company, roles, provided_domain=domain)
+    except Exception as e:
+        logger.error(f"Pipeline failed: {e}")
+        return []
+        
     pool = await storage.get_pool()
     stored = []
     for c in contacts:
@@ -133,6 +163,12 @@ async def discover(body: DiscoverRequest, background_tasks: BackgroundTasks):
     Runs asynchronously in the background; results are persisted to PostgreSQL.
     Poll GET /contacts?company=... to retrieve results.
     """
+    if not PLAYWRIGHT_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="Contact discovery via LinkedIn is temporarily unavailable. GitHub-based discovery is still active."
+        )
+
     background_tasks.add_task(
         _discover_and_store,
         body.company,
@@ -150,25 +186,59 @@ async def discover(body: DiscoverRequest, background_tasks: BackgroundTasks):
 
 @app.get("/contacts", tags=["contacts"])
 async def list_contacts_by_company(
-    company: str = Query(..., description="Company name substring")
+    company: str = Query(..., description="Company name substring"),
+    offset: int = 0,
+    limit: int = 50
 ):
     pool = await storage.get_pool()
-    rows = await storage.get_contacts_by_company(pool, company)
-    return [ContactOut.from_record(r) for r in rows]
+    try:
+        import asyncio
+        rows, total = await asyncio.gather(
+            storage.get_contacts_by_company(pool, company, offset=offset, limit=limit),
+            storage.get_contacts_count(pool, company)
+        )
+    except Exception as e:
+        logger.error(f"DB Error: {e}")
+        rows, total = [], 0
+        
+    return {
+        "data": [ContactOut.from_record(r).dict() for r in rows],
+        "pagination": {
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "has_more": (offset + limit) < total
+        }
+    }
 
 
 @app.get("/contacts/{job_id}", tags=["contacts"])
-async def list_contacts_by_job(job_id: UUID):
+async def list_contacts_by_job(job_id: UUID, offset: int = 0, limit: int = 50):
     pool = await storage.get_pool()
-    rows = await storage.get_contacts_by_job(pool, job_id)
-    if not rows:
-        raise HTTPException(status_code=404, detail="No contacts found for this job_id")
-    return [ContactOut.from_record(r) for r in rows]
+    try:
+        rows = await storage.get_contacts_by_job(pool, job_id, offset=offset, limit=limit)
+    except Exception as e:
+        logger.error(f"DB Error: {e}")
+        rows = []
+    
+    return {
+        "data": [ContactOut.from_record(r).dict() for r in rows],
+        "pagination": {
+            "total": len(rows),
+            "limit": limit,
+            "offset": offset,
+            "has_more": False
+        }
+    }
 
 
 @app.delete("/contacts/{contact_id}", status_code=204, tags=["contacts"])
 async def remove_contact(contact_id: UUID):
     pool = await storage.get_pool()
-    deleted = await storage.delete_contact(pool, contact_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Contact not found")
+    try:
+        deleted = await storage.delete_contact(pool, contact_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Contact not found")
+    except Exception as e:
+        logger.error(f"DB Error: {e}")
+        raise HTTPException(status_code=500, detail="Database error")

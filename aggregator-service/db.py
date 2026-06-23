@@ -13,15 +13,10 @@ import asyncpg
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Pool management
-# ---------------------------------------------------------------------------
-
 _pool: Optional[asyncpg.Pool] = None
 
 
 async def create_pool() -> asyncpg.Pool:
-    """Create the global asyncpg connection pool and initialise the schema."""
     global _pool
     database_url = os.environ["DATABASE_URL"]
     _pool = await asyncpg.create_pool(
@@ -49,10 +44,6 @@ async def close_pool() -> None:
         logger.info("PostgreSQL pool closed.")
 
 
-# ---------------------------------------------------------------------------
-# Schema initialisation
-# ---------------------------------------------------------------------------
-
 _SCHEMA_SQL = """
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
@@ -70,30 +61,21 @@ CREATE TABLE IF NOT EXISTS jobs (
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- GIN index for fast array containment queries on stack
 CREATE INDEX IF NOT EXISTS idx_jobs_stack
     ON jobs USING GIN (stack);
 
--- BTREE index for sorting / filtering by posted date
 CREATE INDEX IF NOT EXISTS idx_jobs_posted_at
     ON jobs (posted_at DESC NULLS LAST);
 
--- BTREE index for filtering by status
 CREATE INDEX IF NOT EXISTS idx_jobs_status
     ON jobs (status);
 """
 
 
 async def _init_schema(pool: asyncpg.Pool) -> None:
-    """Run schema DDL idempotently on startup."""
     async with pool.acquire() as conn:
         await conn.execute(_SCHEMA_SQL)
     logger.info("Database schema verified / created.")
-
-
-# ---------------------------------------------------------------------------
-# Query helpers
-# ---------------------------------------------------------------------------
 
 
 async def insert_job(
@@ -106,12 +88,8 @@ async def insert_job(
     stack: Optional[List[str]],
     product: Optional[str],
     location: Optional[str],
-    posted_at: Optional[Any],  # datetime or None
+    posted_at: Optional[Any],
 ) -> Optional[asyncpg.Record]:
-    """
-    Insert a new job row.  Returns the inserted record, or None on conflict.
-    Uses INSERT … ON CONFLICT DO NOTHING so duplicate URLs are silently dropped.
-    """
     sql = """
         INSERT INTO jobs (company, role, source, url, stack, product, location, posted_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, COALESCE($8, NOW()))
@@ -124,24 +102,11 @@ async def insert_job(
         )
     return row
 
-
-async def get_jobs(
-    pool: asyncpg.Pool,
-    *,
+def _build_job_filters(
     role: Optional[str] = None,
     stack: Optional[List[str]] = None,
     status: Optional[str] = None,
-    sort: str = "latest",
-    limit: int = 50,
-) -> List[asyncpg.Record]:
-    """
-    Fetch jobs with optional filters and sorting.
-
-    - role   : case-insensitive substring match
-    - stack  : jobs whose stack contains ALL supplied tags
-    - status : exact match
-    - sort   : 'latest' → posted_at DESC, 'oldest' → posted_at ASC
-    """
+):
     conditions: List[str] = []
     params: List[Any] = []
     idx = 1
@@ -162,14 +127,46 @@ async def get_jobs(
         idx += 1
 
     where_clause = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+    return where_clause, params, idx
+
+async def get_jobs_count(
+    pool: asyncpg.Pool,
+    *,
+    role: Optional[str] = None,
+    stack: Optional[List[str]] = None,
+    status: Optional[str] = None,
+) -> int:
+    where_clause, params, _ = _build_job_filters(role, stack, status)
+    sql = f"SELECT COUNT(*) FROM jobs {where_clause}"
+    async with pool.acquire() as conn:
+        return await conn.fetchval(sql, *params)
+
+
+async def get_jobs(
+    pool: asyncpg.Pool,
+    *,
+    role: Optional[str] = None,
+    stack: Optional[List[str]] = None,
+    status: Optional[str] = None,
+    sort: str = "latest",
+    limit: int = 50,
+    offset: int = 0,
+) -> List[asyncpg.Record]:
+    where_clause, params, idx = _build_job_filters(role, stack, status)
     order = "DESC NULLS LAST" if sort == "latest" else "ASC NULLS LAST"
 
     params.append(limit)
+    limit_idx = idx
+    idx += 1
+    
+    params.append(offset)
+    offset_idx = idx
+
     sql = f"""
         SELECT * FROM jobs
         {where_clause}
         ORDER BY posted_at {order}
-        LIMIT ${idx}
+        LIMIT ${limit_idx} OFFSET ${offset_idx}
     """
 
     async with pool.acquire() as conn:
@@ -193,15 +190,18 @@ async def update_job_status(
         )
 
 
-async def get_stats(pool: asyncpg.Pool) -> Dict[str, Any]:
-    """Return count by source and count by status."""
-    sql_source = """
+async def get_stats(pool: asyncpg.Pool, days: int = 30) -> Dict[str, Any]:
+    sql_source = f"""
         SELECT COALESCE(source, 'unknown') AS key, COUNT(*) AS cnt
-        FROM jobs GROUP BY source
+        FROM jobs
+        WHERE created_at >= NOW() - INTERVAL '{days} days'
+        GROUP BY source
     """
-    sql_status = """
+    sql_status = f"""
         SELECT status AS key, COUNT(*) AS cnt
-        FROM jobs GROUP BY status
+        FROM jobs
+        WHERE created_at >= NOW() - INTERVAL '{days} days'
+        GROUP BY status
     """
     async with pool.acquire() as conn:
         source_rows = await conn.fetch(sql_source)
@@ -221,31 +221,7 @@ async def stream_jobs(
     status: Optional[str] = None,
     sort: str = "latest",
 ):
-    """
-    Stream jobs with optional filters and sorting using server-side cursor.
-
-    Yields chunks of records. Use inside a transaction for cursor stability.
-    """
-    conditions: List[str] = []
-    params: List[Any] = []
-    idx = 1
-
-    if role:
-        conditions.append(f"role ILIKE ${idx}")
-        params.append(f"%{role}%")
-        idx += 1
-
-    if stack:
-        conditions.append(f"stack @> ${idx}::text[]")
-        params.append(stack)
-        idx += 1
-
-    if status:
-        conditions.append(f"status = ${idx}")
-        params.append(status)
-        idx += 1
-
-    where_clause = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+    where_clause, params, _ = _build_job_filters(role, stack, status)
     order = "DESC NULLS LAST" if sort == "latest" else "ASC NULLS LAST"
 
     sql = f"""

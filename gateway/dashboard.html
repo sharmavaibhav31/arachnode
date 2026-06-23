@@ -238,6 +238,28 @@
       color: var(--accent);
       background: var(--accent-low);
     }
+    
+    #btn-settings {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 36px;
+      padding: 0 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-dim);
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    
+    #btn-settings:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-low);
+    }
 
     #btn-scrape {
       padding: 7px 16px;
@@ -297,6 +319,76 @@
     }
 
     #offline-banner.show { display: flex; }
+
+    /* === HEALTH INDICATORS === */
+    .health-indicators {
+      display: flex;
+      gap: 12px;
+      margin-right: 16px;
+    }
+    .health-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      position: relative;
+    }
+    .health-dot[data-status="ok"] { background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .health-dot[data-status="degraded"] { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+    .health-dot[data-status="down"] { background: var(--red); box-shadow: 0 0 8px var(--red); }
+    .health-dot::after {
+      content: attr(title);
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--surface);
+      color: var(--text);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .health-dot:hover::after { opacity: 1; }
+
+    /* === MODALS === */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      background: rgba(0,0,0,.5);
+      backdrop-filter: blur(4px);
+    }
+    .modal-backdrop.open { display: flex; align-items: center; justify-content: center; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      width: 400px;
+      max-width: 90%;
+      box-shadow: var(--shadow);
+    }
+    .modal h3 { margin-bottom: 16px; }
+    .modal input {
+      width: 100%;
+      height: 40px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin-bottom: 16px;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
 
     /* ============================================================
        MAIN CONTENT
@@ -1544,9 +1636,12 @@
     async function apiFetch(path, opts = {}) {
       const url = API(path);
       const method = opts.method || 'GET';
+      const apiKey = localStorage.getItem('JOBHUNTER_API_KEY');
+      const headers = { 'Content-Type': 'application/json', ...opts.headers };
+      if (apiKey) headers['X-API-Key'] = apiKey;
       const options = {
         method,
-        headers: { 'Content-Type': 'application/json', ...opts.headers },
+        headers,
       };
       if (opts.body) options.body = JSON.stringify(opts.body);
       try {
@@ -1673,22 +1768,54 @@
     // ===========================================================================
     // JOBS VIEW
     // ===========================================================================
-    async function loadJobs(force = false) {
-      if (state.jobs.length && !force) { renderJobs(); return; }
-      document.getElementById('jobs-grid').innerHTML =
-        `<div style="grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:14px">${skelCards(6)}</div>`;
-      const data = await apiFetch('/jobs?limit=200');
-      if (!data) {
+    async function loadJobs(force = false, loadMore = false) {
+      if (state.jobs.length && !force && !loadMore) { renderJobs(); return; }
+      
+      if (!loadMore) {
+        jobsOffset = 0;
         document.getElementById('jobs-grid').innerHTML =
-          `<div class="empty" style="grid-column:1/-1">
-            <div class="empty-icon">⚠</div>
-            <p>Failed to load jobs. <button class="btn-outline" onclick="loadJobs(true)">Retry</button></p>
-          </div>`;
+          `<div style="grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:14px">${skelCards(6)}</div>`;
+      }
+      
+      const btn = document.getElementById('btn-load-more-jobs');
+      if (btn) btn.textContent = 'Loading...';
+
+      const data = await apiFetch(`/jobs?limit=50&offset=${jobsOffset}`);
+      if (!data) {
+        if (!loadMore) {
+          document.getElementById('jobs-grid').innerHTML =
+            `<div class="empty" style="grid-column:1/-1">
+              <div class="empty-icon">⚠</div>
+              <p>Failed to load jobs. <button class="btn-outline" onclick="loadJobs(true)">Retry</button></p>
+            </div>`;
+        }
+        if (btn) btn.textContent = 'Load More';
         return;
       }
-      state.jobs = Array.isArray(data) ? data : (data.jobs || []);
+      
+      const newJobs = Array.isArray(data) ? data : (data.data || data.jobs || []);
+      if (loadMore) {
+        state.jobs.push(...newJobs);
+      } else {
+        state.jobs = newJobs;
+      }
+      
       populateStackFilter();
       renderJobs();
+      
+      // Append Load More button if there are more jobs
+      const hasMore = data.pagination ? data.pagination.has_more : false;
+      const grid = document.getElementById('jobs-grid');
+      const existingBtn = document.getElementById('btn-load-more-jobs');
+      if (existingBtn) existingBtn.remove();
+      
+      if (hasMore) {
+        grid.insertAdjacentHTML('beforeend', LOAD_MORE_JOBS_BTN);
+        document.getElementById('btn-load-more-jobs').addEventListener('click', () => {
+          jobsOffset += 50;
+          loadJobs(false, true);
+        });
+      }
     }
 
     function populateStackFilter() {
@@ -1951,20 +2078,55 @@
     // ===========================================================================
     // CONTACTS VIEW
     // ===========================================================================
-    async function loadContacts(force = false) {
+    let contactsOffset = 0;
+    async function loadContacts(force = false, loadMore = false) {
       const q = document.getElementById('contact-search').value.trim();
       const cacheKey = q || '__all__';
-      if (state.contacts[cacheKey] && !force) { renderContacts(state.contacts[cacheKey]); return; }
-      document.getElementById('contacts-body').innerHTML = skelRows(5, 6);
-      const url = q ? `/contacts?company=${encodeURIComponent(q)}` : '/contacts?company=';
+      if (!loadMore && state.contacts[cacheKey] && !force) { renderContacts(state.contacts[cacheKey]); return; }
+      
+      if (!loadMore) {
+        contactsOffset = 0;
+        document.getElementById('contacts-body').innerHTML = skelRows(5, 6);
+      }
+      
+      const btn = document.getElementById('btn-load-more-contacts');
+      if (btn) btn.textContent = 'Loading...';
+      
+      const baseUrl = q ? `/contacts?company=${encodeURIComponent(q)}` : '/contacts?company=';
+      const url = `${baseUrl}&limit=50&offset=${contactsOffset}`;
       const data = await apiFetch(url);
+      
       if (!data) {
-        document.getElementById('contacts-body').innerHTML =
-          `<tr><td colspan="6"><div class="empty"><p>Failed to load. <button class="btn-outline" onclick="loadContacts(true)">Retry</button></p></div></td></tr>`;
+        if (!loadMore) {
+          document.getElementById('contacts-body').innerHTML =
+            `<tr><td colspan="6"><div class="empty"><p>Failed to load. <button class="btn-outline" onclick="loadContacts(true)">Retry</button></p></div></td></tr>`;
+        }
+        if (btn) btn.textContent = 'Load More';
         return;
       }
-      state.contacts[cacheKey] = Array.isArray(data) ? data : [];
+      
+      const newContacts = Array.isArray(data) ? data : (data.data || []);
+      if (loadMore) {
+        if (!state.contacts[cacheKey]) state.contacts[cacheKey] = [];
+        state.contacts[cacheKey].push(...newContacts);
+      } else {
+        state.contacts[cacheKey] = newContacts;
+      }
+      
       renderContacts(state.contacts[cacheKey]);
+      
+      const hasMore = data.pagination ? data.pagination.has_more : false;
+      const tbody = document.getElementById('contacts-body');
+      const existingBtnRow = document.getElementById('row-load-more-contacts');
+      if (existingBtnRow) existingBtnRow.remove();
+      
+      if (hasMore) {
+        tbody.insertAdjacentHTML('beforeend', `<tr id="row-load-more-contacts"><td colspan="6" style="text-align:center"><button class="btn-outline" style="width:100%" id="btn-load-more-contacts">Load More</button></td></tr>`);
+        document.getElementById('btn-load-more-contacts').addEventListener('click', () => {
+          contactsOffset += 50;
+          loadContacts(false, true);
+        });
+      }
     }
 
     function sortContacts(rows) {
@@ -2432,9 +2594,106 @@
     document.getElementById('btn-test-email')?.addEventListener('click', () => testNotification('email'));
 
     // ===========================================================================
+    // API KEY MODAL
+    // ===========================================================================
+    const apikeyModal = document.createElement('div');
+    apikeyModal.className = 'modal-backdrop';
+    apikeyModal.id = 'apikey-modal';
+    apikeyModal.innerHTML = `
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Authentication</h3>
+          <button class="btn-close-x" id="apikey-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="field-group">
+            <label>API Key</label>
+            <input type="password" id="apikey-input" placeholder="Enter JOBHUNTER_API_KEY" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-accent" id="apikey-submit">Save Key</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(apikeyModal);
+    
+    document.getElementById('apikey-close').addEventListener('click', () => apikeyModal.classList.remove('open'));
+    document.getElementById('apikey-submit').addEventListener('click', () => {
+      const val = document.getElementById('apikey-input').value.trim();
+      if(val) {
+        localStorage.setItem('JOBHUNTER_API_KEY', val);
+        apikeyModal.classList.remove('open');
+        toast('API key saved. Reloading...', 'success');
+        setTimeout(() => location.reload(), 1000);
+      }
+    });
+
+    const settingsBtn = document.createElement('button');
+    settingsBtn.id = 'btn-settings';
+    settingsBtn.innerHTML = '⚙ Settings';
+    settingsBtn.title = 'Configure API Key';
+    settingsBtn.onclick = () => {
+      document.getElementById('apikey-input').value = localStorage.getItem('JOBHUNTER_API_KEY') || '';
+      apikeyModal.classList.add('open');
+    };
+    document.querySelector('.nav-actions').prepend(settingsBtn);
+
+    // ===========================================================================
+    // HEALTH INDICATORS
+    // ===========================================================================
+    const healthContainer = document.createElement('div');
+    healthContainer.className = 'health-indicators';
+    healthContainer.innerHTML = `
+      <div class="health-dot" id="health-aggregator" data-status="degraded" title="Aggregator"></div>
+      <div class="health-dot" id="health-scraper" data-status="degraded" title="Scraper"></div>
+      <div class="health-dot" id="health-contact" data-status="degraded" title="Contact Discovery"></div>
+      <div class="health-dot" id="health-email" data-status="degraded" title="Email Generator"></div>
+    `;
+    document.querySelector('.nav-right').prepend(healthContainer);
+
+    async function checkHealth() {
+      try {
+        const res = await fetch(API('/health'), {
+          headers: localStorage.getItem('JOBHUNTER_API_KEY') ? {'X-API-Key': localStorage.getItem('JOBHUNTER_API_KEY')} : {}
+        });
+        if(res.status === 401) {
+          if (!localStorage.getItem('JOBHUNTER_API_KEY')) {
+            apikeyModal.classList.add('open');
+          }
+          return;
+        }
+        if(res.ok || res.status === 207) {
+          const data = await res.json();
+          if(data && data.services) {
+            data.services.forEach(s => {
+              const el = document.getElementById('health-' + (s.service === 'email-gen' ? 'email' : s.service));
+              if(el) el.setAttribute('data-status', s.status === 'ok' ? 'ok' : 'down');
+            });
+          }
+        }
+      } catch(e) {
+        // network error
+        ['aggregator', 'scraper', 'contact', 'email'].forEach(s => {
+           const el = document.getElementById('health-' + s);
+           if(el) el.setAttribute('data-status', 'down');
+        });
+      }
+    }
+
+    // ===========================================================================
+    // PAGINATION
+    // ===========================================================================
+    let jobsOffset = 0;
+    const LOAD_MORE_JOBS_BTN = '<button class="btn-outline" style="width:100%; grid-column:1/-1; margin-top:20px;" id="btn-load-more-jobs">Load More</button>';
+    
+    // Modification to renderJobs logic wrapper for load more will be handled by extending loadJobs
+    // ===========================================================================
     // INIT
     // ===========================================================================
     (async () => {
+      await checkHealth();
+      setInterval(checkHealth, 30000); // Check health every 30s
       switchTab('jobs');
     })();
   </script>

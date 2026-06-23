@@ -50,14 +50,13 @@ SUMMARY_PATH            = Path(os.environ.get("SUMMARY_PATH", "/data/run_summary
 
 def _write_summary(extra: dict | None = None) -> None:
     """Flush the current task summary to SUMMARY_PATH."""
-    SUMMARY_PATH.parent.mkdir(parents=True, exist_ok=True)
     data = {
         "run_at": datetime.now(timezone.utc).isoformat(),
         **tasks.get_summary(),
         **(extra or {}),
     }
     try:
-        SUMMARY_PATH.write_text(json.dumps(data, indent=2))
+        tasks.write_summary(data, str(SUMMARY_PATH))
         log.info("Run summary written", path=str(SUMMARY_PATH), data=data)
     except Exception as exc:
         log.error("Failed to write summary", error=str(exc))

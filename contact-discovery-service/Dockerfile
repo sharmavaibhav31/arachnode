@@ -1,14 +1,4 @@
-# ── Stage 1: Build ───────────────────────────────────────────────────────────
-FROM python:3.11-slim AS builder
-
-WORKDIR /app
-RUN pip install --upgrade pip
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
-
-
-# ── Stage 2: Runtime ─────────────────────────────────────────────────────────
+# ── Stage 1: Runtime ─────────────────────────────────────────────────────────
 FROM python:3.11-slim
 
 # Playwright/Chromium system dependencies + curl (for healthcheck)
@@ -20,17 +10,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libx11-xcb1 libxcb-dri3-0 fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
+RUN useradd -m -u 1000 appuser
+
+ENV PLAYWRIGHT_BROWSERS_PATH=/home/appuser/.cache/ms-playwright
+
 WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY --from=builder /install /usr/local
+# Install Playwright Chromium browser binary as root but into appuser's path
+RUN playwright install chromium --with-deps
 
-# Install Playwright Chromium browser binary
-RUN playwright install chromium
+# Give appuser ownership
+RUN chown -R appuser:appuser /home/appuser/.cache
 
-COPY . .
-
-RUN useradd -m appuser
 USER appuser
+
+COPY --chown=appuser:appuser . .
 
 EXPOSE 8000
 

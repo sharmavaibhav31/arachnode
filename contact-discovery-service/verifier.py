@@ -1,24 +1,5 @@
 """
-verifier.py — SMTP-based email verification with per-domain rate limiting.
-
-How it works:
-  1. Look up the MX record for the domain (using dnspython or a stdlib fallback).
-  2. Open an SMTP connection to the MX host.
-  3. Send EHLO + MAIL FROM + RCPT TO to check if the mailbox exists.
-  4. Close without DATA — no email is ever sent.
-
-Rate limiting:
-  To avoid being blocklisted, we allow a maximum of 5 verification attempts
-  per domain per hour.  A simple in-memory dict tracks this; for multi-process
-  deployments swap it for a Redis counter.
-
-Verification results:
-  'verified'   — SMTP server returned 250 (mailbox exists)
-  'unverified' — We could not reach the MX server or it returned a 4xx
-  'invalid'    — SMTP server returned 550 / 551 (mailbox does not exist)
-
-⚠ Some large providers (Google, Microsoft) block SMTP verification and always
-  return 250. Treat 'verified' as a best-effort signal, not a guarantee.
+verifier.py — SMTP-based email verification with per-domain rate limiting using Redis.
 """
 
 from __future__ import annotations
@@ -30,49 +11,54 @@ import socket
 import time
 from collections import defaultdict
 from typing import Literal
+import os
+import redis.asyncio as redis
 
 logger = logging.getLogger(__name__)
 
 VerifyResult = Literal["verified", "unverified", "invalid"]
 
-# Per-domain rate limit: (count, window_start)
-_domain_rate: dict[str, tuple[int, float]] = defaultdict(lambda: (0, time.time()))
-_MAX_PER_DOMAIN_PER_HOUR = 5
-_WINDOW_SECONDS = 3600
 _SMTP_TIMEOUT = 5   # seconds
 
+# Set up global redis client
+REDIS_URL = f"redis://{os.environ.get('REDIS_HOST', 'redis')}:{os.environ.get('REDIS_PORT', '6379')}"
+try:
+    global_redis = redis.from_url(REDIS_URL, decode_responses=True)
+except Exception:
+    global_redis = None
 
-def _rate_allowed(domain: str) -> bool:
-    """Return True if we have quota left for this domain this hour."""
-    count, window_start = _domain_rate[domain]
-    now = time.time()
-    if now - window_start > _WINDOW_SECONDS:
-        # Window expired — reset
-        _domain_rate[domain] = (0, now)
+async def _check_rate_limit(domain: str, redis_client) -> bool:
+    """
+    Returns True if the domain is within rate limit.
+    Max 3 SMTP verifications per domain per hour.
+    """
+    if redis_client is None:
+        logger.warning("[Verifier] Redis client is None. Failing open for rate limit.")
         return True
-    if count >= _MAX_PER_DOMAIN_PER_HOUR:
-        logger.warning(
-            "[Verifier] Rate limit reached for domain '%s' (%d/hr). Skipping.",
-            domain, _MAX_PER_DOMAIN_PER_HOUR,
-        )
-        return False
-    return True
 
-
-def _increment_rate(domain: str) -> None:
-    count, window_start = _domain_rate[domain]
-    _domain_rate[domain] = (count + 1, window_start)
+    try:
+        key = f"smtp_rate:{domain}"
+        count = await redis_client.get(key)
+        
+        if count is None:
+            await redis_client.setex(key, 3600, 1)
+            return True
+        
+        if int(count) >= 3:
+            logger.warning("[Verifier] Rate limit reached for domain '%s' (3/hr). Skipping.", domain)
+            return False
+        
+        await redis_client.incr(key)
+        return True
+    except Exception as e:
+        logger.warning(f"[Verifier] Redis rate limit check failed: {e}. Failing open.")
+        return True
 
 
 def _resolve_mx(domain: str) -> str | None:
-    """
-    Return the highest-priority MX hostname for *domain*, or None if not found.
-    Uses dnspython when available, falls back to a socket probe of the domain itself.
-    """
     try:
         import dns.resolver  # type: ignore
         answers = dns.resolver.resolve(domain, "MX")
-        # sort by preference (lowest = highest priority)
         mx_host = sorted(answers, key=lambda r: r.preference)[0].exchange.to_text().rstrip(".")
         return mx_host
     except ImportError:
@@ -80,15 +66,10 @@ def _resolve_mx(domain: str) -> str | None:
     except Exception as exc:
         logger.debug("[Verifier] dnspython MX lookup failed for %s: %s", domain, exc)
 
-    # Fallback: assume domain itself accepts SMTP (works for many companies)
     return f"mail.{domain}"
 
 
 def _smtp_check_sync(email: str, mx_host: str) -> VerifyResult:
-    """
-    Synchronous SMTP check (run in a thread-pool executor).
-    Returns the verification result string.
-    """
     from_addr = "noreply@jobdiscovery.internal"
     try:
         with smtplib.SMTP(timeout=_SMTP_TIMEOUT) as smtp:
@@ -111,18 +92,21 @@ def _smtp_check_sync(email: str, mx_host: str) -> VerifyResult:
         return "unverified"
 
 
-async def verify_email(email: str) -> VerifyResult:
+async def verify_email(email: str, redis_client=None) -> VerifyResult:
     """
     Async wrapper around the SMTP check.
-    Enforces per-domain rate limiting before connecting.
-    Returns 'unverified' immediately if rate limit is exceeded.
+    Enforces per-domain rate limiting using Redis before connecting.
     """
     if not email or "@" not in email:
         return "invalid"
 
     domain = email.split("@", 1)[1].lower()
+    
+    # Use global_redis if none provided (e.g. from discovery.py)
+    rc = redis_client if redis_client is not None else global_redis
 
-    if not _rate_allowed(domain):
+    allowed = await _check_rate_limit(domain, rc)
+    if not allowed:
         return "unverified"
 
     mx_host = _resolve_mx(domain)
@@ -130,7 +114,6 @@ async def verify_email(email: str) -> VerifyResult:
         logger.debug("[Verifier] No MX record found for %s", domain)
         return "unverified"
 
-    _increment_rate(domain)
     loop = asyncio.get_running_loop()
     result: VerifyResult = await loop.run_in_executor(
         None, _smtp_check_sync, email, mx_host

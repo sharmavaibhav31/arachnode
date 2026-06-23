@@ -1,135 +1,156 @@
-# (Removed obsolete `version:` key — modern Compose ignores it)
-# ─────────────────────────────────────────────────────────────────────────────
-# Job Discovery System — Full Stack
-#
-# Services:
-#   redis        — shared message broker
-#   postgres     — shared database
-#   crawler      — Scrapy job crawler (one-shot)
-#   aggregator   — FastAPI stream consumer + jobs REST API  (:8000)
-#   scraper      — Platform scraper (Naukri/LinkedIn/Internshala)  (:8001)
-#   contact      — Contact discovery pipeline  (:8002)
-#   email-gen    — Cold email generator  (:8003)
-#   gateway      — API gateway + dashboard  (:8080)
-#   scheduler    — APScheduler pipeline automation (background)
-# ─────────────────────────────────────────────────────────────────────────────
+# .env.example
+# REQUIRED FOR RUNTIME (Set to strong values)
+# JOBHUNTER_API_KEY=change-me-before-deploying
+# POSTGRES_USER=jobuser
+# POSTGRES_PASSWORD=jobpass
+# POSTGRES_DB=jobsdb
 
-x-common-env: &common-env
-  REDIS_HOST: redis
-  REDIS_PORT: "6379"
-  DATABASE_URL: postgresql://${POSTGRES_USER:-jobuser}:${POSTGRES_PASSWORD:-jobpass}@postgres:5432/${POSTGRES_DB:-jobsdb}
+# EXTERNAL SERVICES (Required for full functionality)
+# GITHUB_TOKEN=ghp_...
+# GMAIL_ADDRESS=you@gmail.com
+# GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
+
+# JOB SEEKER PROFILE (Customize for your search)
+# YOUR_NAME="Applicant Name"
+# YOUR_GITHUB_URL="https://github.com/yourusername"
+# JOBSEEKER_ROLE="Backend Engineer"
+# JOBSEEKER_STACK="Python,FastAPI,PostgreSQL,Redis,Go"
+
+# SYSTEM CONFIGURATION
+# CRAWL_INTERVAL_HOURS=8
+# DISCOVER_INTERVAL_HOURS=24
+# SCRAPER_WAIT_SECS=60
+# DISCOVER_DELAY_SECS=30
+# FOLLOWUP_DAYS=7
+# GATEWAY_PORT=8080
+# OLLAMA_BASE_URL=http://host.docker.internal:11434
+
+# Postgres and Redis are intentionally not exposed to the host.
+# Use docker exec for direct access during development.
 
 services:
-
-  # ── Redis ──────────────────────────────────────────────────────────────────
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      retries: 5
-    networks: [jobnet]
-
-  # ── PostgreSQL ─────────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER:     ${POSTGRES_USER:-jobuser}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-jobpass}
       POSTGRES_DB:       ${POSTGRES_DB:-jobsdb}
-    ports:
-      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jobuser} -d ${POSTGRES_DB:-jobsdb}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-jobuser} -d $${POSTGRES_DB:-jobsdb}"]
       interval: 5s
       retries: 10
     networks: [jobnet]
+    restart: unless-stopped
 
-  # ── Crawler (Scrapy, one-shot) ─────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 5
+    networks: [jobnet]
+    restart: unless-stopped
+
   crawler:
     build:
       context: ./crawler-service
       dockerfile: Dockerfile
     environment:
-      <<: *common-env
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
       JOBSEEKER_ROLE:  ${JOBSEEKER_ROLE:-Backend Engineer}
       JOBSEEKER_STACK: ${JOBSEEKER_STACK:-Python,FastAPI,PostgreSQL,Redis,Go}
     depends_on:
       redis:
         condition: service_healthy
-    restart: "no"
-    command: ["scrapy", "crawl", "remotive"]
+    restart: on-failure
     networks: [jobnet]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8004/health || exit 1"]
+      interval: 10s
+      retries: 5
 
-  # ── Aggregator ─────────────────────────────────────────────────────────────
   aggregator:
     build:
       context: ./aggregator-service
       dockerfile: Dockerfile
     environment:
-      <<: *common-env
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-jobuser}:${POSTGRES_PASSWORD:-jobpass}@postgres:5432/${POSTGRES_DB:-jobsdb}
     depends_on:
       redis:
         condition: service_healthy
       postgres:
         condition: service_healthy
     networks: [jobnet]
-    restart: unless-stopped
+    restart: on-failure
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
       interval: 10s
       retries: 5
       start_period: 15s
 
-  # ── Platform Scraper ───────────────────────────────────────────────────────
   scraper:
     build:
       context: ./scraper-service
       dockerfile: Dockerfile
     environment:
-      <<: *common-env
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-jobuser}:${POSTGRES_PASSWORD:-jobpass}@postgres:5432/${POSTGRES_DB:-jobsdb}
     depends_on:
       redis:
         condition: service_healthy
     networks: [jobnet]
-    restart: unless-stopped
+    restart: on-failure
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
       interval: 10s
       retries: 5
       start_period: 20s
 
-  # ── Contact Discovery ──────────────────────────────────────────────────────
   contact:
     build:
       context: ./contact-discovery-service
       dockerfile: Dockerfile
     environment:
-      <<: *common-env
+      DATABASE_URL: postgresql://${POSTGRES_USER:-jobuser}:${POSTGRES_PASSWORD:-jobpass}@postgres:5432/${POSTGRES_DB:-jobsdb}
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     networks: [jobnet]
-    restart: unless-stopped
+    restart: on-failure
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
       interval: 10s
       retries: 5
       start_period: 25s
 
-  # ── Email Generator ────────────────────────────────────────────────────────
   email-gen:
     build:
       context: ./email-generator-service
       dockerfile: Dockerfile
     environment:
-      <<: *common-env
+      DATABASE_URL: postgresql://${POSTGRES_USER:-jobuser}:${POSTGRES_PASSWORD:-jobpass}@postgres:5432/${POSTGRES_DB:-jobsdb}
       OLLAMA_BASE_URL:    ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
       GMAIL_ADDRESS:      ${GMAIL_ADDRESS:-}
       GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD:-}
@@ -139,14 +160,13 @@ services:
       postgres:
         condition: service_healthy
     networks: [jobnet]
-    restart: unless-stopped
+    restart: on-failure
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
       interval: 10s
       retries: 5
       start_period: 15s
 
-  # ── API Gateway + Dashboard ────────────────────────────────────────────────
   gateway:
     build:
       context: ./gateway
@@ -164,8 +184,10 @@ services:
       DISCORD_WEBHOOK_URL:   ${DISCORD_WEBHOOK_URL:-}
       NOTIFICATION_EMAIL:    ${NOTIFICATION_EMAIL:-}
       NOTIFY_RATE_LIMIT_SECS: ${NOTIFY_RATE_LIMIT_SECS:-300}
+      SUMMARY_PATH:   /data/run_summary.json
+      JOBHUNTER_API_KEY: ${JOBHUNTER_API_KEY:-}
     volumes:
-      - scheduler_data:/data
+      - run_summary:/data:ro
     depends_on:
       aggregator:
         condition: service_healthy
@@ -176,20 +198,20 @@ services:
       email-gen:
         condition: service_healthy
     networks: [jobnet]
-    restart: unless-stopped
+    restart: on-failure
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8080/api/health || exit 1"]
       interval: 15s
       retries: 5
       start_period: 30s
 
-  # ── Scheduler (APScheduler background process) ───────────────────────────────
   scheduler:
     build:
       context: ./scheduler
       dockerfile: Dockerfile
     environment:
       GATEWAY_URL:            http://gateway:8080
+      CRAWLER_URL:            http://crawler:8004
       JOBSEEKER_ROLE:         ${JOBSEEKER_ROLE:-Backend Engineer}
       JOBSEEKER_STACK:        ${JOBSEEKER_STACK:-Python,FastAPI,PostgreSQL,Redis,Go}
       CRAWL_INTERVAL_HOURS:   ${CRAWL_INTERVAL_HOURS:-8}
@@ -204,16 +226,22 @@ services:
       NOTIFY_RATE_LIMIT_SECS: ${NOTIFY_RATE_LIMIT_SECS:-300}
       NOTIFY_EVENTS:          ${NOTIFY_EVENTS:-}
     volumes:
-      - scheduler_data:/data   # shared with gateway for GET /api/summary
+      - run_summary:/data
     depends_on:
       gateway:
         condition: service_healthy
+      crawler:
+        condition: service_healthy
     networks: [jobnet]
-    restart: unless-stopped
+    restart: on-failure
 
 volumes:
   pgdata:
-  scheduler_data:    # shared between scheduler (writer) and gateway (reader)
+    driver: local
+  redis_data:
+    driver: local
+  run_summary:
+    driver: local
 
 networks:
   jobnet:
