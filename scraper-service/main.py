@@ -12,14 +12,19 @@ from __future__ import annotations
 import asyncio
 import logging
 from contextlib import asynccontextmanager
+from datetime import date
+from typing import Any
 
 from fastapi import FastAPI, BackgroundTasks
 from pydantic import BaseModel
 
 import emit as emitter
+from discovery.dork_builder import DEFAULT_PLATFORMS, JobDorkConfig
+from discovery.dork_discovery import DorkDiscoveryService, provider_from_env
 from scrapers.naukri import NaukriScraper
 from scrapers.linkedin import LinkedInScraper
 from scrapers.internshala import IntershalaScraper
+from scrapers.google_dork import GoogleDorkScraper
 from scrapers.unstop import UnstopScraper
 
 logging.basicConfig(
@@ -28,6 +33,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+PLATFORMS = ["naukri", "linkedin", "internshala", "google_dork"]
 PLATFORMS = ["naukri", "linkedin", "internshala", "unstop"]
 
 
@@ -70,6 +76,22 @@ class ScrapeResponse(BaseModel):
     platforms: list[str]
 
 
+class DorkDiscoverRequest(BaseModel):
+    role: str = "Backend Engineer"
+    stack: list[str] = []
+    location: str | None = None
+    year: int | None = None
+    after: date | None = None
+    platforms: list[str] = []
+    max_queries: int = 8
+    results_per_query: int = 10
+
+
+class DorkDiscoverResponse(BaseModel):
+    queries: list[str]
+    candidates: list[dict[str, Any]]
+
+
 # ---------------------------------------------------------------------------
 # Background scrape runner
 # ---------------------------------------------------------------------------
@@ -83,6 +105,7 @@ async def _run_all_scrapers(role: str, stack: list[str]) -> None:
         NaukriScraper(),
         LinkedInScraper(),
         IntershalaScraper(),
+        GoogleDorkScraper(),
         UnstopScraper(),
     ]
 
@@ -124,3 +147,37 @@ async def trigger_scrape(body: ScrapeRequest, background_tasks: BackgroundTasks)
     """
     background_tasks.add_task(_run_all_scrapers, body.role, body.stack)
     return ScrapeResponse(triggered=True, platforms=PLATFORMS)
+
+
+@app.post("/discover/dorks", response_model=DorkDiscoverResponse, tags=["discovery"])
+async def discover_dorks(body: DorkDiscoverRequest):
+    """
+    Generate dork queries and, when a provider is configured, return filtered
+    discovery candidates. This endpoint is demo-friendly and does not emit jobs.
+    """
+    config = JobDorkConfig(
+        role=body.role,
+        stack=tuple(body.stack),
+        location=body.location,
+        year=body.year,
+        after=body.after,
+        platforms=tuple(body.platforms) or DEFAULT_PLATFORMS,
+        max_queries=body.max_queries,
+    )
+    response = await DorkDiscoveryService(provider=provider_from_env()).discover(
+        config,
+        results_per_query=body.results_per_query,
+    )
+    return DorkDiscoverResponse(
+        queries=response.queries,
+        candidates=[
+            {
+                "title": candidate.title,
+                "url": candidate.url,
+                "snippet": candidate.snippet,
+                "query": candidate.query,
+                "score": candidate.score,
+            }
+            for candidate in response.candidates
+        ],
+    )

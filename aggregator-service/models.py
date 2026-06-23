@@ -32,6 +32,8 @@ class JobOut(JobBase):
     id: UUID
     status: str
     created_at: datetime
+    match_score: Optional[float] = None
+    match_tier: Optional[str] = None
 
 
 class StatusUpdate(BaseModel):

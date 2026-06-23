@@ -4,3 +4,4 @@ asyncpg>=0.29.0
 redis[asyncio]>=5.0.3
 pydantic>=2.7.0
 playwright-stealth>=1.0.6
+sentence-transformers>=2.7.0
