@@ -69,6 +69,11 @@ CREATE INDEX IF NOT EXISTS idx_jobs_posted_at
 
 CREATE INDEX IF NOT EXISTS idx_jobs_status
     ON jobs (status);
+    
+-- Prevent duplicate job URLs by enforcing uniqueness
+CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_url_unique
+ON jobs(url)
+WHERE url IS NOT NULL;    
 """
 
 
