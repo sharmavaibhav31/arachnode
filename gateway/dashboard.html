@@ -894,6 +894,76 @@
     .summary-row span:first-child { color: var(--text-dim); }
 
     /* ============================================================
+       SETTINGS
+    ============================================================ */
+    .settings-group {
+      max-width: 680px;
+      margin: 0 auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 32px;
+    }
+    .settings-group h3 {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .settings-desc {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-bottom: 20px;
+    }
+    .settings-group .field-group {
+      margin-bottom: 16px;
+    }
+    .settings-group .field-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+    }
+    .settings-group .field-group input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-2);
+      color: var(--text);
+      font-size: 14px;
+    }
+    .settings-group .field-group input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-low);
+    }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
+    }
+    .toggle-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .toggle-row:hover { color: var(--accent); }
+    .settings-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    /* ============================================================
        MODAL
     ============================================================ */
     .modal-backdrop {
@@ -1190,17 +1260,13 @@
         <button class="nav-tab" data-tab="contacts">Contacts</button>
         <button class="nav-tab" data-tab="emails">Emails</button>
         <button class="nav-tab" data-tab="stats">Stats</button>
+        <button class="nav-tab" data-tab="settings">⚙ Settings</button>
       </div>
     </div>
-  <button id="btn-scrape">▶ Trigger Scrape</button>
-        <button id="btn-export-csv" style="padding:7px 14px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;" title="Export jobs as CSV">⬇ Export CSV</button>
-      </nav>
     <div class="nav-right">
       <button id="btn-theme" aria-label="Toggle theme">🌙 Dark</button>
-      <button id="btn-scrape">+ Scrape</button>
-    <div class="nav-actions">
+      <button class="btn-accent" id="btn-scrape">▶ Scrape</button>
       <button id="btn-shortcuts" title="Keyboard shortcuts">?</button>
-      <button id="btn-scrape">▶ Trigger Scrape</button>
     </div>
   </nav>
 
@@ -1328,6 +1394,49 @@
             <div class="empty-icon">🕐</div>
             <p>No run summary yet.</p>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS TAB -->
+    <section id="tab-settings" class="tab-view">
+      <div class="settings-group">
+        <h3>🔔 Notifications</h3>
+        <p class="settings-desc">Configure webhook and email notifications for automation events.</p>
+
+        <div class="field-group">
+          <label>Slack Webhook URL</label>
+          <input type="url" id="notify-slack-url" placeholder="https://hooks.slack.com/services/…" />
+        </div>
+        <div class="field-group">
+          <label>Discord Webhook URL</label>
+          <input type="url" id="notify-discord-url" placeholder="https://discord.com/api/webhooks/…" />
+        </div>
+        <div class="field-group">
+          <label>Notification Email</label>
+          <input type="email" id="notify-email" placeholder="you@example.com" />
+        </div>
+        <div class="field-group">
+          <label>Rate Limit (seconds between notifications)</label>
+          <input type="number" id="notify-rate-limit" min="60" max="3600" value="300" />
+        </div>
+
+        <h4 style="margin: 20px 0 10px; color: var(--text-dim); font-weight: 500;">Event Types</h4>
+        <p class="settings-desc" style="margin-bottom: 12px;">Choose which events should trigger notifications.</p>
+        <div id="notify-events-list">
+          <label class="toggle-row"><input type="checkbox" value="jobs:new" checked /> <span>New jobs discovered</span></label>
+          <label class="toggle-row"><input type="checkbox" value="contacts:found" checked /> <span>New contacts discovered</span></label>
+          <label class="toggle-row"><input type="checkbox" value="emails:drafted" checked /> <span>Emails drafted</span></label>
+          <label class="toggle-row"><input type="checkbox" value="emails:sent" checked /> <span>Emails sent</span></label>
+          <label class="toggle-row"><input type="checkbox" value="scrape:error" checked /> <span>Scrape errors</span></label>
+          <label class="toggle-row"><input type="checkbox" value="cycle:complete" checked /> <span>Cycle complete summaries</span></label>
+        </div>
+
+        <div class="settings-actions">
+          <button class="btn-accent" id="btn-save-notify">Save Settings</button>
+          <button class="btn-outline" id="btn-test-slack" data-channel="slack">Test Slack</button>
+          <button class="btn-outline" id="btn-test-discord" data-channel="discord">Test Discord</button>
+          <button class="btn-outline" id="btn-test-email" data-channel="email">Test Email</button>
         </div>
       </div>
     </section>
@@ -1622,6 +1731,41 @@
     }
 
     // ===========================================================================
+    // NOTIFICATION SETTINGS
+    // ===========================================================================
+    async function loadNotifyConfig() {
+      const data = await apiFetch('/notifications/config');
+      if (!data) return;
+      document.getElementById('notify-slack-url').value = data.slack_webhook_url || '';
+      document.getElementById('notify-discord-url').value = data.discord_webhook_url || '';
+      document.getElementById('notify-email').value = data.notification_email || '';
+      document.getElementById('notify-rate-limit').value = data.rate_limit_secs || 300;
+      const checks = document.querySelectorAll('#notify-events-list input[type="checkbox"]');
+      const enabled = new Set(data.notify_events || []);
+      checks.forEach(cb => { cb.checked = enabled.has(cb.value); });
+    }
+
+    async function saveNotifyConfig() {
+      const checks = document.querySelectorAll('#notify-events-list input[type="checkbox"]:checked');
+      const events = Array.from(checks).map(cb => cb.value);
+      const body = {
+        slack_webhook_url: document.getElementById('notify-slack-url').value.trim(),
+        discord_webhook_url: document.getElementById('notify-discord-url').value.trim(),
+        notification_email: document.getElementById('notify-email').value.trim(),
+        notify_events: events,
+        rate_limit_secs: parseInt(document.getElementById('notify-rate-limit').value) || 300,
+      };
+      const res = await apiFetch('/notifications/config', { method: 'PUT', body });
+      if (res) toast('Notification settings saved!', 'success');
+    }
+
+    async function testNotification(channel) {
+      const res = await apiFetch(`/notifications/test?channel=${channel}`, { method: 'POST' });
+      if (res) toast(`Test ${channel} notification sent!`, 'success');
+      else toast(`Test ${channel} notification failed`, 'error');
+    }
+
+    // ===========================================================================
     // JOBS VIEW
     // ===========================================================================
     async function loadJobs(force = false, loadMore = false) {
@@ -1756,7 +1900,7 @@
       <strong>Step 3</strong> — Use filters above to narrow down by role or stack
     </div>
   </div>
-  <button class="btn-accent" onclick="document.getElementById('btn-scrape').click()">▶ Trigger Scrape</button>
+  <button class="btn-accent" onclick="openScrapeModal()">▶ Trigger Scrape</button>
 </div>`;
           <div class="empty-icon">🔍</div>
           <p>No jobs found. Trigger a scrape to get started.</p>
@@ -2224,6 +2368,7 @@
       else if (tab === 'contacts') loadContacts();
       else if (tab === 'emails')   loadEmails();
       else if (tab === 'stats')    loadStats();
+      else if (tab === 'settings') loadNotifyConfig();
     }
 
     function isTypingTarget(target) {
@@ -2415,37 +2560,11 @@
     });
 
     const scrapeModal = document.getElementById('scrape-modal');
-    document.getElementById('btn-scrape').addEventListener('click',  () => scrapeModal.classList.add('open'));
-    document.getElementById('modal-close').addEventListener('click', () => scrapeModal.classList.remove('open'));
-    document.getElementById('modal-cancel').addEventListener('click',() => scrapeModal.classList.remove('open'));
-    scrapeModal.addEventListener('click', e => { if (e.target === scrapeModal) scrapeModal.classList.remove('open'); });
-    // CSV Export
-  document.getElementById('btn-export-csv').addEventListener('click', async () => {
-    const btn = document.getElementById('btn-export-csv');
-    btn.textContent = '⏳ Exporting...';
-    btn.disabled = true;
-    try {
-      const res = await fetch('/api/jobs/export/csv');
-      if (!res.ok) throw new Error('Export failed');
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `jobs_${new Date().toISOString().slice(0,10)}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      alert('Export failed: ' + e.message);
-    } finally {
-      btn.textContent = '⬇ Export CSV';
-      btn.disabled = false;
-    }
-  });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') scrapeModal.classList.remove('open'); });
     document.getElementById('btn-scrape').addEventListener('click', openScrapeModal);
     document.getElementById('modal-close').addEventListener('click', closeScrapeModal);
     document.getElementById('modal-cancel').addEventListener('click', closeScrapeModal);
     scrapeModal.addEventListener('click', e => { if (e.target === scrapeModal) closeScrapeModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeScrapeModal(); });
 
     // Shortcut reference
     const shortcutsModal = document.getElementById('shortcuts-modal');
@@ -2467,6 +2586,12 @@
     });
 
     document.getElementById('btn-dismiss-banner').addEventListener('click', hideBanner);
+
+    // Notification buttons
+    document.getElementById('btn-save-notify')?.addEventListener('click', saveNotifyConfig);
+    document.getElementById('btn-test-slack')?.addEventListener('click', () => testNotification('slack'));
+    document.getElementById('btn-test-discord')?.addEventListener('click', () => testNotification('discord'));
+    document.getElementById('btn-test-email')?.addEventListener('click', () => testNotification('email'));
 
     // ===========================================================================
     // API KEY MODAL
