@@ -56,6 +56,11 @@ scheduler/
 | `DISCOVER_DELAY_SECS` | `30` | Delay between each per-job discover call |
 | `SCRAPY_PROJECT_DIR` | `/crawler` | CWD for `scrapy crawl` subprocess |
 | `SUMMARY_PATH` | `/data/run_summary.json` | Output path for run summary |
+| `SLACK_WEBHOOK_URL` | — | Slack Incoming Webhook URL for notifications |
+| `DISCORD_WEBHOOK_URL` | — | Discord Webhook URL for notifications |
+| `NOTIFICATION_EMAIL` | — | Email address for email notifications (uses Gmail SMTP) |
+| `NOTIFY_RATE_LIMIT_SECS` | `300` | Rate limit window per event type (seconds) |
+| `NOTIFY_EVENTS` | _(all)_ | Comma-separated enabled event types (e.g. `jobs:new,emails:drafted`) |
 
 ---
 
