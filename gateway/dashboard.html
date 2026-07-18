@@ -1646,52 +1646,64 @@
     // ===========================================================================
     // JOBS VIEW
     // ===========================================================================
-    async function loadJobs(force = false, loadMore = false) {
-      if (state.jobs.length && !force && !loadMore) { renderJobs(); return; }
+    async function loadJobs(force = false, pageChange = false) {
+      if (state.jobs.length && !force && !pageChange) { renderJobs(); return; }
       
-      if (!loadMore) {
+      if (!pageChange) {
         jobsOffset = 0;
-        document.getElementById('jobs-grid').innerHTML =
-          `<div style="grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:14px">${skelCards(6)}</div>`;
       }
       
-      const btn = document.getElementById('btn-load-more-jobs');
-      if (btn) btn.textContent = 'Loading...';
+      document.getElementById('jobs-grid').innerHTML =
+        `<div style="grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:14px">${skelCards(6)}</div>`;
+      
+      const existingPagination = document.getElementById('jobs-pagination-controls');
+      if (existingPagination) existingPagination.remove();
 
       const data = await apiFetch(`/jobs?limit=50&offset=${jobsOffset}`);
       if (!data) {
-        if (!loadMore) {
-          document.getElementById('jobs-grid').innerHTML =
-            `<div class="empty" style="grid-column:1/-1">
-              <div class="empty-icon">⚠</div>
-              <p>Failed to load jobs. <button class="btn-outline" onclick="loadJobs(true)">Retry</button></p>
-            </div>`;
-        }
-        if (btn) btn.textContent = 'Load More';
+        document.getElementById('jobs-grid').innerHTML =
+          `<div class="empty" style="grid-column:1/-1">
+            <div class="empty-icon">⚠</div>
+            <p>Failed to load jobs. <button class="btn-outline" onclick="loadJobs(true)">Retry</button></p>
+          </div>`;
         return;
       }
       
       const newJobs = Array.isArray(data) ? data : (data.data || data.jobs || []);
-      if (loadMore) {
-        state.jobs.push(...newJobs);
-      } else {
-        state.jobs = newJobs;
-      }
+      state.jobs = newJobs;
       
       populateStackFilter();
       renderJobs();
       
-      // Append Load More button if there are more jobs
-      const hasMore = data.pagination ? data.pagination.has_more : false;
       const grid = document.getElementById('jobs-grid');
-      const existingBtn = document.getElementById('btn-load-more-jobs');
-      if (existingBtn) existingBtn.remove();
       
-      if (hasMore) {
-        grid.insertAdjacentHTML('beforeend', LOAD_MORE_JOBS_BTN);
-        document.getElementById('btn-load-more-jobs').addEventListener('click', () => {
-          jobsOffset += 50;
-          loadJobs(false, true);
+      if (data.pagination) {
+        const { total, limit, offset, has_more } = data.pagination;
+        const start = total === 0 ? 0 : offset + 1;
+        const end = Math.min(offset + limit, total);
+        
+        const paginationHTML = `
+          <div id="jobs-pagination-controls" style="grid-column:1/-1; display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding: 14px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);">
+            <button class="btn-outline" id="btn-prev-jobs" ${offset === 0 ? 'disabled' : ''}>Previous</button>
+            <span class="pagination-info" style="color:var(--text-dim); font-size:13px; font-weight:500;">
+              ${start}-${end} of ${total}
+            </span>
+            <button class="btn-outline" id="btn-next-jobs" ${!has_more ? 'disabled' : ''}>Next</button>
+          </div>
+        `;
+        grid.insertAdjacentHTML('beforeend', paginationHTML);
+        
+        document.getElementById('btn-prev-jobs').addEventListener('click', () => {
+          if (offset > 0) {
+            jobsOffset = Math.max(0, offset - limit);
+            loadJobs(false, true);
+          }
+        });
+        document.getElementById('btn-next-jobs').addEventListener('click', () => {
+          if (has_more) {
+            jobsOffset = offset + limit;
+            loadJobs(false, true);
+          }
         });
       }
     }
@@ -1957,52 +1969,67 @@
     // CONTACTS VIEW
     // ===========================================================================
     let contactsOffset = 0;
-    async function loadContacts(force = false, loadMore = false) {
+    async function loadContacts(force = false, pageChange = false) {
       const q = document.getElementById('contact-search').value.trim();
       const cacheKey = q || '__all__';
-      if (!loadMore && state.contacts[cacheKey] && !force) { renderContacts(state.contacts[cacheKey]); return; }
+      if (!pageChange && state.contacts[cacheKey] && !force) { renderContacts(state.contacts[cacheKey]); return; }
       
-      if (!loadMore) {
+      if (!pageChange) {
         contactsOffset = 0;
-        document.getElementById('contacts-body').innerHTML = skelRows(5, 6);
       }
+      document.getElementById('contacts-body').innerHTML = skelRows(5, 6);
       
-      const btn = document.getElementById('btn-load-more-contacts');
-      if (btn) btn.textContent = 'Loading...';
+      const existingPagination = document.getElementById('row-pagination-contacts');
+      if (existingPagination) existingPagination.remove();
       
       const baseUrl = q ? `/contacts?company=${encodeURIComponent(q)}` : '/contacts?company=';
       const url = `${baseUrl}&limit=50&offset=${contactsOffset}`;
       const data = await apiFetch(url);
       
       if (!data) {
-        if (!loadMore) {
-          document.getElementById('contacts-body').innerHTML =
-            `<tr><td colspan="6"><div class="empty"><p>Failed to load. <button class="btn-outline" onclick="loadContacts(true)">Retry</button></p></div></td></tr>`;
-        }
-        if (btn) btn.textContent = 'Load More';
+        document.getElementById('contacts-body').innerHTML =
+          `<tr><td colspan="6"><div class="empty"><p>Failed to load. <button class="btn-outline" onclick="loadContacts(true)">Retry</button></p></div></td></tr>`;
         return;
       }
       
       const newContacts = Array.isArray(data) ? data : (data.data || []);
-      if (loadMore) {
-        if (!state.contacts[cacheKey]) state.contacts[cacheKey] = [];
-        state.contacts[cacheKey].push(...newContacts);
-      } else {
-        state.contacts[cacheKey] = newContacts;
-      }
+      state.contacts[cacheKey] = newContacts;
       
       renderContacts(state.contacts[cacheKey]);
       
-      const hasMore = data.pagination ? data.pagination.has_more : false;
       const tbody = document.getElementById('contacts-body');
-      const existingBtnRow = document.getElementById('row-load-more-contacts');
-      if (existingBtnRow) existingBtnRow.remove();
       
-      if (hasMore) {
-        tbody.insertAdjacentHTML('beforeend', `<tr id="row-load-more-contacts"><td colspan="6" style="text-align:center"><button class="btn-outline" style="width:100%" id="btn-load-more-contacts">Load More</button></td></tr>`);
-        document.getElementById('btn-load-more-contacts').addEventListener('click', () => {
-          contactsOffset += 50;
-          loadContacts(false, true);
+      if (data.pagination) {
+        const { total, limit, offset, has_more } = data.pagination;
+        const start = total === 0 ? 0 : offset + 1;
+        const end = Math.min(offset + limit, total);
+        
+        const paginationHTML = `
+          <tr id="row-pagination-contacts">
+            <td colspan="6" style="padding:0;">
+              <div style="display:flex; justify-content:space-between; align-items:center; padding: 14px 20px; background:var(--surface-2); border-top:1px solid var(--border);">
+                <button class="btn-outline" id="btn-prev-contacts" ${offset === 0 ? 'disabled' : ''}>Previous</button>
+                <span class="pagination-info" style="color:var(--text-dim); font-size:13px; font-weight:500;">
+                  ${start}-${end} of ${total}
+                </span>
+                <button class="btn-outline" id="btn-next-contacts" ${!has_more ? 'disabled' : ''}>Next</button>
+              </div>
+            </td>
+          </tr>
+        `;
+        tbody.insertAdjacentHTML('beforeend', paginationHTML);
+        
+        document.getElementById('btn-prev-contacts').addEventListener('click', () => {
+          if (offset > 0) {
+            contactsOffset = Math.max(0, offset - limit);
+            loadContacts(false, true);
+          }
+        });
+        document.getElementById('btn-next-contacts').addEventListener('click', () => {
+          if (has_more) {
+            contactsOffset = offset + limit;
+            loadContacts(false, true);
+          }
         });
       }
     }
