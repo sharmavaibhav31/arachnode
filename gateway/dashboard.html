@@ -829,6 +829,9 @@
       text-transform: uppercase;
       letter-spacing: .06em;
       margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 8px;
     }
 
     .metric-value {
@@ -1333,6 +1336,7 @@
     </section>
 
   </div><!-- #main -->
+  </div><!-- #main -->
 
   <!-- DETAIL PANEL -->
   <div id="panel-backdrop"></div>
@@ -1362,6 +1366,24 @@
         <div class="field-group">
           <label>Stack (comma-separated)</label>
           <input type="text" id="scrape-stack" value="Python,Go,FastAPI" />
+        </div>
+        <div class="field-group">
+          <label>Platforms</label>
+          <div class="platform-chips" id="platform-chips">
+            <button type="button" class="platform-chip" data-platform="linkedin">
+              <span class="chip-icon">💼</span>LinkedIn<span class="chip-check">✓</span>
+            </button>
+            <button type="button" class="platform-chip" data-platform="internshala">
+              <span class="chip-icon">🎓</span>Internshala<span class="chip-check">✓</span>
+            </button>
+            <button type="button" class="platform-chip" data-platform="naukri">
+              <span class="chip-icon">🏢</span>Naukri<span class="chip-check">✓</span>
+            </button>
+            <button type="button" class="platform-chip" data-platform="unstop">
+              <span class="chip-icon">🚀</span>Unstop<span class="chip-check">✓</span>
+            </button>
+          </div>
+          <p class="scrape-all-hint" id="scrape-all-hint">No selection — all platforms will be scraped</p>
         </div>
       </div>
       <div class="modal-footer">
@@ -2458,10 +2480,19 @@
       const role  = document.getElementById('scrape-role').value.trim();
       const stack = document.getElementById('scrape-stack').value.split(',').map(s => s.trim()).filter(Boolean);
       if (!role) { toast('Enter a role first', 'error'); return; }
+
+      // Collect selected platforms; empty array = scrape-all (backend default)
+      const selectedChips = document.querySelectorAll('#platform-chips .platform-chip.active');
+      const platforms = selectedChips.length > 0
+        ? [...selectedChips].map(c => c.dataset.platform)
+        : [];
+
       scrapeModal.classList.remove('open');
       const btn = document.getElementById('modal-submit');
       btn.disabled = true;
-      const r = await apiFetch('/scrape', { method: 'POST', body: { role, stack } });
+      const body = { role, stack };
+      if (platforms.length > 0) body.platforms = platforms;
+      const r = await apiFetch('/scrape', { method: 'POST', body });
       btn.disabled = false;
       if (r !== null) toast('Scraping started — new jobs will appear in ~60 seconds', 'info', 6000);
     });
