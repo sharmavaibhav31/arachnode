@@ -1,9 +1,6 @@
 FROM python:3.11-slim
 
-WORKDIR /app
-
-# System deps for Playwright's Chromium
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     wget curl gnupg ca-certificates \
     libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 \
     libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 \
@@ -11,14 +8,23 @@ RUN apt-get update && apt-get install -y \
     fonts-liberation libappindicator3-1 xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
+RUN useradd -m -u 1000 appuser
+
+# Set Playwright path so it lands in appuser's home directory
+ENV PLAYWRIGHT_BROWSERS_PATH=/home/appuser/.cache/ms-playwright
+
+WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir fastapi uvicorn pydantic
 
-# Install only Chromium — skip Firefox and WebKit to keep the image slim
 RUN playwright install chromium
+RUN chown -R appuser:appuser /home/appuser/.cache
 
-COPY . .
+USER appuser
+COPY --chown=appuser:appuser . .
 
-# Default command: run the Remotive spider (safest starting point)
-# Override at runtime: docker run ... scrapy crawl wellfound
-CMD ["scrapy", "crawl", "remotive"]
+ENV SCRAPY_SETTINGS_MODULE=crawler.settings
+
+EXPOSE 8004
+CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8004"]

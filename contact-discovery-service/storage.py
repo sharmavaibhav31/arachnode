@@ -84,8 +84,13 @@ CREATE TABLE IF NOT EXISTS contacts (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+
 CREATE INDEX IF NOT EXISTS idx_contacts_company
     ON contacts (company);
+
+CREATE INDEX IF NOT EXISTS idx_contacts_company_text
+    ON contacts USING gin(company gin_trgm_ops);
 
 CREATE INDEX IF NOT EXISTS idx_contacts_job_id
     ON contacts (job_id)
@@ -188,23 +193,38 @@ async def insert_contact_simple(
         )
 
 
+async def get_contacts_count(
+    pool: asyncpg.Pool, company: Optional[str] = None
+) -> int:
+    async with pool.acquire() as conn:
+        if not company:
+            return await conn.fetchval("SELECT COUNT(*) FROM contacts")
+        return await conn.fetchval(
+            "SELECT COUNT(*) FROM contacts WHERE company ILIKE $1", f"%{company}%"
+        )
+
 async def get_contacts_by_company(
-    pool: asyncpg.Pool, company: str
+    pool: asyncpg.Pool, company: str, offset: int = 0, limit: int = 50
 ) -> List[asyncpg.Record]:
     async with pool.acquire() as conn:
+        if not company:
+            return await conn.fetch(
+                "SELECT * FROM contacts ORDER BY created_at DESC LIMIT $1 OFFSET $2",
+                limit, offset
+            )
         return await conn.fetch(
-            "SELECT * FROM contacts WHERE company ILIKE $1 ORDER BY created_at DESC",
-            f"%{company}%",
+            "SELECT * FROM contacts WHERE company ILIKE $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3",
+            f"%{company}%", limit, offset
         )
 
 
 async def get_contacts_by_job(
-    pool: asyncpg.Pool, job_id: UUID
+    pool: asyncpg.Pool, job_id: UUID, offset: int = 0, limit: int = 50
 ) -> List[asyncpg.Record]:
     async with pool.acquire() as conn:
         return await conn.fetch(
-            "SELECT * FROM contacts WHERE job_id = $1 ORDER BY created_at DESC",
-            job_id,
+            "SELECT * FROM contacts WHERE job_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3",
+            job_id, limit, offset
         )
 
 

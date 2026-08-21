@@ -60,6 +60,19 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+from fastapi import Request
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception on {request.url}: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "An internal error occurred",
+            "path": str(request.url.path),
+            "hint": "Check service logs for details"
+        }
+    )
+
 
 # ---------------------------------------------------------------------------
 # Request / response models
@@ -316,6 +329,15 @@ async def upload_resume(file: UploadFile = File(...)):
             status_code=400,
             detail="Resume file too large. Please upload a file smaller than 5MB."
         )
+
+    if file_type == "pdf" and not file_bytes.startswith(b"%PDF"):
+        raise HTTPException(status_code=400, detail="Invalid PDF file")
+    
+    if file_type == "txt":
+        try:
+            file_bytes.decode('utf-8')
+        except UnicodeDecodeError:
+            raise HTTPException(status_code=400, detail="Invalid TXT file (not UTF-8)")
 
     # Parse the resume
     context = parse_resume(file_bytes, file_type=file_type)
