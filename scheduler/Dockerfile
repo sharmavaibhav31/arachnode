@@ -1,12 +1,13 @@
 FROM python:3.11-slim AS builder
 WORKDIR /app
-RUN pip install --upgrade pip
+RUN pip config set global.timeout 120 \
+ && pip config set global.retries 5 \
+ && pip install --upgrade pip
 COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 FROM python:3.11-slim
 
-# scrapy + crawlers require network; no extra system deps needed for scheduler alone
 WORKDIR /app
 COPY --from=builder /install /usr/local
 COPY . .

@@ -1,34 +1,43 @@
-# .env.example
-# REQUIRED FOR RUNTIME (Set to strong values)
-# JOBHUNTER_API_KEY=change-me-before-deploying
-# POSTGRES_USER=jobuser
-# POSTGRES_PASSWORD=jobpass
-# POSTGRES_DB=jobsdb
+# =============================================================================
+# JobHunter (Arachnode) — Production Docker Compose
+# =============================================================================
+#
+# REQUIRED ENVIRONMENT VARIABLES — copy .env.example to .env before running:
+#
+#   JOBHUNTER_API_KEY        API key for dashboard authentication (set a strong random string)
+#   POSTGRES_USER            Database user (default: jobuser)
+#   POSTGRES_PASSWORD        Database password (default: jobpass)
+#   POSTGRES_DB              Database name (default: jobsdb)
+#   GITHUB_TOKEN             GitHub personal access token for contact discovery
+#   GMAIL_ADDRESS            Gmail address for sending cold emails
+#   GMAIL_APP_PASSWORD       Gmail App Password (NOT your account password)
+#   YOUR_NAME                Your display name for cold email templates
+#   YOUR_GITHUB_URL          Your GitHub profile URL
+#   JOBSEEKER_ROLE           Target job title (default: Backend Engineer)
+#   JOBSEEKER_STACK          Comma-separated tech stack (default: Python,FastAPI,PostgreSQL,Redis,Go)
+#   OLLAMA_BASE_URL          Ollama endpoint for LLM (default: http://host.docker.internal:11434)
+#   GATEWAY_PORT             Host port for the dashboard (default: 8080)
+#
+# QUICK START:
+#   cp .env.example .env    # then edit with your values
+#   docker compose up -d
+#   open http://localhost:8080
+#
+# Postgres and Redis are intentionally NOT exposed to the host.
+# Use docker exec for direct access during development:
+#   docker exec -it $(docker compose ps -q postgres) psql -U jobuser jobsdb
+#   docker exec -it $(docker compose ps -q redis) redis-cli
 
-# EXTERNAL SERVICES (Required for full functionality)
-# GITHUB_TOKEN=ghp_...
-# GMAIL_ADDRESS=you@gmail.com
-# GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
-
-# JOB SEEKER PROFILE (Customize for your search)
-# YOUR_NAME="Applicant Name"
-# YOUR_GITHUB_URL="https://github.com/yourusername"
-# JOBSEEKER_ROLE="Backend Engineer"
-# JOBSEEKER_STACK="Python,FastAPI,PostgreSQL,Redis,Go"
-
-# SYSTEM CONFIGURATION
-# CRAWL_INTERVAL_HOURS=8
-# DISCOVER_INTERVAL_HOURS=24
-# SCRAPER_WAIT_SECS=60
-# DISCOVER_DELAY_SECS=30
-# FOLLOWUP_DAYS=7
-# GATEWAY_PORT=8080
-# OLLAMA_BASE_URL=http://host.docker.internal:11434
-
-# Postgres and Redis are intentionally not exposed to the host.
-# Use docker exec for direct access during development.
+# ---------------------------------------------------------------------------
+# DNS configuration for reliable pip installs during build
+# ---------------------------------------------------------------------------
+x-build-dns: &build-dns
+  network: host
 
 services:
+
+  # ── Infrastructure ──────────────────────────────────────────────────────────
+
   postgres:
     image: postgres:16-alpine
     environment:
@@ -37,9 +46,11 @@ services:
       POSTGRES_DB:       ${POSTGRES_DB:-jobsdb}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    # No ports exposed — access via: docker exec -it <container> psql -U jobuser jobsdb
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-jobuser} -d $${POSTGRES_DB:-jobsdb}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jobuser} -d ${POSTGRES_DB:-jobsdb}"]
       interval: 5s
+      timeout: 5s
       retries: 10
     networks: [jobnet]
     restart: unless-stopped
@@ -49,17 +60,22 @@ services:
     command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --appendonly yes
     volumes:
       - redis_data:/data
+    # No ports exposed — access via: docker exec -it <container> redis-cli
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
+      timeout: 3s
       retries: 5
     networks: [jobnet]
     restart: unless-stopped
+
+  # ── Application Services ────────────────────────────────────────────────────
 
   crawler:
     build:
       context: ./crawler-service
       dockerfile: Dockerfile
+      <<: *build-dns
     environment:
       REDIS_HOST: redis
       REDIS_PORT: "6379"
@@ -72,13 +88,16 @@ services:
     networks: [jobnet]
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8004/health || exit 1"]
-      interval: 10s
+      interval: 15s
+      timeout: 5s
       retries: 5
+      start_period: 30s
 
   aggregator:
     build:
       context: ./aggregator-service
       dockerfile: Dockerfile
+      <<: *build-dns
     environment:
       REDIS_HOST: redis
       REDIS_PORT: "6379"
@@ -93,13 +112,15 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
       interval: 10s
+      timeout: 5s
       retries: 5
-      start_period: 15s
+      start_period: 20s
 
   scraper:
     build:
       context: ./scraper-service
       dockerfile: Dockerfile
+      <<: *build-dns
     environment:
       REDIS_HOST: redis
       REDIS_PORT: "6379"
@@ -116,13 +137,15 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
       interval: 10s
+      timeout: 5s
       retries: 5
-      start_period: 20s
+      start_period: 30s
 
   contact:
     build:
       context: ./contact-discovery-service
       dockerfile: Dockerfile
+      <<: *build-dns
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-jobuser}:${POSTGRES_PASSWORD:-jobpass}@postgres:5432/${POSTGRES_DB:-jobsdb}
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
@@ -142,13 +165,15 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
       interval: 10s
+      timeout: 5s
       retries: 5
-      start_period: 25s
+      start_period: 45s
 
   email-gen:
     build:
       context: ./email-generator-service
       dockerfile: Dockerfile
+      <<: *build-dns
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-jobuser}:${POSTGRES_PASSWORD:-jobpass}@postgres:5432/${POSTGRES_DB:-jobsdb}
       OLLAMA_BASE_URL:    ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
@@ -164,21 +189,24 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
       interval: 10s
+      timeout: 5s
       retries: 5
-      start_period: 15s
+      start_period: 20s
 
   gateway:
     build:
       context: ./gateway
       dockerfile: Dockerfile
+      <<: *build-dns
     ports:
       - "${GATEWAY_PORT:-8080}:8080"
     environment:
-      AGGREGATOR_URL: http://aggregator:8000
-      SCRAPER_URL:    http://scraper:8000
-      CONTACT_URL:    http://contact:8000
-      EMAIL_GEN_URL:  http://email-gen:8000
-      SUMMARY_PATH:   /data/run_summary.json
+      AGGREGATOR_URL:    http://aggregator:8000
+      SCRAPER_URL:       http://scraper:8000
+      CONTACT_URL:       http://contact:8000
+      EMAIL_GEN_URL:     http://email-gen:8000
+      CRAWLER_URL:       http://crawler:8004
+      SUMMARY_PATH:      /data/run_summary.json
       JOBHUNTER_API_KEY: ${JOBHUNTER_API_KEY:-}
     volumes:
       - run_summary:/data:ro
@@ -196,6 +224,7 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8080/api/health || exit 1"]
       interval: 15s
+      timeout: 10s
       retries: 5
       start_period: 30s
 
@@ -203,16 +232,18 @@ services:
     build:
       context: ./scheduler
       dockerfile: Dockerfile
+      <<: *build-dns
     environment:
-      GATEWAY_URL:            http://gateway:8080
-      CRAWLER_URL:            http://crawler:8004
-      JOBSEEKER_ROLE:         ${JOBSEEKER_ROLE:-Backend Engineer}
-      JOBSEEKER_STACK:        ${JOBSEEKER_STACK:-Python,FastAPI,PostgreSQL,Redis,Go}
-      CRAWL_INTERVAL_HOURS:   ${CRAWL_INTERVAL_HOURS:-8}
+      GATEWAY_URL:             http://gateway:8080
+      CRAWLER_URL:             http://crawler:8004
+      JOBHUNTER_API_KEY:       ${JOBHUNTER_API_KEY:-}
+      JOBSEEKER_ROLE:          ${JOBSEEKER_ROLE:-Backend Engineer}
+      JOBSEEKER_STACK:         ${JOBSEEKER_STACK:-Python,FastAPI,PostgreSQL,Redis,Go}
+      CRAWL_INTERVAL_HOURS:    ${CRAWL_INTERVAL_HOURS:-8}
       DISCOVER_INTERVAL_HOURS: ${DISCOVER_INTERVAL_HOURS:-24}
-      SCRAPER_WAIT_SECS:      ${SCRAPER_WAIT_SECS:-60}
-      DISCOVER_DELAY_SECS:    ${DISCOVER_DELAY_SECS:-30}
-      SUMMARY_PATH:           /data/run_summary.json
+      SCRAPER_WAIT_SECS:       ${SCRAPER_WAIT_SECS:-60}
+      DISCOVER_DELAY_SECS:     ${DISCOVER_DELAY_SECS:-30}
+      SUMMARY_PATH:            /data/run_summary.json
     volumes:
       - run_summary:/data
     depends_on:
@@ -223,6 +254,9 @@ services:
     networks: [jobnet]
     restart: on-failure
 
+# ---------------------------------------------------------------------------
+# Named volumes
+# ---------------------------------------------------------------------------
 volumes:
   pgdata:
     driver: local
@@ -231,6 +265,11 @@ volumes:
   run_summary:
     driver: local
 
+# ---------------------------------------------------------------------------
+# Networks
+# ---------------------------------------------------------------------------
 networks:
   jobnet:
     driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: jobnet0

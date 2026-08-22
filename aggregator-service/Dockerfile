@@ -3,8 +3,9 @@ FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
-# Install build deps
-RUN pip install --upgrade pip
+RUN pip config set global.timeout 120 \
+ && pip config set global.retries 5 \
+ && pip install --upgrade pip
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
@@ -31,5 +32,4 @@ USER appuser
 
 EXPOSE 8000
 
-# Use uvicorn with a single worker; scale horizontally with replicas.
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
