@@ -51,8 +51,8 @@ RUN useradd -m appuser
 
 ENV PLAYWRIGHT_BROWSERS_PATH=/home/appuser/.cache/ms-playwright
 
-# Install Chromium browser binary only (deps already installed above)
-RUN python -m playwright install chromium \
+# Install Chromium browser binary only with retries for network resilience
+RUN for i in 1 2 3 4 5; do python -m playwright install chromium && break || (echo "Retry $i..." && sleep 5); done \
  && chown -R appuser:appuser /home/appuser/.cache/ms-playwright
 
 COPY . .

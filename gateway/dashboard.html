@@ -526,6 +526,16 @@
     .job-card.status-new     { border-left-color: var(--amber); }
     .job-card.status-applied { border-left-color: var(--green); }
     .job-card.status-ignored { border-left-color: var(--red); }
+    .job-card.date-today     { border-left-color: var(--green); }
+    .job-card.date-week      { border-left-color: var(--accent); }
+    .job-card.date-fortnight { border-left-color: var(--amber); }
+    .job-card.date-unknown   { border-left-color: var(--muted); }
+
+    @keyframes slideInDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .job-card-animated { animation: slideInDown 0.3s ease-out forwards; }
 
     .card-company {
       font-size: 15px;
@@ -1190,6 +1200,7 @@
       </div>
       <div class="nav-tabs">
         <button class="nav-tab active" data-tab="jobs">Jobs</button>
+        <button class="nav-tab" data-tab="agent-search">Search</button>
         <button class="nav-tab" data-tab="contacts">Contacts</button>
         <button class="nav-tab" data-tab="emails">Emails</button>
         <button class="nav-tab" data-tab="stats">Stats</button>
@@ -1332,6 +1343,89 @@
             <p>No run summary yet.</p>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- AGENT SEARCH TAB -->
+    <section id="tab-agent-search" class="tab-view">
+      <!-- Search Input Box -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:24px;box-shadow:var(--shadow-sm);">
+        <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
+          <input type="text" id="agent-query-input" placeholder="e.g. founding engineer fintech Bangalore series A python" 
+                 style="flex:1;min-width:280px;height:46px;padding:0 16px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-size:14px;outline:none;" />
+          <button class="btn-accent" id="btn-agent-search-submit" style="height:46px;padding:0 24px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px;">
+            <span>⚡ Search Jobs</span>
+          </button>
+        </div>
+        
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+          <button type="button" id="btn-agent-filters-toggle" style="font-size:12px;color:var(--accent);font-weight:600;display:flex;align-items:center;gap:4px;cursor:pointer;background:none;border:none;padding:0;">
+            <span>⚙ Filters & Options</span> <span id="agent-filters-arrow">▼</span>
+          </button>
+          <span style="font-size:12px;color:var(--muted)">Powered by AI — finds fresh jobs from Lever, Greenhouse, Wellfound, Cutshort & web</span>
+        </div>
+
+        <!-- Collapsible Filters -->
+        <div id="agent-filters-body" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;">
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:4px;">Tech Stack</label>
+            <input type="text" id="agent-filter-stack" placeholder="Python, Go, FastAPI" style="width:100%;height:34px;padding:0 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-size:12px;" />
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:4px;">Location</label>
+            <input type="text" id="agent-filter-location" placeholder="Bangalore" style="width:100%;height:34px;padding:0 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-size:12px;" />
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:4px;">Max Job Age</label>
+            <select id="agent-filter-max-age" style="width:100%;height:34px;padding:0 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-size:12px;">
+              <option value="7">Last 7 days</option>
+              <option value="14" selected>Last 14 days</option>
+              <option value="30">Last 30 days</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:4px;">Experience</label>
+            <input type="text" id="agent-filter-exp" placeholder="3 years" style="width:100%;height:34px;padding:0 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-size:12px;" />
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:18px;">
+            <input type="checkbox" id="agent-filter-remote" style="width:16px;height:16px;cursor:pointer;" />
+            <label for="agent-filter-remote" style="font-size:13px;color:var(--text);cursor:pointer;">Remote OK</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Progress Bar -->
+      <div id="agent-progress-card" style="display:none;background:var(--surface);border:1px solid var(--accent-low);border-radius:var(--radius);padding:18px;margin-bottom:24px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <span id="agent-progress-status" style="font-size:13px;font-weight:600;color:var(--text)">Starting search...</span>
+          <span id="agent-progress-count" style="font-size:12px;color:var(--muted)">0 / 0</span>
+        </div>
+        <div style="height:6px;background:var(--surface-2);border-radius:99px;overflow:hidden;position:relative;">
+          <div id="agent-progress-bar" style="height:100%;width:5%;background:linear-gradient(90deg, var(--accent), var(--accent-2));transition:width 0.3s ease;"></div>
+        </div>
+      </div>
+
+      <!-- Results Header -->
+      <div id="agent-results-header" style="display:none;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h3 style="font-size:15px;font-weight:600;color:var(--text);">Search Results <span id="agent-results-badge" class="badge badge-purple" style="margin-left:6px;">0</span></h3>
+      </div>
+
+      <!-- Results Grid -->
+      <div id="agent-results-grid" class="card-grid"></div>
+
+      <!-- Empty State -->
+      <div id="agent-empty-state" class="empty" style="display:block;">
+        <div class="empty-icon">🤖</div>
+        <h3 style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:8px">AI Job Search Agent</h3>
+        <p style="margin-bottom:16px;font-size:13px">Type a search query above to find fresh jobs matched to your natural language intent.</p>
+      </div>
+
+      <!-- Recent Searches -->
+      <div style="margin-top:40px;border-top:1px solid var(--border);padding-top:20px;">
+        <div id="btn-agent-history-toggle" style="font-size:13px;font-weight:600;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:6px;">
+          <span>Recent Searches ▾</span>
+        </div>
+        <div id="agent-history-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;"></div>
       </div>
     </section>
 
@@ -2242,10 +2336,11 @@
       state.activeTab = tab;
       document.querySelectorAll('.nav-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
       document.querySelectorAll('.tab-view').forEach(s => s.classList.toggle('active', s.id === `tab-${tab}`));
-      if (tab === 'jobs')          loadJobs();
-      else if (tab === 'contacts') loadContacts();
-      else if (tab === 'emails')   loadEmails();
-      else if (tab === 'stats')    loadStats();
+      if (tab === 'jobs')                  loadJobs();
+      else if (tab === 'agent-search')     loadAgentSearchTab();
+      else if (tab === 'contacts')         loadContacts();
+      else if (tab === 'emails')           loadEmails();
+      else if (tab === 'stats')            loadStats();
     }
 
     function isTypingTarget(target) {
@@ -2334,6 +2429,264 @@
       window.open(exportUrl, '_blank');
 
       toast('Preparing CSV export...', 'info');
+    }
+
+    // ===========================================================================
+    // AGENT SEARCH ENGINE & SSE STREAMING
+    // ===========================================================================
+    let agentEventSource = null;
+    let currentAgentSearchId = null;
+
+    async function loadAgentSearchTab() {
+      initAgentSearchEvents();
+      fetchAgentSearchHistory();
+    }
+
+    function initAgentSearchEvents() {
+      const toggleBtn = document.getElementById('btn-agent-filters-toggle');
+      const filtersBody = document.getElementById('agent-filters-body');
+      if (toggleBtn && !toggleBtn._wired) {
+        toggleBtn._wired = true;
+        toggleBtn.addEventListener('click', () => {
+          const isHidden = filtersBody.style.display === 'none' || !filtersBody.style.display;
+          filtersBody.style.display = isHidden ? 'grid' : 'none';
+          document.getElementById('agent-filters-arrow').textContent = isHidden ? '▲' : '▼';
+        });
+      }
+
+      const submitBtn = document.getElementById('btn-agent-search-submit');
+      if (submitBtn && !submitBtn._wired) {
+        submitBtn._wired = true;
+        submitBtn.addEventListener('click', () => startAgentSearch());
+      }
+
+      const input = document.getElementById('agent-query-input');
+      if (input && !input._wired) {
+        input._wired = true;
+        input.addEventListener('keydown', e => {
+          if (e.key === 'Enter') startAgentSearch();
+        });
+      }
+
+      const historyToggle = document.getElementById('btn-agent-history-toggle');
+      const historyList = document.getElementById('agent-history-list');
+      if (historyToggle && !historyToggle._wired) {
+        historyToggle._wired = true;
+        historyToggle.addEventListener('click', () => {
+          const isHidden = historyList.style.display === 'none';
+          historyList.style.display = isHidden ? 'flex' : 'none';
+        });
+      }
+    }
+
+    async function startAgentSearch(customQuery = null, customMaxAge = null) {
+      const queryInput = document.getElementById('agent-query-input');
+      const query = (customQuery || queryInput.value).trim();
+      if (!query) {
+        toast('Please enter a search query first', 'error');
+        queryInput.focus();
+        return;
+      }
+
+      const stackStr = document.getElementById('agent-filter-stack').value.trim();
+      const stack = stackStr ? stackStr.split(',').map(s => s.trim()).filter(Boolean) : [];
+      const location = document.getElementById('agent-filter-location').value.trim() || null;
+      const max_age_days = customMaxAge || parseInt(document.getElementById('agent-filter-max-age').value) || 14;
+      const experience_years = document.getElementById('agent-filter-exp').value.trim() || null;
+      const remote = document.getElementById('agent-filter-remote').checked;
+
+      const payload = {
+        query,
+        filters: { stack, location, max_age_days, experience_years, remote }
+      };
+
+      if (agentEventSource) {
+        agentEventSource.close();
+        agentEventSource = null;
+      }
+
+      document.getElementById('agent-empty-state').style.display = 'none';
+      document.getElementById('agent-results-grid').innerHTML = '';
+      document.getElementById('agent-results-header').style.display = 'flex';
+      document.getElementById('agent-results-badge').textContent = '0';
+
+      const progressCard = document.getElementById('agent-progress-card');
+      const progressBar = document.getElementById('agent-progress-bar');
+      const progressStatus = document.getElementById('agent-progress-status');
+      const progressCount = document.getElementById('agent-progress-count');
+
+      progressCard.style.display = 'block';
+      progressBar.style.width = '5%';
+      progressStatus.textContent = 'Initializing AI search agent...';
+      progressCount.textContent = '0 / 0';
+
+      const res = await apiFetch('/agent-search', { method: 'POST', body: payload });
+      if (!res || !res.search_id) {
+        toast('Failed to start agent search', 'error');
+        progressCard.style.display = 'none';
+        return;
+      }
+
+      currentAgentSearchId = res.search_id;
+      let foundCount = 0;
+
+      const sseUrl = API(`/agent-search/${currentAgentSearchId}/stream`);
+      agentEventSource = new EventSource(sseUrl);
+
+      agentEventSource.addEventListener('progress', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          progressStatus.textContent = data.message || 'Searching...';
+          
+          if (data.queries_total) {
+            const pct = Math.max(5, Math.min(100, Math.round((data.queries_done / data.queries_total) * 100)));
+            progressBar.style.width = `${pct}%`;
+            progressCount.textContent = `${data.queries_done} / ${data.queries_total} sources`;
+          }
+
+          if (data.stage === 'complete') {
+            progressBar.style.width = '100%';
+            progressStatus.textContent = `Search Complete — Found ${data.total_found || foundCount} relevant jobs (${data.discarded_stale || 0} discarded as stale)`;
+            setTimeout(() => {
+              progressCard.style.display = 'none';
+            }, 5000);
+            fetchAgentSearchHistory();
+          }
+        } catch (err) {}
+      });
+
+      agentEventSource.addEventListener('job', (e) => {
+        try {
+          const job = JSON.parse(e.data);
+          foundCount++;
+          document.getElementById('agent-results-badge').textContent = String(foundCount);
+          renderAgentJobCard(job);
+        } catch (err) {}
+      });
+
+      agentEventSource.addEventListener('done', () => {
+        if (agentEventSource) {
+          agentEventSource.close();
+          agentEventSource = null;
+        }
+      });
+
+      agentEventSource.addEventListener('error', (e) => {
+        if (agentEventSource) {
+          agentEventSource.close();
+          agentEventSource = null;
+        }
+        if (foundCount === 0) {
+          renderAgentEmptyState(query, max_age_days);
+        }
+      });
+    }
+
+    function renderAgentJobCard(job) {
+      const grid = document.getElementById('agent-results-grid');
+      const dateClass = getDateClass(job.days_ago, job.date_unknown);
+      const dateBadgeHtml = getDateBadgeHtml(job.days_ago, job.date_unknown);
+      const relevancePct = Math.round((job.relevance_score || 0) * 100);
+      const sourceName = job.source || 'web_search';
+
+      const card = document.createElement('div');
+      card.className = `job-card ${dateClass} job-card-animated`;
+      card.dataset.jobId = job.id;
+
+      card.innerHTML = `
+        <div class="card-actions">
+          <button class="icon-btn btn-save-pipeline" title="Save to tracked pipeline" onclick="saveAgentJob('${esc(currentAgentSearchId)}', '${esc(job.id)}', this)">📥 Save</button>
+          <a class="icon-btn" href="${esc(job.url)}" target="_blank" rel="noopener" title="Open job page">🔗</a>
+        </div>
+        <div class="card-company">${esc(job.company || 'Company')}</div>
+        <div class="card-role">${esc(job.role || 'Job Role')}</div>
+        <div class="card-tags">
+          ${(job.stack || []).map(t => `<span class="tag">${esc(t)}</span>`).join('')}
+          ${job.location ? `<span class="tag tag-gray">📍 ${esc(job.location)}</span>` : ''}
+        </div>
+        <div class="card-footer">
+          <div style="display:flex;align-items:center;gap:6px;">
+            ${dateBadgeHtml}
+            <span class="badge badge-gray">${esc(sourceName)}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;" title="Relevance score: ${relevancePct}%">
+            <span style="font-size:11px;color:var(--muted)">Score</span>
+            <div style="width:40px;height:4px;background:var(--surface-2);border-radius:99px;overflow:hidden;">
+              <div style="height:100%;width:${relevancePct}%;background:var(--accent);"></div>
+            </div>
+            <span style="font-size:11px;font-weight:600;color:var(--accent)">${relevancePct}%</span>
+          </div>
+        </div>
+      `;
+      grid.prepend(card);
+    }
+
+    function getDateClass(daysAgo, dateUnknown) {
+      if (dateUnknown) return 'date-unknown';
+      if (daysAgo === 0) return 'date-today';
+      if (daysAgo <= 7) return 'date-week';
+      if (daysAgo <= 14) return 'date-fortnight';
+      return 'date-unknown';
+    }
+
+    function getDateBadgeHtml(daysAgo, dateUnknown) {
+      if (dateUnknown) return `<span class="badge badge-gray">Date unknown</span>`;
+      if (daysAgo === 0) return `<span class="badge badge-green">New today</span>`;
+      if (daysAgo <= 7) return `<span class="badge badge-purple">${daysAgo}d ago</span>`;
+      if (daysAgo <= 14) return `<span class="badge badge-amber">${daysAgo}d ago</span>`;
+      return `<span class="badge badge-gray">${daysAgo}d ago</span>`;
+    }
+
+    function renderAgentEmptyState(query, maxAge) {
+      const grid = document.getElementById('agent-results-grid');
+      grid.innerHTML = `
+        <div class="empty" style="grid-column:1/-1">
+          <div class="empty-icon">🔎</div>
+          <h3 style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px">No recent jobs found</h3>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:16px">No jobs matching your exact criteria were found within ${maxAge} days.</p>
+          <button class="btn-accent" onclick="startAgentSearch(null, 30)">Try again with 30 days max age</button>
+        </div>
+      `;
+    }
+
+    async function saveAgentJob(searchId, jobId, btnEl) {
+      if (!searchId || !jobId) return;
+      btnEl.disabled = true;
+      btnEl.textContent = 'Saving...';
+
+      const res = await apiFetch(`/agent-search/${searchId}/save`, {
+        method: 'POST',
+        body: { job_ids: [jobId] }
+      });
+
+      if (res && res.saved > 0) {
+        btnEl.textContent = 'Saved ✓';
+        btnEl.style.background = 'var(--green)';
+        btnEl.style.borderColor = 'var(--green)';
+        btnEl.style.color = '#fff';
+        toast('Added job to tracked pipeline!', 'success');
+      } else {
+        btnEl.disabled = false;
+        btnEl.textContent = '📥 Save';
+        toast('Failed to save job to pipeline', 'error');
+      }
+    }
+
+    async function fetchAgentSearchHistory() {
+      const listEl = document.getElementById('agent-history-list');
+      if (!listEl) return;
+      const searches = await apiFetch('/agent-search/searches');
+      if (!searches || !Array.isArray(searches) || !searches.length) {
+        listEl.innerHTML = '<span style="font-size:12px;color:var(--muted)">No previous searches yet</span>';
+        return;
+      }
+
+      listEl.innerHTML = searches.slice(0, 5).map(s => `
+        <button type="button" class="btn-outline" style="height:30px;font-size:12px;padding:0 10px;border-radius:99px;" 
+                onclick="document.getElementById('agent-query-input').value='${esc(s.query)}';startAgentSearch('${esc(s.query)}');">
+          🔍 ${esc(s.query)} <span style="color:var(--accent);margin-left:4px">(${s.results_count || 0})</span>
+        </button>
+      `).join('');
     }
 
     // ===========================================================================
@@ -2553,6 +2906,7 @@
     healthContainer.innerHTML = `
       <div class="health-dot" id="health-aggregator" data-status="degraded" title="Aggregator"></div>
       <div class="health-dot" id="health-scraper" data-status="degraded" title="Scraper"></div>
+      <div class="health-dot" id="health-agent-search" data-status="degraded" title="Search Agent"></div>
       <div class="health-dot" id="health-contact" data-status="degraded" title="Contact Discovery"></div>
       <div class="health-dot" id="health-email" data-status="degraded" title="Email Generator"></div>
     `;
@@ -2573,14 +2927,15 @@
           const data = await res.json();
           if(data && data.services) {
             data.services.forEach(s => {
-              const el = document.getElementById('health-' + (s.service === 'email-gen' ? 'email' : s.service));
+              const name = s.service === 'email-gen' ? 'email' : (s.service === 'agent-search' ? 'agent-search' : s.service);
+              const el = document.getElementById('health-' + name);
               if(el) el.setAttribute('data-status', s.status === 'ok' ? 'ok' : 'down');
             });
           }
         }
       } catch(e) {
         // network error
-        ['aggregator', 'scraper', 'contact', 'email'].forEach(s => {
+        ['aggregator', 'scraper', 'agent-search', 'contact', 'email'].forEach(s => {
            const el = document.getElementById('health-' + s);
            if(el) el.setAttribute('data-status', 'down');
         });

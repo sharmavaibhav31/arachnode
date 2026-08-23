@@ -15,7 +15,7 @@ from uuid import UUID
 
 import httpx  # type: ignore
 from fastapi import FastAPI, HTTPException, Request  # type: ignore
-from fastapi.responses import FileResponse, JSONResponse  # type: ignore
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse  # type: ignore
 
 from pydantic import BaseModel  # type: ignore
 from starlette.middleware.base import BaseHTTPMiddleware  # type: ignore
@@ -96,10 +96,11 @@ async def dashboard():
 @app.get("/api/health", tags=["ops"])
 async def gateway_health():
     results = await asyncio.gather(
-        proxy.health_check("aggregator", proxy.AGGREGATOR_URL),
-        proxy.health_check("scraper",    proxy.SCRAPER_URL),
-        proxy.health_check("contact",    proxy.CONTACT_URL),
-        proxy.health_check("email-gen",  proxy.EMAIL_GEN_URL),
+        proxy.health_check("aggregator",   proxy.AGGREGATOR_URL),
+        proxy.health_check("scraper",      proxy.SCRAPER_URL),
+        proxy.health_check("contact",      proxy.CONTACT_URL),
+        proxy.health_check("email-gen",    proxy.EMAIL_GEN_URL),
+        proxy.health_check("agent-search", proxy.AGENT_SEARCH_URL),
     )
     all_ok = all(r["status"] == "ok" for r in results)
     return JSONResponse(
@@ -166,6 +167,43 @@ async def proxy_generate(request: Request):
 @app.api_route("/api/digest", methods=["POST"], tags=["proxy"])
 async def proxy_digest(request: Request):
     return await proxy.proxy_request(request, f"{proxy.EMAIL_GEN_URL}/digest")
+
+@app.api_route("/api/agent-search", methods=["POST"], tags=["proxy"])
+async def proxy_agent_search(request: Request):
+    return await proxy.proxy_request(request, f"{proxy.AGENT_SEARCH_URL}/search")
+
+@app.get("/api/agent-search/{search_id}/stream", tags=["proxy"])
+async def proxy_agent_search_stream(search_id: str, request: Request):
+    client = proxy.get_client()
+    async def stream():
+        async with client.stream(
+            "GET",
+            f"{proxy.AGENT_SEARCH_URL}/search/{search_id}/stream",
+            timeout=None  # SSE streams indefinitely
+        ) as response:
+            async for chunk in response.aiter_bytes():
+                yield chunk
+
+    return StreamingResponse(
+        stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
+@app.api_route("/api/agent-search/{search_id}/save", methods=["POST"], tags=["proxy"])
+async def proxy_agent_search_save(search_id: str, request: Request):
+    return await proxy.proxy_request(request, f"{proxy.AGENT_SEARCH_URL}/search/{search_id}/save")
+
+@app.api_route("/api/agent-search/searches", methods=["GET"], tags=["proxy"])
+async def proxy_agent_searches(request: Request):
+    return await proxy.proxy_request(request, f"{proxy.AGENT_SEARCH_URL}/searches")
+
+@app.api_route("/api/agent-search/searches/{path:path}", methods=["GET"], tags=["proxy"])
+async def proxy_agent_searches_detail(path: str, request: Request):
+    return await proxy.proxy_request(request, f"{proxy.AGENT_SEARCH_URL}/searches/{path}")
 
 class WorkflowRequest(BaseModel):
     job_id:   UUID

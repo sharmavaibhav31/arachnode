@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+asyncpg
+httpx
+redis
+python-dotenv
+sse-starlette
+duckduckgo-search
+openai
+anthropic

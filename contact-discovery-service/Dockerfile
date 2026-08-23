@@ -44,8 +44,8 @@ RUN pip config set global.timeout 120 \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Chromium browser binary only (deps already installed above)
-RUN playwright install chromium \
+# Install Chromium browser binary only with retries for network resilience
+RUN for i in 1 2 3 4 5; do playwright install chromium && break || (echo "Retry $i..." && sleep 5); done \
  && chown -R appuser:appuser /home/appuser/.cache
 
 USER appuser

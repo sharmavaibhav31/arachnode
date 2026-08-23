@@ -193,6 +193,38 @@ services:
       retries: 5
       start_period: 20s
 
+  agent-search:
+    build:
+      context: ./agent-search-service
+      dockerfile: Dockerfile
+      <<: *build-dns
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-jobuser}:${POSTGRES_PASSWORD:-jobpass}@postgres:5432/${POSTGRES_DB:-jobsdb}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      AGENT_PROVIDER: ${AGENT_PROVIDER:-ollama}
+      AGENT_MODEL: ${AGENT_MODEL:-mistral}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [jobnet]
+    restart: on-failure
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8009/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
   gateway:
     build:
       context: ./gateway
@@ -205,6 +237,7 @@ services:
       SCRAPER_URL:       http://scraper:8000
       CONTACT_URL:       http://contact:8000
       EMAIL_GEN_URL:     http://email-gen:8000
+      AGENT_SEARCH_URL:  http://agent-search:8009
       CRAWLER_URL:       http://crawler:8004
       SUMMARY_PATH:      /data/run_summary.json
       JOBHUNTER_API_KEY: ${JOBHUNTER_API_KEY:-}
@@ -218,6 +251,8 @@ services:
       contact:
         condition: service_healthy
       email-gen:
+        condition: service_healthy
+      agent-search:
         condition: service_healthy
     networks: [jobnet]
     restart: on-failure
