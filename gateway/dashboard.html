@@ -1206,17 +1206,26 @@
         <button class="nav-tab" data-tab="stats">Stats</button>
       </div>
     </div>
-  <button id="btn-scrape">▶ Trigger Scrape</button>
-        <button id="btn-export-csv" style="padding:7px 14px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;" title="Export jobs as CSV">⬇ Export CSV</button>
-      </nav>
     <div class="nav-right">
+      <button id="btn-export-csv" style="padding:7px 14px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;" title="Export jobs as CSV">⬇ Export CSV</button>
       <button id="btn-theme" aria-label="Toggle theme">🌙 Dark</button>
-      <button id="btn-scrape">+ Scrape</button>
-    <div class="nav-actions">
-      <button id="btn-shortcuts" title="Keyboard shortcuts">?</button>
-      <button id="btn-scrape">▶ Trigger Scrape</button>
+      <div class="nav-actions">
+        <button id="btn-shortcuts" title="Keyboard shortcuts">?</button>
+        <button id="btn-scrape">▶ Trigger Scrape</button>
+      </div>
     </div>
   </nav>
+
+  <!-- HEALTH BAR -->
+  <div id="health-bar" style="
+    position: relative;
+    margin-top: var(--n-h);
+    display: flex; gap: 8px; padding: 8px 20px; 
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    font-size: 12px; align-items: center; flex-wrap: wrap; z-index: 100;">
+    <span style="color:var(--muted)">Services:</span>
+    <!-- Populated by checkHealth() -->
+  </div>
 
   <!-- OFFLINE BANNER -->
   <div id="offline-banner">
@@ -1225,7 +1234,7 @@
   </div>
 
   <!-- MAIN -->
-  <div id="main" style="margin-top:calc(var(--n-h) + 24px)">
+  <div id="main" style="margin-top: 0">
 
     <!-- JOBS TAB -->
     <section id="tab-jobs" class="tab-view active">
@@ -1527,8 +1536,8 @@
       const btn = document.getElementById('btn-theme');
       if (btn) btn.textContent = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
       localStorage.setItem(THEME_KEY, theme);
-      // Re-render chart colors if it exists
-      if (state && state.chart) {
+      // Only touch state.chart if state exists and chart is initialized
+      if (typeof state !== 'undefined' && state && state.chart) {
         const gridColor = getComputedStyle(document.documentElement)
           .getPropertyValue('--border').trim();
         const textColor = getComputedStyle(document.documentElement)
@@ -1857,63 +1866,40 @@
       const jobs = filteredJobs();
       const grid = document.getElementById('jobs-grid');
       if (!jobs.length) {
-        grid.innerHTML = `<div class="empty" style="grid-column:1/-1">
-  <div class="empty-icon">📭</div>
-  <h3 style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:8px">No jobs found yet</h3>
-  <p style="margin-bottom:20px;font-size:13px">Follow these steps to start discovering jobs</p>
-  <div style="display:flex;flex-direction:column;gap:8px;max-width:300px;margin:0 auto 20px;text-align:left">
-    <div style="padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px">
-      <strong>Step 1</strong> — Click "Trigger Scrape" to start crawling job platforms
-    </div>
-    <div style="padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px">
-      <strong>Step 2</strong> — Wait ~60 seconds for jobs to appear
-    </div>
-    <div style="padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px">
-      <strong>Step 3</strong> — Use filters above to narrow down by role or stack
-    </div>
-  </div>
-  <button class="btn-accent" onclick="document.getElementById('btn-scrape').click()">▶ Trigger Scrape</button>
-</div>`;
-          <div class="empty-icon">🔍</div>
-          <p>No jobs found. Trigger a scrape to get started.</p>
-        </div>`;
         state.focusedJobIndex = -1;
-        grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🕷️</div><p><strong>No jobs yet!</strong><br>Trigger your first scrape to get started.</p><button class="btn" style="margin-top:12px" onclick="document.getElementById('scrape-modal').classList.add('open')">🚀 Start First Scrape</button></div>`;
+        grid.innerHTML = `<div class="empty" style="grid-column:1/-1">
+          <div class="empty-icon">📭</div>
+          <h3>No jobs found yet</h3>
+          <p>Trigger a scrape to get started.</p>
+          <button class="btn-accent" 
+            onclick="document.getElementById('btn-scrape').click()">
+            ▶ Trigger Scrape
+          </button>
+        </div>`;
         return;
       }
       grid.innerHTML = jobs.map(j => `
-        <div class="job-card status-${esc(j.status || 'new')}" data-id="${esc(j.id)}">
+        <div class="job-card status-${esc(j.status || 'new')}" 
+             data-id="${esc(j.id)}" tabindex="0" role="button">
           <div class="card-actions">
-            <button class="icon-btn" data-action="discover" data-id="${esc(j.id)}" title="Find contacts">👤</button>
-            <button class="icon-btn" data-action="draft"   data-id="${esc(j.id)}" title="Draft email">✉</button>
-            <button class="icon-btn" data-action="apply"   data-id="${esc(j.id)}" title="Mark applied">✓</button>
+            <button class="icon-btn" data-action="discover" 
+                    data-id="${esc(j.id)}" title="Find contacts">👤</button>
+            <button class="icon-btn" data-action="draft" 
+                    data-id="${esc(j.id)}" title="Draft email">✉</button>
+            <button class="icon-btn" data-action="apply" 
+                    data-id="${esc(j.id)}" title="Mark applied">✓</button>
           </div>
           <div class="card-company">${esc(j.company)}</div>
           <div class="card-role">${esc(j.role)}</div>
           <div class="card-tags">
-            ${(j.stack || []).slice(0,5).map(t => `<span class="tag">${esc(t)}</span>`).join('')}
+            ${(j.stack || []).slice(0, 5).map(t => 
+              `<span class="tag">${esc(t)}</span>`).join('')}
           </div>
           <div class="card-footer">
             <span class="tag tag-gray">${esc(j.source || '—')}</span>
             <span>${relTime(j.posted_at)}</span>
           </div>
         </div>`).join('');
-    <div class="job-card status-${esc(j.status || 'new')}" data-id="${esc(j.id)}" tabindex="0" role="button" aria-selected="false">
-      <div class="card-actions">
-        <button class="icon-btn" data-action="discover" data-id="${esc(j.id)}" title="Find contacts">👤</button>
-        <button class="icon-btn" data-action="draft" data-id="${esc(j.id)}" title="Draft email">✉</button>
-        <button class="icon-btn" data-action="apply" data-id="${esc(j.id)}" title="Mark applied">✓</button>
-      </div>
-      <div class="card-company">${esc(j.company)}</div>
-      <div class="card-role">${esc(j.role)}</div>
-      <div class="card-tags">
-        ${(j.stack || []).slice(0, 5).map(t => `<span class="tag">${esc(t)}</span>`).join('')}
-      </div>
-      <div class="card-footer">
-        <span class="tag tag-gray">${esc(j.source || '—')}</span>
-        <span>${relTime(j.posted_at)}</span>
-      </div>
-    </div>`).join('');
       updateFocusedJobCard();
     }
 
@@ -2348,15 +2334,6 @@
       return target?.isContentEditable || ['input', 'textarea', 'select'].includes(tag);
     }
 
-    function openScrapeModal() {
-      scrapeModal.classList.add('open');
-      document.getElementById('scrape-role')?.focus();
-    }
-
-    function closeScrapeModal() {
-      scrapeModal.classList.remove('open');
-    }
-
     function openShortcutsModal() {
       document.getElementById('shortcuts-modal').classList.add('open');
     }
@@ -2372,7 +2349,7 @@
 
       if (key === 'Escape') {
         closeShortcutsModal();
-        closeScrapeModal();
+        scrapeModal.classList.remove('open');
         closePanel();
         return;
       }
@@ -2390,7 +2367,8 @@
 
       if (key === 's') {
         e.preventDefault();
-        openScrapeModal();
+        scrapeModal.classList.add('open');
+        document.getElementById('scrape-role')?.focus();
       } else if (key === 'r') {
         e.preventDefault();
         switchTab('jobs');
@@ -2800,7 +2778,7 @@
     btn.textContent = '⏳ Exporting...';
     btn.disabled = true;
     try {
-      const res = await fetch('/api/jobs/export/csv');
+      const res = await fetch('/api/jobs/export?format=csv');
       if (!res.ok) throw new Error('Export failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -2817,10 +2795,6 @@
     }
   });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') scrapeModal.classList.remove('open'); });
-    document.getElementById('btn-scrape').addEventListener('click', openScrapeModal);
-    document.getElementById('modal-close').addEventListener('click', closeScrapeModal);
-    document.getElementById('modal-cancel').addEventListener('click', closeScrapeModal);
-    scrapeModal.addEventListener('click', e => { if (e.target === scrapeModal) closeScrapeModal(); });
 
     // Shortcut reference
     const shortcutsModal = document.getElementById('shortcuts-modal');
@@ -2913,32 +2887,25 @@
     document.querySelector('.nav-right').prepend(healthContainer);
 
     async function checkHealth() {
+      const bar = document.getElementById('health-bar');
       try {
-        const res = await fetch(API('/health'), {
-          headers: localStorage.getItem('JOBHUNTER_API_KEY') ? {'X-API-Key': localStorage.getItem('JOBHUNTER_API_KEY')} : {}
-        });
-        if(res.status === 401) {
-          if (!localStorage.getItem('JOBHUNTER_API_KEY')) {
-            apikeyModal.classList.add('open');
-          }
+        const data = await apiFetch('/health');
+        if (!data) {
+          if (bar) bar.innerHTML = '<span style="color:var(--muted)">Services:</span>' +
+            '<span class="badge badge-red">Backend unreachable</span>';
           return;
         }
-        if(res.ok || res.status === 207) {
-          const data = await res.json();
-          if(data && data.services) {
-            data.services.forEach(s => {
-              const name = s.service === 'email-gen' ? 'email' : (s.service === 'agent-search' ? 'agent-search' : s.service);
-              const el = document.getElementById('health-' + name);
-              if(el) el.setAttribute('data-status', s.status === 'ok' ? 'ok' : 'down');
-            });
-          }
-        }
-      } catch(e) {
-        // network error
-        ['aggregator', 'scraper', 'agent-search', 'contact', 'email'].forEach(s => {
-           const el = document.getElementById('health-' + s);
-           if(el) el.setAttribute('data-status', 'down');
-        });
+        const services = data.services || [];
+        if (bar) bar.innerHTML = '<span style="color:var(--muted)">Services:</span>' +
+          services.map(s => `
+            <span class="badge ${s.status === 'ok' ? 'badge-green' : 'badge-red'}">
+              ${esc(s.name || s.service || 'unknown')}
+            </span>`).join('') +
+          (services.length === 0 ? 
+            '<span class="badge badge-amber">No services reported</span>' : '');
+      } catch {
+        if (bar) bar.innerHTML = '<span style="color:var(--muted)">Services:</span>' +
+          '<span class="badge badge-red">Backend unreachable</span>';
       }
     }
 
@@ -2947,34 +2914,34 @@
     // ===========================================================================
     let jobsOffset = 0;
     const LOAD_MORE_JOBS_BTN = '<button class="btn-outline" style="width:100%; grid-column:1/-1; margin-top:20px;" id="btn-load-more-jobs">Load More</button>';
-    
-    // Modification to renderJobs logic wrapper for load more will be handled by extending loadJobs
+
     // ===========================================================================
     // INIT
     // ===========================================================================
     (async () => {
+      // Expose state for kanban.js interop
+      window._state = state;
+      
+      // Wrap renderJobs so kanban board auto-updates when jobs reload
+      const _origRenderJobs = renderJobs;
+      renderJobs = function() {
+        _origRenderJobs();
+        const board = document.getElementById('kanban-board');
+        if (board && board.style.display !== 'none') {
+          if (typeof renderKanban === 'function') renderKanban(state.jobs);
+        }
+      };
+      
+      // Init view toggle (grid vs kanban)
+      if (typeof initViewToggle === 'function') initViewToggle();
+      
       await checkHealth();
-      setInterval(checkHealth, 30000); // Check health every 30s
+      setInterval(checkHealth, 30000);
       switchTab('jobs');
     })();
   </script>
   <script src="/static/kanban.js"></script>
-  <script>
-    // Expose state so kanban.js can sync after drops
-    window._state = state;
-    // Hook into existing renderJobs so kanban auto-updates when jobs reload
-    const _origRenderJobs = renderJobs;
-    function renderJobs() {
-      _origRenderJobs();
-      const board = document.getElementById('kanban-board');
-      if (board && board.style.display !== 'none') renderKanban(state.jobs);
-    }
-    // Init toggle after page load
-    document.addEventListener('DOMContentLoaded', initViewToggle);
-  </script>
 </body>
-</html>
-
 </html>
 
 

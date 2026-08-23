@@ -33,10 +33,14 @@ SUMMARY_PATH   = Path(os.environ.get("SUMMARY_PATH", "/data/run_summary.json"))
 
 API_KEY = os.environ.get("JOBHUNTER_API_KEY", None)
 
+from fastapi.staticfiles import StaticFiles  # type: ignore
+
+# ...
+
 class APIKeyMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         public_paths = ["/", "/health", "/api/health"]
-        if request.url.path in public_paths:
+        if request.url.path in public_paths or request.url.path.startswith("/static"):
             return await call_next(request)
         
         if API_KEY is None:
@@ -88,6 +92,12 @@ async def global_exception_handler(request: Request, exc: Exception):
             "hint": "Check service logs for details"
         }
     )
+
+app.mount(
+    "/static",
+    StaticFiles(directory=Path(__file__).parent / "static"),
+    name="static"
+)
 
 @app.get("/", include_in_schema=False)
 async def dashboard():
