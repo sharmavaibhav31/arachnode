@@ -34,6 +34,16 @@ def _stack() -> list[str]:
     raw = os.environ.get("JOBSEEKER_STACK", "Python,FastAPI,PostgreSQL,Redis,Go")
     return [s.strip() for s in raw.split(",") if s.strip()]
 
+def _headers() -> dict[str, str]:
+    key = os.environ.get("JOBHUNTER_API_KEY", "")
+    return {"X-API-Key": key} if key else {}
+
+def _client(timeout=None) -> httpx.Client:
+    kwargs = {"headers": _headers()}
+    if timeout is not None:
+        kwargs["timeout"] = timeout
+    return httpx.Client(**kwargs)
+
 _HTTP_TIMEOUT = httpx.Timeout(60.0, connect=10.0)
 _SCRAPER_WAIT_SECS  = int(os.environ.get("SCRAPER_WAIT_SECS", 60))
 _DISCOVER_DELAY_SECS = int(os.environ.get("DISCOVER_DELAY_SECS", 30))
@@ -80,7 +90,7 @@ def write_summary(summary: dict, path: str = "/data/run_summary.json"):
 
 def _job_count() -> int:
     try:
-        with httpx.Client(timeout=10) as c:
+        with _client(timeout=10) as c:
             r = c.get(f"{_gw()}/api/stats")
             r.raise_for_status()
             by_status = r.json().get("by_status", {})
@@ -99,7 +109,7 @@ def run_scrape_cycle() -> None:
     jobs_before = _job_count()
 
     try:
-        with httpx.Client(timeout=_HTTP_TIMEOUT) as c:
+        with _client(timeout=_HTTP_TIMEOUT) as c:
             r = c.post(
                 f"{_gw()}/api/scrape",
                 json={"role": _role(), "stack": _stack()},
@@ -112,7 +122,7 @@ def run_scrape_cycle() -> None:
     for spider in ("remotive", "yc_jobs", "wellfound", "cutshort", "glassdoor"):
         log.info("Triggering Scrapy spider via HTTP", spider=spider)
         try:
-            with httpx.Client(timeout=httpx.Timeout(10.0)) as c:
+            with _client(timeout=httpx.Timeout(10.0)) as c:
                 r = c.post(
                     f"{_crawler_url()}/crawl",
                     json={"spider": spider}
@@ -137,7 +147,7 @@ def run_scrape_cycle() -> None:
 def run_discover_cycle() -> None:
     log.info("Discover cycle starting")
     try:
-        with httpx.Client(timeout=_HTTP_TIMEOUT) as c:
+        with _client(timeout=_HTTP_TIMEOUT) as c:
             r = c.get(f"{_gw()}/api/jobs", params={"status": "new", "limit": 20})
             r.raise_for_status()
             data = r.json()
@@ -154,7 +164,7 @@ def run_discover_cycle() -> None:
         company = job.get("company", "unknown")
         log.info("Discovering contacts", job_id=jid, company=company)
         try:
-            with httpx.Client(timeout=_HTTP_TIMEOUT) as c:
+            with _client(timeout=_HTTP_TIMEOUT) as c:
                 r = c.post(
                     f"{_gw()}/api/discover",
                     json={
@@ -180,7 +190,7 @@ def run_discover_cycle() -> None:
 def run_draft_cycle() -> None:
     log.info("Draft cycle starting")
     try:
-        with httpx.Client(timeout=_HTTP_TIMEOUT) as c:
+        with _client(timeout=_HTTP_TIMEOUT) as c:
             r = c.get(f"{_gw()}/api/jobs", params={"status": "new", "limit": 20})
             r.raise_for_status()
             data = r.json()
@@ -195,7 +205,7 @@ def run_draft_cycle() -> None:
         company = job.get("company", "")
 
         try:
-            with httpx.Client(timeout=20) as c:
+            with _client(timeout=20) as c:
                 cr = c.get(f"{_gw()}/api/contacts", params={"company": company})
                 # Check for dict wrapper with 'data' since we added pagination
                 data = cr.json() if cr.status_code == 200 else []
@@ -219,7 +229,7 @@ def run_draft_cycle() -> None:
             if contact_id:
                 payload["contact_id"] = contact_id
 
-            with httpx.Client(timeout=httpx.Timeout(90.0, connect=10.0)) as c:
+            with _client(timeout=httpx.Timeout(90.0, connect=10.0)) as c:
                 r = c.post(f"{_gw()}/api/generate", json=payload)
                 r.raise_for_status()
             drafted += 1
@@ -245,7 +255,7 @@ def run_digest_cycle() -> None:
     week_label = f"{week_start.strftime('%d %b')}–{week_end.strftime('%d %b %Y')}"
 
     try:
-        with httpx.Client(timeout=_HTTP_TIMEOUT) as c:
+        with _client(timeout=_HTTP_TIMEOUT) as c:
             r = c.get(
                 f"{_gw()}/api/jobs",
                 params={
@@ -268,7 +278,7 @@ def run_digest_cycle() -> None:
 
     log.info("Digest cycle: fetched %d new jobs", len(jobs))
     try:
-        with httpx.Client(timeout=httpx.Timeout(90.0, connect=10.0)) as c:
+        with _client(timeout=httpx.Timeout(90.0, connect=10.0)) as c:
             r = c.post(
                 f"{_gw()}/api/digest",
                 json={
@@ -304,7 +314,7 @@ def run_followup_cycle() -> None:
     reminded = 0
 
     try:
-        with httpx.Client(timeout=httpx.Timeout(30.0, connect=10.0)) as c:
+        with _client(timeout=httpx.Timeout(30.0, connect=10.0)) as c:
             r = c.get(
                 f"{_gw()}/api/emails",
                 params={"status": "sent"},
@@ -345,7 +355,7 @@ def run_followup_cycle() -> None:
         }
 
         try:
-            with httpx.Client(timeout=httpx.Timeout(90.0, connect=10.0)) as c:
+            with _client(timeout=httpx.Timeout(90.0, connect=10.0)) as c:
                 r = c.post(f"{_gw()}/api/generate", json=payload)
                 r.raise_for_status()
                 reminded += 1

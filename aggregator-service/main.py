@@ -73,6 +73,69 @@ def _record_to_dict(row) -> dict:
 async def health():
     return {"status": "ok"}
 
+@app.get("/pipeline-status", tags=["ops"])
+async def pipeline_status():
+    """
+    Diagnostic endpoint showing the health of the full data pipeline.
+    Readable from the gateway at GET /api/pipeline-status
+    """
+    import redis as redis_lib
+    r = redis_lib.Redis(
+        host=os.getenv("REDIS_HOST", "redis"),
+        port=int(os.getenv("REDIS_PORT", 6379)),
+        decode_responses=True
+    )
+    try:
+        stream_len = r.xlen("jobs:raw")
+        stream_info = r.xinfo_stream("jobs:raw") if stream_len > 0 else {}
+        last_entry_ms = stream_info.get("last-generated-id", "0-0").split("-")[0]
+        last_entry_ts = (
+            int(last_entry_ms) / 1000 
+            if last_entry_ms.isdigit() else 0
+        )
+    except Exception as e:
+        stream_len = -1
+        last_entry_ts = 0
+        
+    try:
+        pool = await database.get_pool()
+        async with pool.acquire() as conn:
+            job_count = await conn.fetchval("SELECT COUNT(*) FROM jobs")
+            new_count = await conn.fetchval(
+                "SELECT COUNT(*) FROM jobs WHERE status = 'new'"
+            )
+            latest_job = await conn.fetchrow(
+                "SELECT company, role, source, created_at "
+                "FROM jobs ORDER BY created_at DESC LIMIT 1"
+            )
+    except Exception as e:
+        job_count = -1
+        new_count = -1
+        latest_job = None
+    
+    from datetime import datetime, timezone
+    now_ts = datetime.now(timezone.utc).timestamp()
+    
+    latest_job_dict = dict(latest_job) if latest_job else None
+    if latest_job_dict and isinstance(latest_job_dict.get("created_at"), datetime):
+        latest_job_dict["created_at"] = latest_job_dict["created_at"].isoformat()
+
+    return {
+        "redis_stream": {
+            "name": "jobs:raw",
+            "length": stream_len,
+            "last_message_age_seconds": (
+                int(now_ts - last_entry_ts) if last_entry_ts else None
+            )
+        },
+        "postgres": {
+            "total_jobs": job_count,
+            "new_jobs": new_count,
+            "latest_job": latest_job_dict
+        },
+        "pipeline_healthy": stream_len > 0 and job_count > 0
+    }
+
 @app.get("/jobs", tags=["jobs"])
 async def list_jobs(
     role: Optional[str] = Query(None, description="Substring match on role title"),

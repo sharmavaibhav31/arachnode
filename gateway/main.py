@@ -93,11 +93,9 @@ async def global_exception_handler(request: Request, exc: Exception):
         }
     )
 
-app.mount(
-    "/static",
-    StaticFiles(directory=Path(__file__).parent / "static"),
-    name="static"
-)
+STATIC_DIR = Path(__file__).parent / "static"
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 @app.get("/", include_in_schema=False)
 async def dashboard():
@@ -145,6 +143,12 @@ async def proxy_jobs_path(path: str, request: Request):
 @app.get("/api/stats", tags=["proxy"])
 async def proxy_stats(request: Request):
     return await proxy.proxy_request(request, f"{proxy.AGGREGATOR_URL}/stats")
+
+@app.api_route("/api/pipeline-status", methods=["GET"], tags=["proxy"])
+async def proxy_pipeline_status(request: Request):
+    return await proxy.proxy_request(
+        request, f"{proxy.AGGREGATOR_URL}/pipeline-status"
+    )
 
 @app.api_route("/api/scrape", methods=["GET", "POST"], tags=["proxy"])
 async def proxy_scrape(request: Request):

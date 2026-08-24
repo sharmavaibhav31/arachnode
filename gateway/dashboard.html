@@ -1520,6 +1520,7 @@
   <!-- TOASTS -->
   <div id="toasts"></div>
 
+  <script src="/static/kanban.js"></script>
   <script>
     // ===========================================================================
     // THEME SYSTEM
@@ -2919,28 +2920,29 @@
     // INIT
     // ===========================================================================
     (async () => {
-      // Expose state for kanban.js interop
+      // Expose state for kanban.js interop — must be window property
       window._state = state;
       
-      // Wrap renderJobs so kanban board auto-updates when jobs reload
+      // Wrap renderJobs so kanban board stays in sync
       const _origRenderJobs = renderJobs;
       renderJobs = function() {
         _origRenderJobs();
         const board = document.getElementById('kanban-board');
         if (board && board.style.display !== 'none') {
-          if (typeof renderKanban === 'function') renderKanban(state.jobs);
+          if (typeof renderKanban === 'function') {
+            renderKanban(state.jobs);
+          }
         }
       };
       
-      // Init view toggle (grid vs kanban)
+      // Init kanban view toggle
       if (typeof initViewToggle === 'function') initViewToggle();
       
       await checkHealth();
-      setInterval(checkHealth, 30000);
+      setInterval(checkHealth, 30_000);
       switchTab('jobs');
     })();
   </script>
-  <script src="/static/kanban.js"></script>
 </body>
 </html>
 

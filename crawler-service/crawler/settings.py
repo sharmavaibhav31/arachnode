@@ -72,7 +72,6 @@ JOBSEEKER_STACK = os.getenv("JOBSEEKER_STACK", "Java,Python,,RESTAPI,FastAPI,Pos
 # Misc
 # --------------------------------------------------------------------------
 REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
-TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 FEED_EXPORT_ENCODING = "utf-8"
 LOG_LEVEL = "INFO"
 
