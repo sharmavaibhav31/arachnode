@@ -31,7 +31,8 @@ logger = logging.getLogger(__name__)
 DASHBOARD_PATH = Path(__file__).parent / "dashboard.html"
 SUMMARY_PATH   = Path(os.environ.get("SUMMARY_PATH", "/data/run_summary.json"))
 
-API_KEY = os.environ.get("JOBHUNTER_API_KEY", None)
+API_KEY_RAW = os.environ.get("JOBHUNTER_API_KEY", "").strip()
+API_KEY = API_KEY_RAW if API_KEY_RAW else None
 
 from fastapi.staticfiles import StaticFiles  # type: ignore
 
@@ -39,11 +40,11 @@ from fastapi.staticfiles import StaticFiles  # type: ignore
 
 class APIKeyMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        public_paths = ["/", "/health", "/api/health"]
+        public_paths = ["/", "/health", "/api/health", "/favicon.ico"]
         if request.url.path in public_paths or request.url.path.startswith("/static"):
             return await call_next(request)
         
-        if API_KEY is None:
+        if not API_KEY:
             return await call_next(request)
         
         provided_key = (
@@ -61,7 +62,7 @@ class APIKeyMiddleware(BaseHTTPMiddleware):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if API_KEY is None:
+    if not API_KEY:
         logger.warning("WARNING: JOBHUNTER_API_KEY is not set. Running in unauthenticated mode. Do not expose this on a public network.")
     client = httpx.AsyncClient()
     proxy.set_client(client)
@@ -109,6 +110,8 @@ async def gateway_health():
         proxy.health_check("contact",      proxy.CONTACT_URL),
         proxy.health_check("email-gen",    proxy.EMAIL_GEN_URL),
         proxy.health_check("agent-search", proxy.AGENT_SEARCH_URL),
+        proxy.health_check("gemini-agent", proxy.GEMINI_AGENT_URL),
+        proxy.health_check("crawler",      proxy.CRAWLER_URL),
     )
     all_ok = all(r["status"] == "ok" for r in results)
     return JSONResponse(
@@ -218,6 +221,33 @@ async def proxy_agent_searches(request: Request):
 @app.api_route("/api/agent-search/searches/{path:path}", methods=["GET"], tags=["proxy"])
 async def proxy_agent_searches_detail(path: str, request: Request):
     return await proxy.proxy_request(request, f"{proxy.AGENT_SEARCH_URL}/searches/{path}")
+
+GEMINI_AGENT_URL = os.environ.get("GEMINI_AGENT_URL", "http://gemini-agent:8010")
+
+@app.api_route("/api/agent/chat", methods=["POST"], tags=["gemini"])
+async def proxy_agent_chat(request: Request):
+    return await proxy.proxy_request(
+        request, f"{proxy.GEMINI_AGENT_URL}/agent/chat"
+    )
+
+@app.api_route("/api/agent/enhance-resume", methods=["POST"], tags=["gemini"])
+async def proxy_agent_resume(request: Request):
+    return await proxy.proxy_request(
+        request, f"{proxy.GEMINI_AGENT_URL}/agent/enhance-resume"
+    )
+
+@app.api_route("/api/agent/draft-email", methods=["POST"], tags=["gemini"])
+async def proxy_agent_email(request: Request):
+    return await proxy.proxy_request(
+        request, f"{proxy.GEMINI_AGENT_URL}/agent/draft-email"
+    )
+
+@app.api_route("/api/agent/sessions/{path:path}", methods=["GET"], tags=["gemini"])
+async def proxy_agent_sessions(path: str, request: Request):
+    return await proxy.proxy_request(
+        request, f"{proxy.GEMINI_AGENT_URL}/agent/sessions/{path}"
+    )
+
 
 class WorkflowRequest(BaseModel):
     job_id:   UUID

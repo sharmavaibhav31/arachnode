@@ -225,6 +225,28 @@ services:
       retries: 5
       start_period: 20s
 
+  gemini-agent:
+    build:
+      context: ./gemini-agent-service
+      dockerfile: Dockerfile
+      <<: *build-dns
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-jobuser}:${POSTGRES_PASSWORD:-jobpass}@postgres:5432/${POSTGRES_DB:-jobsdb}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      AGGREGATOR_URL: http://aggregator:8000
+      SCRAPER_URL: http://scraper:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [jobnet]
+    restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8010/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
   gateway:
     build:
       context: ./gateway
@@ -238,6 +260,7 @@ services:
       CONTACT_URL:       http://contact:8000
       EMAIL_GEN_URL:     http://email-gen:8000
       AGENT_SEARCH_URL:  http://agent-search:8009
+      GEMINI_AGENT_URL:  http://gemini-agent:8010
       CRAWLER_URL:       http://crawler:8004
       SUMMARY_PATH:      /data/run_summary.json
       JOBHUNTER_API_KEY: ${JOBHUNTER_API_KEY:-}

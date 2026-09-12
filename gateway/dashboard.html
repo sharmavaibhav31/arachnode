@@ -1183,6 +1183,36 @@
       color: #fff;
       border-color: var(--accent);
     }
+    .agent-msg {
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      line-height: 1.6;
+      max-width: 85%;
+    }
+    .agent-msg-user {
+      background: var(--accent);
+      color: white;
+      align-self: flex-end;
+    }
+    .agent-msg-model {
+      background: var(--surface-elevated, var(--surface));
+      border: 1px solid var(--border);
+      align-self: flex-start;
+    }
+    .agent-msg-thinking {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      align-self: flex-start;
+      font-style: italic;
+    }
+    #agent-mode-search.active,
+    #agent-mode-resume.active,
+    #agent-mode-email.active {
+      border-color: var(--accent);
+      background: rgba(108,71,255,0.08);
+    }
   </style>
 </head>
 
@@ -1204,11 +1234,13 @@
         <button class="nav-tab" data-tab="contacts">Contacts</button>
         <button class="nav-tab" data-tab="emails">Emails</button>
         <button class="nav-tab" data-tab="stats">Stats</button>
+        <button class="nav-tab" data-tab="gemini-agent">🤖 Agent</button>
       </div>
     </div>
     <div class="nav-right">
       <button id="btn-export-csv" style="padding:7px 14px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;" title="Export jobs as CSV">⬇ Export CSV</button>
       <button id="btn-theme" aria-label="Toggle theme">🌙 Dark</button>
+      <button id="btn-settings" title="API Settings" onclick="showApiKeyModal()" style="background:none;border:none;cursor:pointer;padding:6px;font-size:16px;color:var(--text-dim)">⚙</button>
       <div class="nav-actions">
         <button id="btn-shortcuts" title="Keyboard shortcuts">?</button>
         <button id="btn-scrape">▶ Trigger Scrape</button>
@@ -1438,6 +1470,94 @@
       </div>
     </section>
 
+    <!-- GEMINI AGENT TAB -->
+    <section id="tab-gemini-agent" class="tab-view">
+      <div style="max-width:800px;margin:0 auto;padding:24px 0">
+        
+        <!-- Status banner — shown when Gemini not configured -->
+        <div id="agent-unconfigured" style="display:none;
+             padding:16px;border:1px solid var(--border);
+             border-radius:var(--radius);background:var(--surface);
+             margin-bottom:24px;text-align:center">
+          <p style="font-size:14px;color:var(--muted);margin-bottom:8px">
+            Gemini API key not configured. Add GEMINI_API_KEY to your 
+            .env file to enable AI features.
+          </p>
+          <a href="https://aistudio.google.com/apikey" target="_blank"
+             style="color:var(--accent);font-size:13px">
+            Get a free API key →
+          </a>
+        </div>
+
+        <!-- Three capability cards -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);
+                    gap:16px;margin-bottom:32px">
+          
+          <div class="job-card" onclick="setAgentMode('search')"
+               id="agent-mode-search" style="cursor:pointer;text-align:center;padding:20px">
+            <div style="font-size:28px;margin-bottom:8px">🔍</div>
+            <div style="font-weight:600;font-size:14px">Job Search</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">
+              Find relevant jobs using AI
+            </div>
+          </div>
+          
+          <div class="job-card" onclick="setAgentMode('resume')"
+               id="agent-mode-resume" style="cursor:pointer;text-align:center;padding:20px">
+            <div style="font-size:28px;margin-bottom:8px">📄</div>
+            <div style="font-weight:600;font-size:14px">Resume Tuning</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">
+              Optimize for a specific JD
+            </div>
+          </div>
+          
+          <div class="job-card" onclick="setAgentMode('email')"
+               id="agent-mode-email" style="cursor:pointer;text-align:center;padding:20px">
+            <div style="font-size:28px;margin-bottom:8px">✉️</div>
+            <div style="font-weight:600;font-size:14px">Cold Email</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">
+              Draft emails that get replies
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat interface — shared across all modes -->
+        <div id="agent-chat-container" style="
+             border:1px solid var(--border);border-radius:var(--radius);
+             background:var(--surface);overflow:hidden">
+          
+          <!-- Messages area -->
+          <div id="agent-messages" style="
+               height:400px;overflow-y:auto;padding:20px;
+               display:flex;flex-direction:column;gap:12px">
+            <div class="agent-msg agent-msg-model">
+              Hi! I'm your Arachnode AI assistant powered by Gemini. 
+              I can help you find relevant jobs, tune your resume for 
+              a specific role, or draft cold emails. What would you like to do?
+            </div>
+          </div>
+          
+          <!-- Input area -->
+          <div style="border-top:1px solid var(--border);padding:16px;
+                      display:flex;gap:10px">
+            <textarea id="agent-input" rows="2"
+              placeholder="Ask me to find jobs, improve your resume, or write a cold email..."
+              style="flex:1;padding:10px;border:1px solid var(--border);
+                     border-radius:var(--radius);background:var(--bg);
+                     color:var(--text);font-size:14px;resize:none;
+                     font-family:inherit"></textarea>
+            <button id="agent-send" class="btn-accent"
+                    style="align-self:flex-end;padding:10px 20px">
+              Send
+            </button>
+          </div>
+        </div>
+
+        <!-- Results area — populated by agent responses -->
+        <div id="agent-results" style="margin-top:24px"></div>
+      </div>
+    </section>
+
   </div><!-- #main -->
   </div><!-- #main -->
 
@@ -1517,10 +1637,33 @@
     </div>
   </div>
 
+  <!-- API KEY MODAL -->
+  <div id="apikey-modal" class="modal-backdrop" style="display:none">
+    <div class="modal" style="max-width:400px">
+      <div class="modal-header">
+        <h3>API Key Required</h3>
+        <button class="btn-close-x" onclick="document.getElementById('apikey-modal').style.display='none'; document.getElementById('apikey-modal').classList.remove('open');">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px">
+          Enter the JOBHUNTER_API_KEY from your .env file.
+          Leave blank if no key is set.
+        </p>
+        <input id="apikey-input" type="password" 
+               placeholder="Enter API key..."
+               style="width:100%;height:40px;padding:0 12px;border:1px solid var(--border);
+                      border-radius:var(--radius-sm);background:var(--bg);
+                      color:var(--text);font-size:14px;margin-bottom:12px">
+      </div>
+      <div class="modal-footer">
+        <button onclick="saveApiKey()" class="btn-accent">Save & Continue</button>
+      </div>
+    </div>
+  </div>
+
   <!-- TOASTS -->
   <div id="toasts"></div>
 
-  <script src="/static/kanban.js"></script>
   <script>
     // ===========================================================================
     // THEME SYSTEM
@@ -1538,15 +1681,15 @@
       if (btn) btn.textContent = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
       localStorage.setItem(THEME_KEY, theme);
       // Only touch state.chart if state exists and chart is initialized
-      if (typeof state !== 'undefined' && state && state.chart) {
+      if (window.state && window.state.chart) {
         const gridColor = getComputedStyle(document.documentElement)
           .getPropertyValue('--border').trim();
         const textColor = getComputedStyle(document.documentElement)
           .getPropertyValue('--muted').trim();
-        state.chart.options.scales.x.ticks.color = textColor;
-        state.chart.options.scales.y.ticks.color = textColor;
-        state.chart.options.scales.y.grid.color  = gridColor;
-        state.chart.update();
+        window.state.chart.options.scales.x.ticks.color = textColor;
+        window.state.chart.options.scales.y.ticks.color = textColor;
+        window.state.chart.options.scales.y.grid.color  = gridColor;
+        window.state.chart.update();
       }
     }
 
@@ -1646,6 +1789,7 @@
       contactSort: { col: 'company', dir: 1 },
       chart: null,
     };
+    window.state = state;
 
     // ===========================================================================
     // API
@@ -1656,17 +1800,27 @@
       const apiKey = localStorage.getItem('JOBHUNTER_API_KEY');
       const headers = { 'Content-Type': 'application/json', ...opts.headers };
       if (apiKey) headers['X-API-Key'] = apiKey;
+
       const options = {
         method,
         headers,
       };
-      if (opts.body) options.body = JSON.stringify(opts.body);
+      if (opts.body) options.body = typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body);
       try {
         const res = await fetch(url, options);
         hideBanner();
+        if (res.status === 401) {
+          const modal = document.getElementById('apikey-modal');
+          if (modal) {
+            const input = document.getElementById('apikey-input');
+            if (input) input.value = localStorage.getItem('JOBHUNTER_API_KEY') || '';
+            modal.classList.add('open');
+          }
+          return null;
+        }
         if (!res.ok) {
           let msg = `HTTP ${res.status}`;
-          try { const err = await res.json(); msg = err.detail || JSON.stringify(err); } catch {}
+          try { const err = await res.json(); msg = err.error || err.detail || JSON.stringify(err); } catch {}
           toast(msg, 'error');
           return null;
         }
@@ -1674,7 +1828,7 @@
         return await res.json();
       } catch (e) {
         showBanner();
-        toast(`Network error: ${e.message}`, 'error');
+        toast('Network error — is the gateway running?', 'error');
         return null;
       }
     }
@@ -2317,6 +2471,159 @@
     }
 
     // ===========================================================================
+    // VIEWS: GEMINI AGENT
+    // ===========================================================================
+    let agentSessionId = null;
+    let currentAgentMode = 'search';
+
+    function setAgentMode(mode) {
+      currentAgentMode = mode;
+      ['search', 'resume', 'email'].forEach(m => {
+        const el = document.getElementById(`agent-mode-${m}`);
+        if (el) el.classList.toggle('active', m === mode);
+      });
+      const placeholders = {
+        search: 'e.g. "Find backend engineering jobs in Bangalore using Python and Go posted this week"',
+        resume: 'Paste your resume text and job description, then ask me to optimize it',
+        email: 'Tell me the company, role, and your background — I\'ll draft the email'
+      };
+      const input = document.getElementById('agent-input');
+      if (input) input.placeholder = placeholders[mode];
+    }
+
+    async function loadGeminiAgentTab() {
+      // Check if Gemini is configured
+      const health = await apiFetch('/agent/chat', {
+        method: 'POST',
+        body: { message: '__health__', session_id: null }
+      });
+      
+      // If 503, show unconfigured banner
+      const unconfigured = document.getElementById('agent-unconfigured');
+      if (!health || health.error) {
+        if (unconfigured) unconfigured.style.display = 'block';
+        return;
+      }
+      if (unconfigured) unconfigured.style.display = 'none';
+    }
+
+    function addAgentMessage(role, content) {
+      const msgs = document.getElementById('agent-messages');
+      if (!msgs) return null;
+      const div = document.createElement('div');
+      div.className = `agent-msg agent-msg-${role}`;
+      div.textContent = content;
+      msgs.appendChild(div);
+      msgs.scrollTop = msgs.scrollHeight;
+      return div;
+    }
+
+    async function sendAgentMessage() {
+      const input = document.getElementById('agent-input');
+      const sendBtn = document.getElementById('agent-send');
+      if (!input || !sendBtn) return;
+      const message = input.value.trim();
+      if (!message) return;
+
+      input.value = '';
+      sendBtn.disabled = true;
+      addAgentMessage('user', message);
+      const thinking = addAgentMessage('thinking', 'Thinking...');
+
+      try {
+        const res = await apiFetch('/agent/chat', {
+          method: 'POST',
+          body: {
+            message,
+            session_id: agentSessionId,
+            context: { mode: currentAgentMode }
+          }
+        });
+
+        if (thinking) thinking.remove();
+
+        if (!res) {
+          addAgentMessage('model', 'Something went wrong. Please try again.');
+          return;
+        }
+
+        agentSessionId = res.session_id;
+        addAgentMessage('model', res.response);
+
+        // Render job results if returned
+        if (res.jobs && res.jobs.length > 0) {
+          const resultsDiv = document.getElementById('agent-results');
+          if (resultsDiv) {
+            resultsDiv.innerHTML = `
+              <h3 style="font-size:14px;font-weight:600;margin-bottom:12px">
+                Found ${res.jobs.length} jobs
+              </h3>
+              <div class="jobs-grid">
+                ${res.jobs.map(j => `
+                  <div class="job-card status-new">
+                    <div class="card-company">${esc(j.company || '')}</div>
+                    <div class="card-role">${esc(j.role || j.title || '')}</div>
+                    <div class="card-footer">
+                      <span class="tag tag-gray">${esc(j.source || 'agent')}</span>
+                      <a href="${esc(j.url || '#')}" target="_blank"
+                         style="color:var(--accent);font-size:12px">View →</a>
+                    </div>
+                  </div>`).join('')}
+              </div>`;
+          }
+        }
+
+        // Render email draft if returned
+        if (res.email_draft) {
+          const resultsDiv = document.getElementById('agent-results');
+          if (resultsDiv) {
+            resultsDiv.innerHTML = `
+              <div style="border:1px solid var(--border);border-radius:var(--radius);
+                          padding:20px;background:var(--surface)">
+                <div style="font-size:12px;font-weight:600;color:var(--muted);
+                            margin-bottom:4px">SUBJECT</div>
+                <div style="font-size:14px;margin-bottom:16px">
+                  ${esc(res.email_draft.subject)}
+                </div>
+                <div style="font-size:12px;font-weight:600;color:var(--muted);
+                            margin-bottom:4px">BODY</div>
+                <pre style="font-size:13px;white-space:pre-wrap;
+                            font-family:inherit;line-height:1.6">
+${esc(res.email_draft.body)}</pre>
+                <div style="margin-top:12px;display:flex;gap:8px">
+                  <button class="btn-outline" onclick="navigator.clipboard.writeText(
+                    '${esc(res.email_draft.subject)}\\n\\n${esc(res.email_draft.body)}'
+                  ).then(() => toast('Copied!', 'success'))">
+                    Copy Email
+                  </button>
+                </div>
+              </div>`;
+          }
+        }
+
+      } finally {
+        sendBtn.disabled = false;
+        input.focus();
+      }
+    }
+
+    // Wire up send button and Enter key
+    document.addEventListener('DOMContentLoaded', () => {
+      const sendBtn = document.getElementById('agent-send');
+      const input = document.getElementById('agent-input');
+      if (sendBtn) sendBtn.addEventListener('click', sendAgentMessage);
+      if (input) {
+        input.addEventListener('keydown', e => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendAgentMessage();
+          }
+        });
+      }
+      setAgentMode('search');
+    });
+
+    // ===========================================================================
     // ROUTER
     // ===========================================================================
     function switchTab(tab) {
@@ -2328,6 +2635,7 @@
       else if (tab === 'contacts')         loadContacts();
       else if (tab === 'emails')           loadEmails();
       else if (tab === 'stats')            loadStats();
+      else if (tab === 'gemini-agent')     loadGeminiAgentTab();
     }
 
     function isTypingTarget(target) {
@@ -2830,48 +3138,33 @@
     // ===========================================================================
     // API KEY MODAL
     // ===========================================================================
-    const apikeyModal = document.createElement('div');
-    apikeyModal.className = 'modal-backdrop';
-    apikeyModal.id = 'apikey-modal';
-    apikeyModal.innerHTML = `
-      <div class="modal">
-        <div class="modal-header">
-          <h3>Authentication</h3>
-          <button class="btn-close-x" id="apikey-close">✕</button>
-        </div>
-        <div class="modal-body">
-          <div class="field-group">
-            <label>API Key</label>
-            <input type="password" id="apikey-input" placeholder="Enter JOBHUNTER_API_KEY" />
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-accent" id="apikey-submit">Save Key</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(apikeyModal);
-    
-    document.getElementById('apikey-close').addEventListener('click', () => apikeyModal.classList.remove('open'));
-    document.getElementById('apikey-submit').addEventListener('click', () => {
-      const val = document.getElementById('apikey-input').value.trim();
-      if(val) {
-        localStorage.setItem('JOBHUNTER_API_KEY', val);
-        apikeyModal.classList.remove('open');
-        toast('API key saved. Reloading...', 'success');
-        setTimeout(() => location.reload(), 1000);
+    function showApiKeyModal() {
+      const modal = document.getElementById('apikey-modal');
+      if (modal) {
+        const input = document.getElementById('apikey-input');
+        if (input) input.value = localStorage.getItem('arachnode-api-key') || localStorage.getItem('JOBHUNTER_API_KEY') || '';
+        modal.style.display = 'flex';
+        modal.classList.add('open');
       }
-    });
+    }
 
-    const settingsBtn = document.createElement('button');
-    settingsBtn.id = 'btn-settings';
-    settingsBtn.innerHTML = '⚙ Settings';
-    settingsBtn.title = 'Configure API Key';
-    settingsBtn.onclick = () => {
-      document.getElementById('apikey-input').value = localStorage.getItem('JOBHUNTER_API_KEY') || '';
-      apikeyModal.classList.add('open');
-    };
-    document.querySelector('.nav-actions').prepend(settingsBtn);
+    function saveApiKey() {
+      const val = document.getElementById('apikey-input').value.trim();
+      if (val) {
+        localStorage.setItem('JOBHUNTER_API_KEY', val);
+        localStorage.setItem('arachnode-api-key', val);
+      } else {
+        localStorage.removeItem('JOBHUNTER_API_KEY');
+        localStorage.removeItem('arachnode-api-key');
+      }
+      const modal = document.getElementById('apikey-modal');
+      if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('open');
+      }
+      toast('Settings saved. Reloading...', 'success');
+      setTimeout(() => location.reload(), 1000);
+    }
 
     // ===========================================================================
     // HEALTH INDICATORS
@@ -2897,6 +3190,11 @@
           return;
         }
         const services = data.services || [];
+        services.forEach(s => {
+          const name = s.name || s.service;
+          const dot = document.getElementById(`health-${name}`);
+          if (dot) dot.setAttribute('data-status', s.status === 'ok' ? 'ok' : 'down');
+        });
         if (bar) bar.innerHTML = '<span style="color:var(--muted)">Services:</span>' +
           services.map(s => `
             <span class="badge ${s.status === 'ok' ? 'badge-green' : 'badge-red'}">
@@ -2940,11 +3238,13 @@
       
       await checkHealth();
       setInterval(checkHealth, 30_000);
+
+      const jobsCheck = await apiFetch('/jobs?limit=1');
+      if (jobsCheck === null) showApiKeyModal();
+
       switchTab('jobs');
     })();
   </script>
+  <script src="/static/kanban.js"></script>
 </body>
 </html>
-
-
-

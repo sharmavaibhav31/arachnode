@@ -166,8 +166,13 @@ async def trigger_scrape(body: ScrapeRequest, background_tasks: BackgroundTasks)
     An empty (or omitted) ``platforms`` list scrapes all platforms (legacy behaviour).
     Returns immediately while scraping happens asynchronously.
     """
-    background_tasks.add_task(_run_all_scrapers, body.role, body.stack)
-    return ScrapeResponse(triggered=True, platforms=PLATFORMS)
+    active_platforms = (
+        [p.lower() for p in body.platforms]
+        if body.platforms
+        else PLATFORMS
+    )
+    background_tasks.add_task(_run_scrapers, body.role, body.stack, body.platforms)
+    return ScrapeResponse(triggered=True, platforms=active_platforms)
 
 
 @app.post("/discover/dorks", response_model=DorkDiscoverResponse, tags=["discovery"])
@@ -202,10 +207,3 @@ async def discover_dorks(body: DorkDiscoverRequest):
             for candidate in response.candidates
         ],
     )
-    active_platforms = (
-        [p.lower() for p in body.platforms]
-        if body.platforms
-        else PLATFORMS
-    )
-    background_tasks.add_task(_run_scrapers, body.role, body.stack, body.platforms)
-    return ScrapeResponse(triggered=True, platforms=active_platforms)
