@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+asyncpg
+httpx
+python-dotenv
+google-generativeai>=0.8.0
+duckduckgo-search
