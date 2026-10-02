@@ -72,6 +72,8 @@ The system uses an event-driven microservice architecture with Python across the
 | Aggregator | Python / FastAPI / asyncpg | 8000 | Consumes the Redis stream, deduplicates entries, saves to Postgres, and serves job queries. |
 | Contact Discovery | Python / FastAPI / httpx | 8002 | Uses OSINT and GitHub APIs to uncover potential recruiter/manager emails per company. |
 | Email Generator | Python / FastAPI / Ollama | 8003 | Renders Jinja2 templates and interfaces with Ollama to draft contextual cold emails. |
+| Agent Search | Python / FastAPI / DuckDuckGo | 8009 | On-demand intent-driven job search engine with direct ATS integration (Lever, Greenhouse, Ashby). |
+| Gemini Agent | Python / FastAPI / google-generativeai | 8010 | Interactive AI chat assistant for job discovery, resume tuning, and email drafting using Gemini 2.0. |
 | Gateway | Python / FastAPI / Vanilla JS | 8080 | Proxies frontend requests, composes complex workflows, and serves the static dashboard. |
 | Scheduler | Python / APScheduler | None | Periodically triggers crawlers, contact discovery, and automated email drafting. |
 
@@ -175,21 +177,22 @@ containers are not restarted.
 
 | Variable | Required | Default | Description |
 | --- | --- | --- | --- |
-| **Core** | | | |
+| **Core & Auth** | | | |
 | `POSTGRES_USER` | Yes | `jobuser` | Target username for the PostgreSQL database container. |
 | `POSTGRES_PASSWORD` | Yes | `jobpass` | Target password for the PostgreSQL database container. |
 | `POSTGRES_DB` | Yes | `jobsdb` | Target database schema name inside PostgreSQL. |
 | `GATEWAY_PORT` | No | `8080` | External routing port exposed on localhost for the UI and Gateway. |
-| **Crawler** | | | |
+| `JOBHUNTER_API_KEY` | No | `""` | API key for Gateway authentication. Leave blank for unauthenticated local development. |
+| **Crawler & Search** | | | |
 | `JOBSEEKER_ROLE` | No | `Backend Engineer` | The primary job role targeted during scraped searches. |
 | `JOBSEEKER_STACK` | No | `Python,FastAPI` | Target developer tools used to filter matching jobs. |
-| **Email** | | | |
+| **Email & AI Agent** | | | |
 | `GMAIL_ADDRESS` | No | | Senders email used for outbound applications. |
 | `GMAIL_APP_PASSWORD` | No | | Secure remote app password to authorize `smtplib`. |
 | `YOUR_NAME` | No | `Applicant` | Outbound sender name attached to drafted cold emails. |
 | `YOUR_GITHUB_URL` | No | | Included in footer context for recruiter outreach prompts. |
-| **Ollama** | | | |
 | `OLLAMA_BASE_URL` | No | `http://host.docker.internal:11434` | Gateway path to resolve localhost Ollama APIs inside container bridges. |
+| `GEMINI_API_KEY` | No | `""` | Google Gemini API key used by Gemini Agent Service for AI features. |
 
 ## Usage
 
@@ -252,6 +255,11 @@ The APScheduler mechanism triggers unattended sweeps continually without manual 
 ## Project structure
 
 ```text
+├── agent-search-service/        # On-demand intent-driven search engine & ATS integration
+│   ├── main.py                  # Search session routes & SSE streaming
+│   ├── search_executor.py       # DuckDuckGo and public ATS API search executor
+│   ├── ats_client.py            # Lever, Greenhouse, and Ashby ATS connectors
+│   └── Dockerfile
 ├── aggregator-service/          # Persists scraped data; serves jobs REST API
 │   ├── main.py                  # FastAPI route declarations
 │   ├── db.py                    # asyncpg query interfaces
@@ -279,6 +287,11 @@ The APScheduler mechanism triggers unattended sweeps continually without manual 
 │   ├── main.py                  # API fanout routers linking isolated tasks
 │   ├── proxy.py                 # httpx abstractions executing proxy mappings
 │   ├── dashboard.html           # Single-page vanilla JS UI tracking state
+│   └── Dockerfile
+├── gemini-agent-service/        # Gemini AI chat, resume tuning, and email drafting agent
+│   ├── main.py                  # Agent endpoints (/chat, /enhance-resume, /draft-email)
+│   ├── agent.py                 # Gemini LLM agent orchestrator
+│   ├── tools.py                 # Tool integrations (job search, resume tuning, email drafting)
 │   └── Dockerfile
 ├── scheduler/                   # Centralized task execution interval timers
 │   ├── main.py                  
@@ -546,15 +559,44 @@ curl -X POST "http://localhost:8080/api/workflow/apply" \
 }
 ```
 
+#### POST /api/agent/chat
+Interacts with the Gemini AI Assistant (`gemini-2.0-flash`) for conversational job search assistance, resume tuning, and email drafting.
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| (Body) | JSON | `Required` | Accepts `message`, `session_id`, and `context` (`{mode: "search|resume|email"}`). |
+
+```bash
+curl -X POST "http://localhost:8080/api/agent/chat" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Find python backend developer jobs in Bangalore", "context": {"mode": "search"}}'
+```
+
+#### POST /api/agent/search
+Triggers an interactive intent-driven search across Google dorks, DuckDuckGo, and ATS APIs (Lever, Greenhouse, Ashby).
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| (Body) | JSON | `Required` | Accepts `query`, `max_age_days` (default 14), and `limit`. |
+
+```bash
+curl -X POST "http://localhost:8080/api/agent/search" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Backend Engineer Python", "max_age_days": 7}'
+```
+
 ## Roadmap
 
 Built:
 - [x] Web crawler (Wellfound, YC, Remotive)
-- [x] Platform scraper (Naukri, LinkedIn, Internshala)
+- [x] Platform scraper (Naukri, LinkedIn, Internshala, Unstop)
 - [x] Job aggregation with deduplication
 - [x] Contact discovery via OSINT
 - [x] Cold email generation (Jinja2 + Ollama)
-- [x] API gateway with dashboard
+- [x] Interactive AI Agent Assistant (Gemini 2.0)
+- [x] Intent-driven job search engine with direct ATS connectors (Lever, Greenhouse, Ashby)
+- [x] API key authentication & secure gateway
+- [x] API gateway with single-page dashboard
 - [x] Automated scheduling
 
 Planned:

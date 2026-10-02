@@ -20,6 +20,12 @@ Overall, the architecture demonstrates a mature, scalable decoupling of concerns
 jobCrawler/
 ├── .claude/                             # Claude agent instruction files — COMPLETE
 │   └── agents/                          # 24 agent profiles for different QA/auditing tasks — COMPLETE
+├── agent-search-service/                # Intent-driven search engine & ATS integration — COMPLETE
+│   ├── ats_client.py                    # Lever, Greenhouse, Ashby ATS connectors — COMPLETE
+│   ├── Dockerfile                       # Multi-stage Docker build — COMPLETE
+│   ├── main.py                          # Search session routes & SSE streaming — COMPLETE
+│   ├── requirements.txt                 # Python dependencies — COMPLETE
+│   └── search_executor.py               # DuckDuckGo and ATS search runner — COMPLETE
 ├── aggregator-service/                  # Jobs aggregator and deduplicator — COMPLETE
 │   ├── consumer.py                      # Background Redis stream consumer — COMPLETE
 │   ├── db.py                            # asyncpg PostgreSQL adapter — COMPLETE
@@ -70,6 +76,13 @@ jobCrawler/
 │   ├── Dockerfile                       # Docker build — COMPLETE
 │   ├── main.py                          # FastAPI router fanout and workflows — COMPLETE
 │   └── proxy.py                         # httpx request forwarding — COMPLETE
+├── gemini-agent-service/                # Gemini AI assistant service — COMPLETE
+│   ├── agent.py                         # Gemini LLM orchestrator — COMPLETE
+│   ├── Dockerfile                       # Multi-stage Docker build — COMPLETE
+│   ├── main.py                          # FastAPI endpoints — COMPLETE
+│   ├── requirements.txt                 # Python dependencies — COMPLETE
+│   ├── storage.py                       # In-memory session history storage — COMPLETE
+│   └── tools.py                         # Search, resume, and email drafting tools — COMPLETE
 ├── scheduler/                           # APScheduler automation pipelines — COMPLETE
 │   ├── Dockerfile                       # Docker build (Missing scrapy dependency) — PARTIAL
 │   ├── logger.py                        # Custom JSON logger — COMPLETE
@@ -95,7 +108,7 @@ jobCrawler/
 │   ├── unit/                            # Independent service logic tests — COMPLETE
 │   └── conftest.py                      # Pytest fixtures — COMPLETE
 ├── workflows/                           # GitHub Issue/PR templates — COMPLETE
-├── docker-compose.yml                   # Infrastructure orchestrator — PARTIAL (missing volumes, depends_on)
+├── docker-compose.yml                   # Infrastructure orchestrator — COMPLETE
 └── README.md                            # Comprehensive documentation — COMPLETE
 ```
 
@@ -168,12 +181,31 @@ jobCrawler/
 - **Language and framework:** Python / FastAPI / httpx / Vanilla JS
 - **Port:** 8080
 - **Entry point file:** `gateway/main.py`
-- **What it does:** Acts as the unified public proxy for all internal microservices. It forwards requests via `httpx`, hosts the static `dashboard.html` single-page application, and manages the composite `POST /api/workflow/apply` endpoint.
-- **What is working:** Request proxying, dashboard serving, and cross-service orchestration.
-- **What is broken or incomplete:** It is entirely unauthenticated. 
-- **External dependencies it calls:** Aggregator, Scraper, Contact Discovery, and Email Generator services.
+- **What it does:** Acts as the unified public proxy for all internal microservices. It forwards requests via `httpx`, hosts the static `dashboard.html` single-page application, and manages composite endpoints.
+- **What is working:** Request proxying, dashboard serving, API key authentication (`APIKeyMiddleware`), and cross-service orchestration.
+- **What is broken or incomplete:** None. API key auth defaults to unauthenticated in local dev mode if `JOBHUNTER_API_KEY` is omitted.
+- **External dependencies it calls:** Aggregator, Scraper, Contact Discovery, Email Generator, Agent Search, and Gemini Agent services.
 - **What calls it:** User via Web Browser, Scheduler Service.
-- **Known issues or code smells spotted during audit:** API is completely open to the network.
+
+### Agent Search Service
+- **Status:** COMPLETE
+- **Language and framework:** Python / FastAPI / httpx / DuckDuckGo
+- **Port:** 8009
+- **Entry point file:** `agent-search-service/main.py`
+- **What it does:** On-demand intent-driven job search engine. Interprets natural language queries, performs Google dorking via DuckDuckGo, polls public ATS APIs (Lever, Greenhouse, Ashby), enforces freshness filtering, and streams results over SSE.
+- **What is working:** SSE streaming, ATS client indexing, freshness filtering, and relevance scoring.
+- **External dependencies it calls:** DuckDuckGo Web API, Lever, Greenhouse, Ashby ATS endpoints, Redis Stream (`jobs:raw`).
+- **What calls it:** Gateway (`/api/agent/search`).
+
+### Gemini Agent Service
+- **Status:** COMPLETE
+- **Language and framework:** Python / FastAPI / google-generativeai
+- **Port:** 8010
+- **Entry point file:** `gemini-agent-service/main.py`
+- **What it does:** AI assistant powered by Gemini 2.0. Provides interactive chat, resume tuning against job descriptions, and custom cold email drafting.
+- **What is working:** Conversational AI chat, resume enhancer, cold email drafter, session history, and graceful degradation if `GEMINI_API_KEY` is missing.
+- **External dependencies it calls:** Google Gemini API (`gemini-2.0-flash`).
+- **What calls it:** Gateway (`/api/agent/*`).
 
 ### Scheduler Service
 - **Status:** PARTIAL
@@ -509,6 +541,10 @@ CREATE INDEX IF NOT EXISTS idx_emails_status ON emails (status);
 | GET | /api/emails/{id} | Email-Gen | WORKING |
 | PATCH | /api/emails/{id}/status | Email-Gen | WORKING |
 | POST | /api/emails/{id}/send | Email-Gen | WORKING |
+| POST | /api/agent/search | Agent-Search | WORKING |
+| POST | /api/agent/chat | Gemini-Agent | WORKING |
+| POST | /api/agent/enhance-resume | Gemini-Agent | WORKING |
+| POST | /api/agent/draft-email | Gemini-Agent | WORKING |
 | POST | /api/workflow/apply | Gateway | WORKING |
 
 ---

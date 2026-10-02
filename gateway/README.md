@@ -1,19 +1,21 @@
 # API Gateway & Dashboard
 
-The API Gateway proxies all four backend services behind a single port and serves a vanilla-JS dashboard at `GET /`.
+The API Gateway proxies backend services behind a single port and serves a vanilla-JS dashboard at `GET /`.
 
 ```
 Browser / curl
      │
      ▼
  Gateway :8080
-  ├── /api/jobs/*      → aggregator:8000
-  ├── /api/scrape      → scraper:8000
-  ├── /api/contacts/*  → contact:8000
-  ├── /api/emails/*    → email-gen:8000
-  ├── /api/workflow/apply  ← composite (orchestrated here)
-  ├── /api/health          ← fans out to all services
-  └── /                    ← dashboard.html
+  ├── /api/jobs/*         → aggregator:8000
+  ├── /api/scrape         → scraper:8001
+  ├── /api/contacts/*     → contact:8002
+  ├── /api/emails/*       → email-gen:8003
+  ├── /api/agent/search   → agent-search:8009
+  ├── /api/agent/*        → gemini-agent:8010
+  ├── /api/workflow/apply ← composite (orchestrated here)
+  ├── /api/health         ← fans out to all services
+  └── /                   ← dashboard.html
 ```
 
 ---
@@ -54,10 +56,10 @@ open http://localhost:8080
 ### Service startup order (automatic via healthchecks)
 
 ```
-redis + postgres  →  aggregator + scraper + contact + email-gen  →  gateway
+redis + postgres  →  aggregator + scraper + contact + email-gen + agent-search + gemini-agent  →  gateway
 ```
 
-The gateway will not start until all four backend services report healthy.
+The gateway will not start until backend services report healthy.
 
 ### Run the crawler (one-shot, separate command)
 
@@ -76,7 +78,7 @@ docker compose run --rm crawler scrapy crawl remotive
 3. On any job card, click **👤 Discover** to find engineering contacts at that company (runs in background).
 4. Click **✉ Draft** — the gateway calls `/api/workflow/apply`, which orchestrates job lookup → contact discovery → email generation in one request and opens a preview modal.
 5. Click **Send** inside the modal to send the email via Gmail.
-6. Switch to **Contacts**, **Emails**, and **Stats** tabs to view results.
+6. Switch to **🤖 Agent**, **Contacts**, **Emails**, and **Stats** tabs to chat with Gemini AI, run intent searches, and view pipeline results.
 
 ---
 
@@ -93,10 +95,13 @@ curl http://localhost:8080/api/health
 {
   "gateway": "ok",
   "services": [
-    {"service": "aggregator", "status": "ok"},
-    {"service": "scraper",    "status": "ok"},
-    {"service": "contact",    "status": "ok"},
-    {"service": "email-gen",  "status": "ok"}
+    {"service": "aggregator",   "status": "ok"},
+    {"service": "scraper",      "status": "ok"},
+    {"service": "contact",      "status": "ok"},
+    {"service": "email-gen",    "status": "ok"},
+    {"service": "agent-search", "status": "ok"},
+    {"service": "gemini-agent", "status": "ok"},
+    {"service": "crawler",      "status": "ok"}
   ]
 }
 ```
@@ -131,6 +136,10 @@ curl -X POST http://localhost:8080/api/workflow/apply \
 | `GET /api/emails` | email-gen `/emails` |
 | `PATCH /api/emails/{id}/status` | email-gen `/emails/{id}/status` |
 | `POST /api/emails/{id}/send` | email-gen `/emails/{id}/send` |
+| `POST /api/agent/search` | agent-search `/search` |
+| `POST /api/agent/chat` | gemini-agent `/agent/chat` |
+| `POST /api/agent/enhance-resume` | gemini-agent `/agent/enhance-resume` |
+| `POST /api/agent/draft-email` | gemini-agent `/agent/draft-email` |
 
 ---
 
@@ -152,9 +161,11 @@ curl -X POST http://localhost:8080/api/workflow/apply \
 
 | Variable | Default | Description |
 |---|---|---|
-| `POSTGRES_USER` | `jobuser` | |
-| `POSTGRES_PASSWORD` | `jobpass` | |
-| `POSTGRES_DB` | `jobsdb` | |
+| `POSTGRES_USER` | `jobuser` | Database user |
+| `POSTGRES_PASSWORD` | `jobpass` | Database password |
+| `POSTGRES_DB` | `jobsdb` | Database name |
+| `JOBHUNTER_API_KEY` | — | Gateway API authentication key (blank for dev mode) |
+| `GEMINI_API_KEY` | — | Google Gemini API key for AI features |
 | `JOBSEEKER_ROLE` | `Backend Engineer` | Crawler search role |
 | `JOBSEEKER_STACK` | `Python,...` | Crawler stack filter |
 | `GITHUB_TOKEN` | — | Contact discovery (optional, raises GH rate limit) |
