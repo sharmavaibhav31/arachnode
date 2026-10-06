@@ -395,10 +395,10 @@
     ============================================================ */
     #main {
       margin-top: var(--n-h);
-      padding: 24px;
-      max-width: 1280px;
-      margin-left: auto;
-      margin-right: auto;
+      padding: 20px 24px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
 
     .tab-view { display: none; }
@@ -725,74 +725,224 @@
     .badge-purple { background: var(--accent-low); color: var(--accent); }
 
     /* ============================================================
-       DETAIL PANEL
+       60-40 SPLIT VIEWPORT LAYOUT & DETAIL PANEL
     ============================================================ */
-    #detail-panel {
-      position: fixed;
-      top: var(--n-h); right: 0; bottom: 0;
-      width: 420px;
-      background: var(--glass);
-      backdrop-filter: blur(20px) saturate(160%);
-      -webkit-backdrop-filter: blur(20px) saturate(160%);
-      border-left: 1px solid var(--glass-border);
-      overflow-y: auto;
-      z-index: 150;
-      transform: translateX(100%);
-      transition: transform 300ms cubic-bezier(.4,0,.2,1);
+    .jobs-split-wrapper {
+      display: flex;
+      flex-direction: row !important;
+      flex-wrap: nowrap !important;
+      width: 100%;
+      gap: 20px;
+      align-items: flex-start;
+      position: relative;
     }
 
-    #detail-panel.open { transform: translateX(0); }
+    .jobs-left-col {
+      flex: 1 1 100%;
+      width: 100%;
+      min-width: 0;
+      transition: all var(--trans);
+    }
+
+    .jobs-split-wrapper.has-detail-open .jobs-left-col {
+      flex: 0 0 calc(60% - 10px) !important;
+      width: calc(60% - 10px) !important;
+      max-width: calc(60% - 10px) !important;
+    }
+
+    .jobs-right-col {
+      display: none;
+      flex: 0 0 calc(40% - 10px) !important;
+      width: calc(40% - 10px) !important;
+      max-width: calc(40% - 10px) !important;
+      min-width: 0;
+      position: sticky;
+      top: calc(var(--n-h) + 16px);
+      max-height: calc(100vh - var(--n-h) - 32px);
+      overflow-y: auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      z-index: 10;
+    }
+
+    .jobs-split-wrapper.has-detail-open .jobs-right-col {
+      display: flex !important;
+      flex-direction: column;
+    }
+
+    .jobs-split-wrapper.has-detail-open .card-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .job-card.is-selected {
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 0 2px var(--accent-low), var(--shadow-sm) !important;
+      background: var(--surface-2) !important;
+    }
 
     #panel-backdrop {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 140;
-      background: rgba(0,0,0,.3);
-      backdrop-filter: blur(2px);
+      display: none !important;
     }
-
-    #panel-backdrop.open { display: block; }
 
     .panel-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      padding: 20px;
-      border-bottom: 1px solid var(--border);
-      gap: 8px;
-      position: sticky;
-      top: 0;
-      background: var(--glass);
-      backdrop-filter: blur(20px);
-      z-index: 1;
-    }
-
-    .panel-section {
       padding: 16px 20px;
       border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--surface);
+      z-index: 5;
     }
 
-    .panel-section h4 {
-      font-size: 10px;
-      font-weight: 700;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: .08em;
-      margin-bottom: 12px;
-    }
-
-    .detail-field {
+    .detail-card-body {
+      padding: 16px;
       display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .detail-section-card {
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .company-role-header {
+      margin-bottom: 4px;
+    }
+
+    .company-name-text {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .role-title-text {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    .meta-details-list {
+      display: flex;
+      flex-direction: column;
       gap: 8px;
-      margin-bottom: 8px;
+      padding: 10px 0;
+      border-top: 1px dashed var(--border);
+      border-bottom: 1px dashed var(--border);
+    }
+
+    .meta-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       font-size: 13px;
     }
 
-    .detail-label {
+    .meta-label {
       color: var(--muted);
-      min-width: 80px;
-      flex-shrink: 0;
+      font-weight: 500;
+    }
+
+    .meta-val {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .meta-val.highlight {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .tech-stack-container {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .sub-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+    }
+
+    .stack-chips-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .apply-link-container {
+      margin-top: 4px;
+    }
+
+    .btn-apply-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      height: 40px;
+      font-weight: 600;
+      font-size: 14px;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      box-shadow: 0 2px 10px var(--accent-glow);
+    }
+
+    .btn-apply-link:hover {
+      opacity: 0.95;
+      transform: translateY(-1px);
+    }
+
+    .no-apply-link {
+      font-size: 13px;
+      color: var(--muted);
+      text-align: center;
+      padding: 8px;
+      background: var(--surface-2);
+      border-radius: var(--radius-sm);
+    }
+
+    .section-sub-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    @media (max-width: 640px) {
+      .jobs-split-wrapper.has-detail-open {
+        flex-direction: column !important;
+        flex-wrap: wrap !important;
+      }
+      .jobs-split-wrapper.has-detail-open .jobs-left-col,
+      .jobs-split-wrapper.has-detail-open .jobs-right-col {
+        flex: 1 1 100% !important;
+        max-width: 100% !important;
+        width: 100% !important;
+      }
+      .jobs-right-col {
+        position: static;
+        max-height: none;
+      }
     }
 
     /* ============================================================
@@ -1288,8 +1438,23 @@
         </div>
         <button class="btn-outline" id="btn-export-jobs">Export CSV</button>
       </div>
-      <div id="jobs-grid" class="card-grid"></div>
-      <div id="kanban-board"></div>
+
+      <div class="jobs-split-wrapper" id="jobs-split-wrapper">
+        <div class="jobs-left-col">
+          <div id="jobs-grid" class="card-grid"></div>
+          <div id="kanban-board"></div>
+        </div>
+        <aside id="detail-panel" class="jobs-right-col">
+          <div class="panel-header">
+            <div>
+              <div id="panel-company" style="font-size:16px;font-weight:600;color:var(--text)"></div>
+              <div id="panel-role" style="font-size:13px;color:var(--text-dim);margin-top:3px"></div>
+            </div>
+            <button class="btn-close-x" id="panel-close" onclick="closePanel()">✕</button>
+          </div>
+          <div id="panel-content"></div>
+        </aside>
+      </div>
     </section>
 
     <!-- CONTACTS TAB -->
@@ -1561,18 +1726,8 @@
   </div><!-- #main -->
   </div><!-- #main -->
 
-  <!-- DETAIL PANEL -->
+  <!-- DETAIL BACKDROP -->
   <div id="panel-backdrop"></div>
-  <aside id="detail-panel">
-    <div class="panel-header">
-      <div>
-        <div id="panel-company" style="font-size:16px;font-weight:600;color:var(--text)"></div>
-        <div id="panel-role" style="font-size:13px;color:var(--text-dim);margin-top:3px"></div>
-      </div>
-      <button class="btn-close-x" id="panel-close">✕</button>
-    </div>
-    <div id="panel-content"></div>
-  </aside>
 
   <!-- SCRAPE MODAL -->
   <div class="modal-backdrop" id="scrape-modal">
@@ -2034,7 +2189,7 @@
         return;
       }
       grid.innerHTML = jobs.map(j => `
-        <div class="job-card status-${esc(j.status || 'new')}" 
+        <div class="job-card status-${esc(j.status || 'new')} ${state.selectedJobId === j.id ? 'is-selected' : ''}" 
              data-id="${esc(j.id)}" tabindex="0" role="button">
           <div class="card-actions">
             <button class="icon-btn" data-action="discover" 
@@ -2092,30 +2247,91 @@
       const job = state.jobs.find(j => j.id === jobId);
       if (!job) return;
       state.selectedJobId = jobId;
+      if (state.activeTab !== 'jobs') {
+        switchTab('jobs');
+      }
       document.getElementById('panel-company').textContent = job.company;
       document.getElementById('panel-role').textContent = job.role;
-      document.getElementById('detail-panel').classList.add('open');
-      document.getElementById('panel-backdrop').classList.add('open');
+      const wrapper = document.getElementById('jobs-split-wrapper');
+      if (wrapper) wrapper.classList.add('has-detail-open');
+      const panel = document.getElementById('detail-panel');
+      if (panel) panel.classList.add('open');
+      highlightSelectedCard(jobId);
       renderPanelContent(job);
       fetchPanelData(job);
     }
 
+    function highlightSelectedCard(jobId) {
+      document.querySelectorAll('.job-card').forEach(card => {
+        if (jobId && card.dataset.id === jobId) {
+          card.classList.add('is-selected');
+        } else {
+          card.classList.remove('is-selected');
+        }
+      });
+    }
+
     function renderPanelContent(job) {
+      const stackList = Array.isArray(job.stack) ? job.stack : (typeof job.stack === 'string' ? job.stack.split(',') : []);
+      const postedStr = job.posted_at ? `${relTime(job.posted_at)} · (${fmtDate(job.posted_at)})` : 'Recently posted';
+      
       document.getElementById('panel-content').innerHTML = `
-        <div class="panel-section">
-          <h4>Details</h4>
-          <div class="detail-field"><span class="detail-label">Source</span><span>${esc(job.source || '—')}</span></div>
-          <div class="detail-field"><span class="detail-label">Status</span>${statusBadge(job.status)}</div>
-          <div class="detail-field"><span class="detail-label">Location</span><span>${esc(job.location || '—')}</span></div>
-          <div class="detail-field"><span class="detail-label">Posted</span><span>${fmtDate(job.posted_at)}</span></div>
-          ${job.url ? `<div class="detail-field"><span class="detail-label">URL</span>
-            <a href="${esc(job.url)}" target="_blank" style="color:var(--accent)">Open ↗</a></div>` : ''}
-        </div>
-        <div class="panel-section" id="panel-contacts-section">
-          <h4>Contacts</h4><div class="skel skel-row"></div>
-        </div>
-        <div class="panel-section" id="panel-emails-section">
-          <h4>Emails</h4><div class="skel skel-row"></div>
+        <div class="detail-card-body">
+          <div class="detail-section-card">
+            <div class="company-role-header">
+              <div class="company-name-text">🏢 ${esc(job.company || '—')}</div>
+              <div class="role-title-text">${esc(job.role || '—')}</div>
+            </div>
+
+            <div class="meta-details-list">
+              <div class="meta-item">
+                <span class="meta-label">📅 Posted</span>
+                <span class="meta-val highlight">${esc(postedStr)}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">📍 Location</span>
+                <span class="meta-val">${esc(job.location || 'Not specified')}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">🌐 Source</span>
+                <span class="meta-val"><span class="tag tag-gray">${esc(job.source || '—')}</span></span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">📌 Status</span>
+                <span class="meta-val">${statusBadge(job.status)}</span>
+              </div>
+            </div>
+
+            <div class="tech-stack-container">
+              <div class="sub-label">💻 Tech Stack</div>
+              <div class="stack-chips-wrap">
+                ${stackList.length > 0 
+                  ? stackList.map(t => `<span class="tag tag-purple">${esc(t.trim())}</span>`).join('') 
+                  : '<span style="color:var(--muted);font-size:12px;font-style:italic">No stack specified</span>'}
+              </div>
+            </div>
+
+            <div class="apply-link-container">
+              ${job.url ? `
+                <a href="${esc(job.url)}" target="_blank" rel="noopener" class="btn-accent btn-apply-link">
+                  <span>🚀 Apply Now</span>
+                  <span style="font-size:14px;margin-left:4px">↗</span>
+                </a>
+              ` : `
+                <div class="no-apply-link">No apply URL available</div>
+              `}
+            </div>
+          </div>
+
+          <div class="detail-section-card" id="panel-contacts-section">
+            <h4 class="section-sub-title">👤 Contacts</h4>
+            <div class="skel skel-row"></div>
+          </div>
+
+          <div class="detail-section-card" id="panel-emails-section">
+            <h4 class="section-sub-title">✉ Email Outreach</h4>
+            <div class="skel skel-row"></div>
+          </div>
         </div>`;
     }
 
@@ -2128,44 +2344,58 @@
       const cSect = document.getElementById('panel-contacts-section');
       if (cSect) {
         if (!contacts?.length) {
-          cSect.innerHTML = '<h4>Contacts</h4><p style="font-size:13px;color:var(--muted)">No contacts discovered yet.</p>';
+          cSect.innerHTML = `
+            <h4 class="section-sub-title">👤 Contacts</h4>
+            <p style="font-size:13px;color:var(--muted);margin-bottom:10px">No contacts discovered yet.</p>
+            <button class="btn-outline" style="height:32px;font-size:12px;width:100%" onclick="discoverForJob('${esc(job.id)}')">👤 Discover Contacts</button>`;
         } else {
-          cSect.innerHTML = `<h4>Contacts</h4>${contacts.map(c => `
-            <div style="margin-bottom:10px;font-size:13px;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2)">
-              <div style="font-weight:500;margin-bottom:2px">${esc(c.name || '—')}</div>
-              <div style="color:var(--text-dim)">${esc(c.email || '—')} · ${verifiedBadge(c.verified)}</div>
-            </div>`).join('')}`;
+          cSect.innerHTML = `
+            <h4 class="section-sub-title">👤 Contacts (${contacts.length})</h4>
+            ${contacts.map(c => `
+              <div style="margin-bottom:8px;font-size:13px;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2)">
+                <div style="font-weight:600;margin-bottom:2px;color:var(--text)">${esc(c.name || '—')}</div>
+                <div style="color:var(--text-dim);font-size:12px">${esc(c.email || '—')} · ${verifiedBadge(c.verified)}</div>
+                ${c.role ? `<div style="color:var(--muted);font-size:11px;margin-top:2px">${esc(c.role)}</div>` : ''}
+              </div>`).join('')}
+            <button class="btn-outline" style="height:30px;font-size:12px;width:100%;margin-top:4px" onclick="discoverForJob('${esc(job.id)}')">+ Discover More</button>`;
         }
       }
 
       const eSect = document.getElementById('panel-emails-section');
       if (eSect) {
-        const tmplSel = `<select id="panel-tmpl" style="height:32px;padding:0 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;margin-right:6px;background:var(--surface);color:var(--text)">
+        const tmplSel = `<select id="panel-tmpl" style="height:34px;padding:0 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;background:var(--surface);color:var(--text)">
           <option value="cold_outreach">Cold Outreach</option>
-          <option value="recruiter_outreach">Recruiter</option>
+          <option value="recruiter_outreach">Recruiter Outreach</option>
           <option value="referral_outreach">Referral Outreach</option>
           <option value="followup">Follow-up</option>
         </select>`;
-        const referralInput = `<input id="panel-referred-by" type="text" placeholder="Referred by" style="display:none;height:32px;padding:0 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;margin-right:6px;min-width:150px;background:var(--surface);color:var(--text)">`;
+        const referralInput = `<input id="panel-referred-by" type="text" placeholder="Referred by name" style="display:none;height:34px;padding:0 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;background:var(--surface);color:var(--text)">`;
         if (!emails?.length) {
-          eSect.innerHTML = `<h4>Emails</h4>
-            <p style="font-size:13px;color:var(--muted);margin-bottom:12px">No emails drafted yet.</p>
-            ${tmplSel}${referralInput}
-            <button class="btn-accent" id="panel-draft-btn" style="height:32px;font-size:12px">Draft Email</button>`;
+          eSect.innerHTML = `
+            <h4 class="section-sub-title">✉ Email Outreach</h4>
+            <p style="font-size:13px;color:var(--muted);margin-bottom:10px">No emails drafted yet.</p>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              ${tmplSel}${referralInput}
+              <button class="btn-accent" id="panel-draft-btn" style="height:34px;font-size:12px;width:100%">✨ Draft Email</button>
+            </div>`;
         } else {
-          eSect.innerHTML = `<h4>Emails</h4>
+          eSect.innerHTML = `
+            <h4 class="section-sub-title">✉ Email Outreach (${emails.length})</h4>
             ${emails.map(e => `
-              <div style="margin-bottom:8px;padding:12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);font-size:12px">
-                <div style="font-weight:500;margin-bottom:4px;color:var(--text)">${esc(e.subject)}</div>
-                <div style="color:var(--muted)">${esc(e.template)} · ${statusBadge(e.status)}</div>
+              <div style="margin-bottom:8px;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);font-size:12px">
+                <div style="font-weight:600;margin-bottom:4px;color:var(--text)">${esc(e.subject)}</div>
+                <div style="color:var(--muted);margin-bottom:6px">${esc(e.template)} · ${statusBadge(e.status)}</div>
+                ${e.body ? `<div style="white-space:pre-wrap;color:var(--text-dim);max-height:120px;overflow-y:auto;background:var(--surface);padding:8px;border-radius:4px;border:1px solid var(--border);font-family:var(--font-mono);font-size:11px">${esc(e.body)}</div>` : ''}
               </div>`).join('')}
-            <div style="margin-top:10px">${tmplSel}${referralInput}
-            <button class="btn-accent" id="panel-draft-btn" style="height:32px;font-size:12px">Draft New</button></div>`;
+            <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
+              ${tmplSel}${referralInput}
+              <button class="btn-accent" id="panel-draft-btn" style="height:34px;font-size:12px;width:100%">✨ Draft New Email</button>
+            </div>`;
         }
         const tmplEl = document.getElementById('panel-tmpl');
         const referredByEl = document.getElementById('panel-referred-by');
         const syncReferralInput = () => {
-          if (referredByEl) referredByEl.style.display = tmplEl?.value === 'referral_outreach' ? 'inline-block' : 'none';
+          if (referredByEl) referredByEl.style.display = tmplEl?.value === 'referral_outreach' ? 'block' : 'none';
         };
         tmplEl?.addEventListener('change', syncReferralInput);
         syncReferralInput();
@@ -2183,9 +2413,12 @@
     }
 
     function closePanel() {
-      document.getElementById('detail-panel').classList.remove('open');
-      document.getElementById('panel-backdrop').classList.remove('open');
+      const wrapper = document.getElementById('jobs-split-wrapper');
+      if (wrapper) wrapper.classList.remove('has-detail-open');
+      const panel = document.getElementById('detail-panel');
+      if (panel) panel.classList.remove('open');
       state.selectedJobId = null;
+      highlightSelectedCard(null);
     }
 
     // ===========================================================================
