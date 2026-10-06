@@ -38,7 +38,8 @@ RUN pip config set global.timeout 120 \
 
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements.txt
 
 # Install Chromium browser binary only with retries for network resilience
 RUN for i in 1 2 3 4 5; do playwright install chromium && break || (echo "Retry $i..." && sleep 5); done \

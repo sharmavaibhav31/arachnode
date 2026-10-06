@@ -102,6 +102,9 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       DATABASE_URL: postgresql://${POSTGRES_USER:-jobuser}:${POSTGRES_PASSWORD:-jobpass}@postgres:5432/${POSTGRES_DB:-jobsdb}
+      HF_HOME: /home/appuser/.cache/huggingface
+    volumes:
+      - hf_cache:/home/appuser/.cache/huggingface
     depends_on:
       redis:
         condition: service_healthy
@@ -321,6 +324,8 @@ volumes:
   redis_data:
     driver: local
   run_summary:
+    driver: local
+  hf_cache:
     driver: local
 
 # ---------------------------------------------------------------------------
