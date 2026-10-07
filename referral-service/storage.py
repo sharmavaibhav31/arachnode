@@ -8,6 +8,7 @@ import logging
 import math
 import os
 from datetime import date as date_type, datetime
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
@@ -16,6 +17,8 @@ import asyncpg
 logger = logging.getLogger(__name__)
 
 _pool: Optional[asyncpg.Pool] = None
+
+TEMPLATES_DIR = Path(__file__).parent / "templates"
 
 
 async def create_pool() -> asyncpg.Pool:
@@ -31,6 +34,7 @@ async def create_pool() -> asyncpg.Pool:
         command_timeout=30,
     )
     await _init_schema(_pool)
+    await _seed_system_templates(_pool)
     logger.info("Referral Service PostgreSQL pool ready.")
     return _pool
 
@@ -78,13 +82,62 @@ CREATE INDEX IF NOT EXISTS idx_referral_type
   ON referral_contacts(contact_type);
 CREATE INDEX IF NOT EXISTS idx_referral_queued_date 
   ON referral_contacts(queued_for_date);
+
+CREATE TABLE IF NOT EXISTS referral_templates (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name         TEXT NOT NULL UNIQUE,
+  description  TEXT,
+  target_type  TEXT NOT NULL DEFAULT 'all',
+               -- hr|technical|leadership|other|unknown|all
+  subject      TEXT,         -- for future email use
+  body         TEXT NOT NULL, -- Jinja2 template string
+  is_system    BOOLEAN NOT NULL DEFAULT false,
+               -- true = built-in, cannot be deleted
+  is_active    BOOLEAN NOT NULL DEFAULT true,
+  created_at   TIMESTAMPTZ DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ DEFAULT NOW()
+);
 """
 
 
 async def _init_schema(pool: asyncpg.Pool) -> None:
     async with pool.acquire() as conn:
         await conn.execute(_SCHEMA_SQL)
-    logger.info("Referral contacts schema verified/created.")
+    logger.info("Referral contacts and templates schema verified/created.")
+
+
+SYSTEM_TEMPLATES_SEED = [
+    ("System HR Template", "hr", "hr_outreach.j2", "System template for HR and Talent Acquisition"),
+    ("System Technical Template", "technical", "technical_outreach.j2", "System template for Engineers and Technical roles"),
+    ("System Leadership Template", "leadership", "leadership_outreach.j2", "System template for Founders, Directors, and VPs"),
+    ("System Other Template", "other", "other_outreach.j2", "System template for Analysts, Consultants, and other roles"),
+    ("System Unknown Template", "unknown", "unknown_outreach.j2", "System template for contacts with no position listed"),
+]
+
+
+async def _seed_system_templates(pool: asyncpg.Pool) -> None:
+    async with pool.acquire() as conn:
+        for name, target_type, file_name, desc in SYSTEM_TEMPLATES_SEED:
+            tmpl_path = TEMPLATES_DIR / file_name
+            if tmpl_path.exists():
+                try:
+                    body = tmpl_path.read_text(encoding="utf-8")
+                    await conn.execute(
+                        """
+                        INSERT INTO referral_templates (name, description, target_type, body, is_system, is_active)
+                        VALUES ($1, $2, $3, $4, true, true)
+                        ON CONFLICT (name) DO UPDATE
+                        SET body = EXCLUDED.body,
+                            description = EXCLUDED.description,
+                            updated_at = NOW()
+                        """,
+                        name,
+                        desc,
+                        target_type,
+                        body,
+                    )
+                except Exception as exc:
+                    logger.error(f"Failed to seed template {name}: {exc}")
 
 
 def _format_record(row) -> Dict[str, Any]:
@@ -97,6 +150,195 @@ def _format_record(row) -> Dict[str, Any]:
         elif isinstance(v, (datetime, date_type)):
             d[k] = v.isoformat()
     return d
+
+
+# ---------------------------------------------------------------------------
+# Templates CRUD
+# ---------------------------------------------------------------------------
+
+
+async def get_templates() -> List[Dict[str, Any]]:
+    pool = await get_pool()
+    if not pool:
+        return []
+
+    sql = """
+        SELECT id, name, description, target_type, subject, is_system, is_active, created_at, updated_at
+        FROM referral_templates
+        ORDER BY is_system DESC, name ASC
+    """
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(sql)
+        return [_format_record(r) for r in rows]
+
+
+async def get_template_by_id(template_id: str | UUID) -> Optional[Dict[str, Any]]:
+    pool = await get_pool()
+    if not pool:
+        return None
+
+    tid = UUID(str(template_id)) if isinstance(template_id, str) else template_id
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT * FROM referral_templates WHERE id = $1", tid)
+        return _format_record(row) if row else None
+
+
+async def create_template(
+    name: str,
+    target_type: str,
+    body: str,
+    description: Optional[str] = None,
+    subject: Optional[str] = None,
+) -> Dict[str, Any]:
+    pool = await get_pool()
+    if not pool:
+        raise RuntimeError("Database pool not initialized")
+
+    sql = """
+        INSERT INTO referral_templates (name, description, target_type, body, subject, is_system, is_active)
+        VALUES ($1, $2, $3, $4, $5, false, true)
+        RETURNING *
+    """
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(sql, name, description, target_type.lower(), body, subject)
+        return _format_record(row)
+
+
+async def update_template(
+    template_id: str | UUID,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    target_type: Optional[str] = None,
+    body: Optional[str] = None,
+    subject: Optional[str] = None,
+    is_active: Optional[bool] = None,
+) -> Optional[Dict[str, Any]]:
+    pool = await get_pool()
+    if not pool:
+        return None
+
+    tid = UUID(str(template_id)) if isinstance(template_id, str) else template_id
+
+    existing = await get_template_by_id(tid)
+    if not existing:
+        return None
+    if existing.get("is_system"):
+        raise PermissionError("System templates cannot be edited via API")
+
+    updates = []
+    params: List[Any] = [tid]
+    param_idx = 2
+
+    if name is not None:
+        updates.append(f"name = ${param_idx}")
+        params.append(name)
+        param_idx += 1
+    if description is not None:
+        updates.append(f"description = ${param_idx}")
+        params.append(description)
+        param_idx += 1
+    if target_type is not None:
+        updates.append(f"target_type = ${param_idx}")
+        params.append(target_type.lower())
+        param_idx += 1
+    if body is not None:
+        updates.append(f"body = ${param_idx}")
+        params.append(body)
+        param_idx += 1
+    if subject is not None:
+        updates.append(f"subject = ${param_idx}")
+        params.append(subject)
+        param_idx += 1
+    if is_active is not None:
+        updates.append(f"is_active = ${param_idx}")
+        params.append(is_active)
+        param_idx += 1
+
+    if not updates:
+        return existing
+
+    updates.append("updated_at = NOW()")
+    sql = f"UPDATE referral_templates SET {', '.join(updates)} WHERE id = $1 RETURNING *"
+
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(sql, *params)
+        return _format_record(row) if row else None
+
+
+async def delete_template(template_id: str | UUID) -> bool:
+    pool = await get_pool()
+    if not pool:
+        return False
+
+    tid = UUID(str(template_id)) if isinstance(template_id, str) else template_id
+    existing = await get_template_by_id(tid)
+    if not existing:
+        return False
+    if existing.get("is_system"):
+        raise PermissionError("System templates cannot be deleted")
+
+    async with pool.acquire() as conn:
+        res = await conn.execute("DELETE FROM referral_templates WHERE id = $1", tid)
+        return res.endswith("1")
+
+
+async def get_active_template_for_type(contact_type: str) -> Optional[Dict[str, Any]]:
+    pool = await get_pool()
+    if not pool:
+        return None
+
+    ctype = contact_type.lower()
+
+    async with pool.acquire() as conn:
+        # Priority 1: Active custom template matching contact_type
+        row = await conn.fetchrow(
+            """
+            SELECT * FROM referral_templates
+            WHERE target_type = $1 AND is_active = true AND is_system = false
+            ORDER BY created_at DESC LIMIT 1
+            """,
+            ctype,
+        )
+        if row:
+            return _format_record(row)
+
+        # Priority 2: Active custom template with target_type = 'all'
+        row = await conn.fetchrow(
+            """
+            SELECT * FROM referral_templates
+            WHERE target_type = 'all' AND is_active = true AND is_system = false
+            ORDER BY created_at DESC LIMIT 1
+            """
+        )
+        if row:
+            return _format_record(row)
+
+        # Priority 3: System template matching contact_type
+        row = await conn.fetchrow(
+            """
+            SELECT * FROM referral_templates
+            WHERE target_type = $1 AND is_system = true AND is_active = true
+            LIMIT 1
+            """,
+            ctype,
+        )
+        if row:
+            return _format_record(row)
+
+        # Priority 4: System template matching 'other' or 'unknown'
+        row = await conn.fetchrow(
+            """
+            SELECT * FROM referral_templates
+            WHERE is_system = true AND is_active = true
+            ORDER BY created_at ASC LIMIT 1
+            """
+        )
+        return _format_record(row) if row else None
+
+
+# ---------------------------------------------------------------------------
+# Contacts persistence
+# ---------------------------------------------------------------------------
 
 
 async def import_contacts(contacts_data: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -360,7 +602,6 @@ async def mark_contacts_sent(contact_ids: List[str | UUID]) -> int:
     """
     async with pool.acquire() as conn:
         res = await conn.execute(sql, uuids)
-        # res looks like "UPDATE 5"
         try:
             return int(res.split(" ")[1])
         except Exception:

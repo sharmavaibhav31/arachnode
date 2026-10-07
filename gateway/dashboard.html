@@ -1754,21 +1754,48 @@
 
         <!-- SECTION A: IMPORT AREA -->
         <div id="referral-import-section" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:24px">
-          <h3 style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:8px">📥 Import Connections</h3>
-          <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px">Upload your LinkedIn connections export file (<code>connections.csv</code>).</p>
-          <div id="ref-dropzone" style="border:2px dashed var(--border-hover);border-radius:var(--radius);padding:32px;text-align:center;background:var(--bg-2);cursor:pointer;transition:var(--trans)">
-            <input type="file" id="ref-csv-file" accept=".csv" style="display:none" />
-            <div style="font-size:32px;margin-bottom:8px">📄</div>
-            <div style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:4px">Upload your LinkedIn connections export (connections.csv)</div>
-            <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Drag and drop your file here or click to browse</div>
-            <button class="btn-accent" onclick="document.getElementById('ref-csv-file').click()">Select File</button>
-            <div id="ref-selected-file" style="font-size:13px;color:var(--accent-2);margin-top:10px;display:none"></div>
+          <h3 style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:12px">📥 Import Connections</h3>
+          <div id="referral-upload-area" style="
+               border: 2px dashed var(--border);
+               border-radius: var(--radius);
+               padding: 40px;
+               text-align: center;
+               cursor: pointer;
+               transition: border-color 150ms ease;"
+               ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+               ondragleave="this.style.borderColor='var(--border)'"
+               ondrop="handleReferralFileDrop(event)">
+            
+            <div style="font-size: 32px; margin-bottom: 12px">📋</div>
+            <div style="font-weight: 600; margin-bottom: 4px">
+              Drop your LinkedIn connections export here
+            </div>
+            <div style="font-size: 13px; color: var(--muted); margin-bottom: 16px">
+              Supports .csv and .xlsx — LinkedIn exports as CSV, but Excel works too
+            </div>
+            <label style="cursor: pointer">
+              <input type="file" id="referral-file-input" 
+                     accept=".csv,.xlsx,.xls" style="display:none"
+                     onchange="handleReferralFileSelect(this)">
+              <span class="btn-outline" style="padding: 8px 20px">
+                Choose File
+              </span>
+            </label>
           </div>
-          <div style="margin-top:16px;display:flex;align-items:center;gap:12px">
-            <button class="btn-accent" id="btn-import-csv" onclick="handleReferralImport()" disabled>Import Connections</button>
-            <span id="ref-import-status" style="font-size:13px;color:var(--text-dim)"></span>
+        </div>
+
+        <!-- SECTION TEMPLATES: MESSAGE TEMPLATES -->
+        <div id="referral-templates-section" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:24px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 style="font-size:16px;font-weight:600;color:var(--text)">📝 Message Templates</h3>
+            <button class="btn-outline" style="font-size:12px" onclick="openNewTemplateModal()">
+              + New Template
+            </button>
           </div>
-          <div id="ref-import-summary" style="display:none;margin-top:16px;padding:12px;border-radius:var(--radius-sm);background:var(--accent-low);color:var(--text);font-size:13px;font-weight:500"></div>
+          
+          <div id="templates-list" style="display:flex;flex-direction:column;gap:8px">
+            <!-- Populated by loadTemplates() -->
+          </div>
         </div>
 
         <!-- SECTION B: TODAY'S QUEUE -->
@@ -1927,6 +1954,56 @@
       </div>
       <div class="modal-footer">
         <button onclick="saveApiKey()" class="btn-accent">Save & Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEMPLATE MODAL -->
+  <div id="template-modal" class="modal-backdrop">
+    <div class="modal" style="max-width:600px;width:90%">
+      <div class="modal-header">
+        <h3 id="template-modal-title">New Template</h3>
+        <button class="btn-close-x" onclick="closeTemplateModal()">✕</button>
+      </div>
+      <div class="modal-body" style="display:flex;flex-direction:column;gap:14px">
+        
+        <div class="field-group">
+          <label style="font-size:13px;font-weight:500;color:var(--text);display:block;margin-bottom:4px">Template Name</label>
+          <input type="text" id="tmpl-name" placeholder="e.g. Casual HR — startups" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-size:13px"/>
+        </div>
+        
+        <div class="field-group">
+          <label style="font-size:13px;font-weight:500;color:var(--text);display:block;margin-bottom:4px">Target Contact Type</label>
+          <select id="tmpl-type" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-size:13px">
+            <option value="all">All types</option>
+            <option value="hr">HR / Talent Acquisition</option>
+            <option value="technical">Technical / Engineers</option>
+            <option value="leadership">Leadership / Founders</option>
+            <option value="other">Other roles</option>
+            <option value="unknown">Unknown / No position</option>
+          </select>
+        </div>
+        
+        <div class="field-group">
+          <label style="font-size:13px;font-weight:500;color:var(--text);display:block;margin-bottom:4px">Description (optional)</label>
+          <input type="text" id="tmpl-description" placeholder="What makes this template different?" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-size:13px"/>
+        </div>
+        
+        <div class="field-group">
+          <label style="font-size:13px;font-weight:500;color:var(--text);display:block;margin-bottom:4px">Message Body</label>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:6px">
+            Available variables: {{ first_name }}, {{ company }}, {{ their_role }}, {{ profile.name }}, {{ profile.stack }}, {{ profile.github }}, {{ profile.portfolio }}, {{ profile.opportunity_type }}, {{ profile.graduation_year }}
+          </div>
+          <textarea id="tmpl-body" rows="10" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px;font-family:monospace;resize:vertical"></textarea>
+        </div>
+        
+        <!-- Preview area -->
+        <div id="tmpl-preview-area" style="display:none;padding:14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);font-size:13px;white-space:pre-wrap;line-height:1.6">
+        </div>
+      </div>
+      <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn-outline" onclick="previewTemplate()">Preview</button>
+        <button class="btn-accent" onclick="saveTemplate()">Save Template</button>
       </div>
     </div>
   </div>
@@ -3521,12 +3598,12 @@ ${esc(res.email_draft.body)}</pre>
     let referralOffset = 0;
     const REFERRAL_LIMIT = 50;
     let referralSearchTimeout = null;
-    let selectedReferralFile = null;
+    let editingTemplateId = null;
 
     async function loadReferralsTab() {
-      setupReferralDropzone();
       await Promise.all([
         loadReferralStats(),
+        loadTemplates(),
         loadReferralQueue(),
         loadReferralContacts(true),
       ]);
@@ -3555,103 +3632,276 @@ ${esc(res.email_draft.body)}</pre>
       }
     }
 
-    function setupReferralDropzone() {
-      const dropzone = document.getElementById('ref-dropzone');
-      const fileInput = document.getElementById('ref-csv-file');
-      const fileLabel = document.getElementById('ref-selected-file');
-      const importBtn = document.getElementById('btn-import-csv');
-      if (!dropzone || dropzone.dataset.initialized) return;
+    // ---------------------------------------------------------------------------
+    // Import (CSV & Excel)
+    // ---------------------------------------------------------------------------
 
-      dropzone.dataset.initialized = "true";
+    function handleReferralFileSelect(input) {
+      const file = input.files[0];
+      if (!file) return;
+      showSelectedFile(file);
+    }
 
-      ['dragenter', 'dragover'].forEach(eventName => {
-        dropzone.addEventListener(eventName, (e) => {
-          e.preventDefault();
-          dropzone.style.borderColor = 'var(--accent)';
-          dropzone.style.background = 'var(--surface-2)';
+    function handleReferralFileDrop(event) {
+      event.preventDefault();
+      const file = event.dataTransfer.files[0];
+      if (!file) return;
+      const area = document.getElementById('referral-upload-area');
+      if (area) area.style.borderColor = 'var(--border)';
+      showSelectedFile(file);
+    }
+
+    function showSelectedFile(file) {
+      const area = document.getElementById('referral-upload-area');
+      if (!area) return;
+      area.innerHTML = `
+        <div style="font-size:28px;margin-bottom:8px">📄</div>
+        <div style="font-weight:600;margin-bottom:4px">${esc(file.name)}</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px">
+          Ready to import (${(file.size / 1024).toFixed(1)} KB)
+        </div>
+        <button class="btn-accent" onclick="importReferralFile()">
+          Import Connections
+        </button>
+        <button class="btn-outline" style="margin-left:8px" onclick="resetReferralUpload()">
+          Change File
+        </button>`;
+      window._referralFile = file;
+    }
+
+    function resetReferralUpload() {
+      window._referralFile = null;
+      const area = document.getElementById('referral-upload-area');
+      if (area) {
+        area.innerHTML = `
+          <div style="font-size: 32px; margin-bottom: 12px">📋</div>
+          <div style="font-weight: 600; margin-bottom: 4px">
+            Drop your LinkedIn connections export here
+          </div>
+          <div style="font-size: 13px; color: var(--muted); margin-bottom: 16px">
+            Supports .csv and .xlsx — LinkedIn exports as CSV, but Excel works too
+          </div>
+          <label style="cursor: pointer">
+            <input type="file" id="referral-file-input" 
+                   accept=".csv,.xlsx,.xls" style="display:none"
+                   onchange="handleReferralFileSelect(this)">
+            <span class="btn-outline" style="padding: 8px 20px">
+              Choose File
+            </span>
+          </label>
+        `;
+      }
+    }
+
+    async function importReferralFile() {
+      if (!window._referralFile) return;
+      const formData = new FormData();
+      formData.append('file', window._referralFile);
+
+      const area = document.getElementById('referral-upload-area');
+      if (area) {
+        area.innerHTML = `
+          <div style="color:var(--muted);font-size:14px">
+            Importing... this takes a few seconds
+          </div>`;
+      }
+
+      try {
+        const apiKey = API_KEY || window._apiKey;
+        const res = await fetch('/api/referral/import', {
+          method: 'POST',
+          body: formData,
+          headers: apiKey ? { 'X-API-Key': apiKey } : {},
         });
-      });
 
-      ['dragleave', 'drop'].forEach(eventName => {
-        dropzone.addEventListener(eventName, (e) => {
-          e.preventDefault();
-          dropzone.style.borderColor = 'var(--border-hover)';
-          dropzone.style.background = 'var(--bg-2)';
-        });
-      });
-
-      dropzone.addEventListener('drop', (e) => {
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          fileInput.files = files;
-          updateSelectedFile(files[0]);
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          showToast(err.error || err.detail || 'Import failed');
+          resetReferralUpload();
+          return;
         }
-      });
 
-      fileInput.addEventListener('change', () => {
-        if (fileInput.files && fileInput.files.length > 0) {
-          updateSelectedFile(fileInput.files[0]);
+        const data = await res.json();
+        showToast(`Imported ${data.imported} contacts`);
+
+        const byType = data.by_type || {};
+        if (area) {
+          area.innerHTML = `
+            <div style="color:var(--muted);font-size:14px;margin-bottom:12px">
+              ✓ Import complete
+            </div>
+            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+              <span class="badge badge-green">HR/TA: ${byType.hr || 0}</span>
+              <span class="badge badge-purple">Technical: ${byType.technical || 0}</span>
+              <span class="badge badge-amber">Leaders: ${byType.leadership || 0}</span>
+              <span class="badge badge-gray">Other: ${byType.other || 0}</span>
+              <span class="badge badge-muted">Unknown: ${byType.unknown || 0}</span>
+            </div>
+            <div style="margin-top:12px">
+              <button class="btn-outline" style="font-size:12px" onclick="resetReferralUpload()">
+                Import another file
+              </button>
+            </div>`;
         }
-      });
 
-      function updateSelectedFile(file) {
-        if (file.name.toLowerCase().endsWith('.csv')) {
-          selectedReferralFile = file;
-          fileLabel.textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
-          fileLabel.style.display = 'block';
-          importBtn.disabled = false;
-        } else {
-          showToast('Please select a valid .csv file');
-          importBtn.disabled = true;
+        await loadReferralStats();
+        await loadReferralQueue();
+        await loadReferralContacts(true);
+      } catch (e) {
+        showToast('Network error during import');
+        resetReferralUpload();
+      }
+    }
+
+    // ---------------------------------------------------------------------------
+    // Templates Management
+    // ---------------------------------------------------------------------------
+
+    async function loadTemplates() {
+      const templates = await apiFetch('/referral/templates');
+      const list = document.getElementById('templates-list');
+      if (!list || !templates) return;
+
+      list.innerHTML = templates.map(t => `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)">
+          <span class="badge" style="font-size:11px">
+            ${esc(t.target_type)}
+          </span>
+          <span style="flex:1;font-size:14px;font-weight:500">
+            ${esc(t.name)}
+          </span>
+          ${t.is_system ? '<span style="font-size:11px;color:var(--muted)">🔒 system</span>' : ''}
+          <button class="btn-outline" style="font-size:11px;padding:4px 10px" onclick="previewTemplateById('${t.id}')">
+            Preview
+          </button>
+          ${!t.is_system ? `
+            <button class="btn-outline" style="font-size:11px;padding:4px 10px" onclick="editTemplate('${t.id}')">
+              Edit
+            </button>
+            <button class="btn-outline" style="font-size:11px;padding:4px 10px;color:var(--red,#ef4444)" onclick="deleteTemplate('${t.id}', '${esc(t.name)}')">
+              Delete
+            </button>
+          ` : ''}
+        </div>`).join('');
+    }
+
+    function openNewTemplateModal() {
+      editingTemplateId = null;
+      document.getElementById('template-modal-title').textContent = 'New Template';
+      document.getElementById('tmpl-name').value = '';
+      document.getElementById('tmpl-type').value = 'all';
+      document.getElementById('tmpl-description').value = '';
+      document.getElementById('tmpl-body').value = '';
+      document.getElementById('tmpl-preview-area').style.display = 'none';
+      document.getElementById('template-modal').classList.add('open');
+    }
+
+    async function editTemplate(id) {
+      const tmpl = await apiFetch(`/referral/templates/${id}`);
+      if (!tmpl) return;
+      editingTemplateId = id;
+      document.getElementById('template-modal-title').textContent = 'Edit Template';
+      document.getElementById('tmpl-name').value = tmpl.name;
+      document.getElementById('tmpl-type').value = tmpl.target_type;
+      document.getElementById('tmpl-description').value = tmpl.description || '';
+      document.getElementById('tmpl-body').value = tmpl.body;
+      document.getElementById('tmpl-preview-area').style.display = 'none';
+      document.getElementById('template-modal').classList.add('open');
+    }
+
+    function closeTemplateModal() {
+      const modal = document.getElementById('template-modal');
+      if (modal) modal.classList.remove('open');
+      editingTemplateId = null;
+    }
+
+    async function previewTemplate() {
+      const body = document.getElementById('tmpl-body').value;
+      if (!body.trim()) return;
+
+      const res = await apiFetch('/referral/templates/preview', {
+        method: 'POST',
+        body: JSON.stringify({
+          template_body: body,
+          first_name: 'Priya',
+          company: 'Zepto',
+          their_role: 'Engineering Manager',
+          contact_type: document.getElementById('tmpl-type').value || 'technical',
+        }),
+      });
+      if (!res) return;
+      const area = document.getElementById('tmpl-preview-area');
+      area.textContent = res.rendered || res.detail || '';
+      area.style.display = 'block';
+    }
+
+    async function previewTemplateById(id) {
+      const res = await apiFetch(`/referral/templates/${id}/preview`, {
+        method: 'POST',
+        body: JSON.stringify({
+          first_name: 'Priya',
+          company: 'Zepto',
+          their_role: 'Engineering Manager',
+        }),
+      });
+      if (res && res.rendered) {
+        editingTemplateId = id;
+        const tmpl = await apiFetch(`/referral/templates/${id}`);
+        if (tmpl) {
+          document.getElementById('template-modal-title').textContent = `Preview — ${tmpl.name}`;
+          document.getElementById('tmpl-name').value = tmpl.name;
+          document.getElementById('tmpl-type').value = tmpl.target_type;
+          document.getElementById('tmpl-description').value = tmpl.description || '';
+          document.getElementById('tmpl-body').value = tmpl.body;
+          const area = document.getElementById('tmpl-preview-area');
+          area.textContent = res.rendered;
+          area.style.display = 'block';
+          document.getElementById('template-modal').classList.add('open');
         }
       }
     }
 
-    async function handleReferralImport() {
-      const fileInput = document.getElementById('ref-csv-file');
-      const file = selectedReferralFile || (fileInput.files && fileInput.files[0]);
-      if (!file) {
-        showToast('Please select a CSV file first');
+    async function saveTemplate() {
+      const name = document.getElementById('tmpl-name').value.trim();
+      const body = document.getElementById('tmpl-body').value.trim();
+      if (!name || !body) {
+        showToast('Name and body are required');
         return;
       }
 
-      const statusEl = document.getElementById('ref-import-status');
-      const summaryEl = document.getElementById('ref-import-summary');
-      const importBtn = document.getElementById('btn-import-csv');
+      const payload = {
+        name,
+        target_type: document.getElementById('tmpl-type').value,
+        description: document.getElementById('tmpl-description').value.trim(),
+        body,
+      };
 
-      statusEl.textContent = 'Uploading and parsing connections...';
-      importBtn.disabled = true;
-
-      const formData = new FormData();
-      formData.append('file', file);
+      const url = editingTemplateId
+        ? `/referral/templates/${editingTemplateId}`
+        : '/referral/templates';
+      const method = editingTemplateId ? 'PUT' : 'POST';
 
       try {
-        const resp = await fetch(`${API_BASE}/referral/import`, {
-          method: 'POST',
-          headers: API_KEY ? { 'X-API-Key': API_KEY } : {},
-          body: formData,
-        });
-
-        if (!resp.ok) {
-          const errData = await resp.json().catch(() => ({}));
-          throw new Error(errData.detail || 'Import failed');
-        }
-
-        const res = await resp.json();
-        statusEl.textContent = '';
-        
-        const byType = res.by_type || {};
-        summaryEl.innerHTML = `Imported ${res.imported} contacts: ${byType.hr || 0} HR/TA · ${byType.leadership || 0} Leaders · ${byType.technical || 0} Engineers · ${byType.other || 0} Other · ${byType.unknown || 0} Unknown`;
-        summaryEl.style.display = 'block';
-        showToast(`Successfully imported ${res.imported} contacts!`);
-
-        await loadReferralsTab();
+        const res = await apiFetch(url, { method, body: JSON.stringify(payload) });
+        if (!res) return;
+        showToast(editingTemplateId ? 'Template updated' : 'Template created');
+        closeTemplateModal();
+        loadTemplates();
       } catch (err) {
-        statusEl.textContent = '';
-        showToast(`Import error: ${err.message}`);
-        console.error('Import failed:', err);
-      } finally {
-        importBtn.disabled = false;
+        showToast(`Save failed: ${err.message}`);
+      }
+    }
+
+    async function deleteTemplate(id, name) {
+      if (!confirm(`Delete template "${name}"?`)) return;
+      try {
+        const res = await apiFetch(`/referral/templates/${id}`, { method: 'DELETE' });
+        if (res !== null) {
+          showToast('Template deleted');
+          loadTemplates();
+        }
+      } catch (err) {
+        showToast(`Delete failed: ${err.message}`);
       }
     }
 

@@ -283,6 +283,18 @@ async def proxy_referral_stats(request: Request):
         request, f"{REFERRAL_URL}/stats"
     )
 
+@app.api_route("/api/referral/templates", methods=["GET", "POST"], tags=["referral"])
+async def proxy_referral_templates(request: Request):
+    return await proxy.proxy_request(
+        request, f"{REFERRAL_URL}/templates"
+    )
+
+@app.api_route("/api/referral/templates/{path:path}", methods=["GET", "POST", "PUT", "DELETE"], tags=["referral"])
+async def proxy_referral_templates_path(path: str, request: Request):
+    return await proxy.proxy_request(
+        request, f"{REFERRAL_URL}/templates/{path}"
+    )
+
 
 class WorkflowRequest(BaseModel):
     job_id:   UUID

@@ -1,7 +1,12 @@
 Hi {{ first_name }},
 
-I came across your profile and noticed you're part of the talent team at {{ company }}. I'm a final-year engineering student (graduating 2025) with hands-on experience in {{ stack }}, and I'm actively looking for {{ opportunity_type }} opportunities.
+I noticed you're part of the talent team at {{ company }} — reaching out because I'm actively looking for {{ profile.opportunity_type }} roles as a {{ profile.role_target }}.
 
-Would love to know if {{ company }} has any open roles that might be a fit, or if you'd be open to referring me internally.
+Quick background: I'm a final-year CS student (graduating {{ profile.graduation_year }}, CGPA {{ profile.cgpa }}) with hands-on experience in {{ profile.stack }}. I've {{ profile.highlight_1 }}, and I {{ profile.highlight_2 }}.
+
+If {{ company }} has any open roles that could be a fit, or if you'd be open to an internal referral, I'd really appreciate it.
+
+Happy to share my resume — {{ profile.portfolio }}
 
 Thanks for being connected!
+{{ profile.name }}
