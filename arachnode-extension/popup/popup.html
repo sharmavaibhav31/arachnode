@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="app">
+    
+    <!-- Header — always visible -->
+    <div id="header">
+      <div id="header-left">
+        <span id="logo">🕸 Arachnode</span>
+        <span id="status-dot" class="dot-gray" title="Connecting..."></span>
+      </div>
+      <button id="btn-settings-toggle" title="Settings">⚙</button>
+    </div>
+
+    <!-- View: Settings -->
+    <div id="view-settings" class="view hidden">
+      <div class="section-label">Gateway URL</div>
+      <div class="input-row">
+        <input type="text" id="input-gateway-url" 
+               placeholder="http://localhost:8080" spellcheck="false">
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:12px">
+        This is your Arachnode gateway. Must be running locally.
+      </div>
+      <button id="btn-save-settings" class="btn-primary">
+        Save & Connect
+      </button>
+      <div id="settings-error" class="error-msg hidden"></div>
+    </div>
+
+    <!-- View: Queue -->
+    <div id="view-queue" class="view hidden">
+      
+      <!-- Stats row -->
+      <div id="stats-row">
+        <div class="stat-card">
+          <div class="stat-number" id="stat-sent">—</div>
+          <div class="stat-label">sent today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="stat-remaining">—</div>
+          <div class="stat-label">remaining</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="stat-total-sent">—</div>
+          <div class="stat-label">total sent</div>
+        </div>
+      </div>
+
+      <!-- Generate queue button — shown when queue is empty -->
+      <div id="no-queue-area" class="hidden">
+        <div class="empty-state">
+          <div class="empty-icon">📋</div>
+          <div class="empty-text">No queue for today yet</div>
+          <button id="btn-generate-queue" class="btn-primary">
+            Generate Today's Queue
+          </button>
+        </div>
+      </div>
+
+      <!-- Contact list -->
+      <div id="contact-list"></div>
+
+      <!-- Load more -->
+      <button id="btn-refresh-queue" class="btn-secondary">
+        ↻ Refresh Queue
+      </button>
+    </div>
+
+    <!-- View: Sending -->
+    <div id="view-sending" class="view hidden">
+      <div id="sending-contact-info">
+        <div class="contact-name" id="sending-name"></div>
+        <div class="contact-meta" id="sending-company"></div>
+        <div id="sending-type-badge" class="type-badge"></div>
+      </div>
+
+      <div class="section-label" style="margin-top:12px">Message draft</div>
+      <div id="sending-message-box">
+        <textarea id="sending-draft" rows="8" 
+                  placeholder="Loading draft..."></textarea>
+        <div id="sending-char-count" class="char-count"></div>
+      </div>
+
+      <div class="action-hint">
+        👆 LinkedIn message box is pre-filled above.
+        Review it, then click <strong>Send</strong> on LinkedIn.
+        Come back here to mark it done.
+      </div>
+
+      <div id="sending-actions">
+        <button id="btn-mark-sent" class="btn-primary">
+          ✓ Sent — Next Contact
+        </button>
+        <button id="btn-open-profile" class="btn-secondary">
+          ↗ Open Profile
+        </button>
+        <button id="btn-skip-contact" class="btn-ghost">
+          Skip
+        </button>
+      </div>
+
+      <button id="btn-back-to-queue" class="btn-ghost" 
+              style="margin-top:8px;width:100%">
+        ← Back to Queue
+      </button>
+    </div>
+
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

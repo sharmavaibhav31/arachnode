@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script>
+  function makeIcon(size) {
+    const canvas = document.createElement('canvas');
+    canvas.width = size; canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    
+    // Background
+    ctx.fillStyle = '#6c47ff';
+    ctx.beginPath();
+    ctx.roundRect(0, 0, size, size, size * 0.18);
+    ctx.fill();
+    
+    // Letter A
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${size * 0.55}px system-ui`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('A', size/2, size/2);
+    
+    // Download
+    const link = document.createElement('a');
+    link.download = `icon${size}.png`;
+    link.href = canvas.toDataURL();
+    link.click();
+  }
+  makeIcon(16);
+  setTimeout(() => makeIcon(48), 200);
+  setTimeout(() => makeIcon(128), 400);
+</script>
+</body>
+</html>
