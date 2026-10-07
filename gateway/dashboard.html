@@ -1385,6 +1385,7 @@
         <button class="nav-tab" data-tab="emails">Emails</button>
         <button class="nav-tab" data-tab="stats">Stats</button>
         <button class="nav-tab" data-tab="gemini-agent">🤖 Agent</button>
+        <button class="nav-tab" data-tab="referrals">🤝 Referrals</button>
       </div>
     </div>
     <div class="nav-right">
@@ -1720,6 +1721,120 @@
 
         <!-- Results area — populated by agent responses -->
         <div id="agent-results" style="margin-top:24px"></div>
+      </div>
+    </section>
+
+    <!-- REFERRALS TAB -->
+    <section id="tab-referrals" class="tab-view">
+      <div style="max-width:1100px;margin:0 auto;padding:24px 0">
+        
+        <!-- SECTION D: STATS ROW -->
+        <div id="referral-stats-row" style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:24px">
+          <div class="stat-card" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px">
+            <div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Total Contacts</div>
+            <div id="ref-stat-total" style="font-size:24px;font-weight:700;color:var(--text)">0</div>
+          </div>
+          <div class="stat-card" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px">
+            <div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Sent</div>
+            <div id="ref-stat-sent" style="font-size:24px;font-weight:700;color:var(--green)">0</div>
+          </div>
+          <div class="stat-card" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px">
+            <div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Queue Today</div>
+            <div id="ref-stat-queued" style="font-size:24px;font-weight:700;color:var(--accent-2)">0</div>
+          </div>
+          <div class="stat-card" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px">
+            <div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Est. Days Left</div>
+            <div id="ref-stat-days" style="font-size:24px;font-weight:700;color:var(--amber)">0</div>
+          </div>
+          <div class="stat-card" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px">
+            <div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Daily Limit</div>
+            <div id="ref-stat-limit" style="font-size:24px;font-weight:700;color:var(--text)">12</div>
+          </div>
+        </div>
+
+        <!-- SECTION A: IMPORT AREA -->
+        <div id="referral-import-section" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:24px">
+          <h3 style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:8px">📥 Import Connections</h3>
+          <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px">Upload your LinkedIn connections export file (<code>connections.csv</code>).</p>
+          <div id="ref-dropzone" style="border:2px dashed var(--border-hover);border-radius:var(--radius);padding:32px;text-align:center;background:var(--bg-2);cursor:pointer;transition:var(--trans)">
+            <input type="file" id="ref-csv-file" accept=".csv" style="display:none" />
+            <div style="font-size:32px;margin-bottom:8px">📄</div>
+            <div style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:4px">Upload your LinkedIn connections export (connections.csv)</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Drag and drop your file here or click to browse</div>
+            <button class="btn-accent" onclick="document.getElementById('ref-csv-file').click()">Select File</button>
+            <div id="ref-selected-file" style="font-size:13px;color:var(--accent-2);margin-top:10px;display:none"></div>
+          </div>
+          <div style="margin-top:16px;display:flex;align-items:center;gap:12px">
+            <button class="btn-accent" id="btn-import-csv" onclick="handleReferralImport()" disabled>Import Connections</button>
+            <span id="ref-import-status" style="font-size:13px;color:var(--text-dim)"></span>
+          </div>
+          <div id="ref-import-summary" style="display:none;margin-top:16px;padding:12px;border-radius:var(--radius-sm);background:var(--accent-low);color:var(--text);font-size:13px;font-weight:500"></div>
+        </div>
+
+        <!-- SECTION B: TODAY'S QUEUE -->
+        <div id="referral-queue-section" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:24px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <h3 style="font-size:16px;font-weight:600;color:var(--text)">📬 Today's Outreach Queue</h3>
+            <span id="ref-queue-count-badge" class="badge badge-purple" style="font-size:13px;padding:4px 10px">0 messages to send today</span>
+          </div>
+
+          <div id="ref-queue-empty-view" style="display:none;text-align:center;padding:32px;border:1px dashed var(--border);border-radius:var(--radius);background:var(--bg-2)">
+            <p style="font-size:14px;color:var(--text-dim);margin-bottom:16px">No outreach messages queued for today.</p>
+            <button class="btn-accent" id="btn-gen-queue" onclick="generateTodayQueue()">⚡ Generate Today's Queue (12 contacts)</button>
+          </div>
+
+          <div id="ref-queue-cards-list" style="display:flex;flex-direction:column;gap:16px"></div>
+        </div>
+
+        <!-- SECTION C: CONTACT BROWSER -->
+        <div id="referral-browser-section" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px">
+          <h3 style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:16px">👥 Connections Directory</h3>
+          
+          <div class="filter-bar" style="margin-bottom:16px;padding:0;background:none;border:none">
+            <select id="ref-filter-type" onchange="loadReferralContacts(true)">
+              <option value="all">All Types</option>
+              <option value="hr">HR / Recruiters</option>
+              <option value="leadership">Leadership</option>
+              <option value="technical">Technical</option>
+              <option value="other">Other</option>
+              <option value="unknown">Unknown</option>
+            </select>
+
+            <select id="ref-filter-status" onchange="loadReferralContacts(true)">
+              <option value="all">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="queued">Queued</option>
+              <option value="sent">Sent</option>
+              <option value="replied">Replied</option>
+              <option value="skipped">Skipped</option>
+            </select>
+
+            <input type="text" id="ref-search-company" placeholder="Search company…" oninput="debounceRefSearch()" />
+
+            <button class="btn-outline" onclick="loadReferralContacts(true)">Refresh</button>
+          </div>
+
+          <div class="table-wrap">
+            <table id="referral-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Company</th>
+                  <th>Position</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="referral-table-body"></tbody>
+            </table>
+          </div>
+
+          <div id="ref-load-more-wrap" style="margin-top:16px;text-align:center;display:none">
+            <button class="btn-outline" style="width:100%" id="btn-load-more-ref" onclick="loadMoreReferralContacts()">Load More</button>
+          </div>
+        </div>
+
       </div>
     </section>
 
@@ -2869,6 +2984,7 @@ ${esc(res.email_draft.body)}</pre>
       else if (tab === 'emails')           loadEmails();
       else if (tab === 'stats')            loadStats();
       else if (tab === 'gemini-agent')     loadGeminiAgentTab();
+      else if (tab === 'referrals')        loadReferralsTab();
     }
 
     function isTypingTarget(target) {
@@ -3400,6 +3516,437 @@ ${esc(res.email_draft.body)}</pre>
     }
 
     // ===========================================================================
+    // REFERRALS OUTREACH SERVICE
+    // ===========================================================================
+    let referralOffset = 0;
+    const REFERRAL_LIMIT = 50;
+    let referralSearchTimeout = null;
+    let selectedReferralFile = null;
+
+    async function loadReferralsTab() {
+      setupReferralDropzone();
+      await Promise.all([
+        loadReferralStats(),
+        loadReferralQueue(),
+        loadReferralContacts(true),
+      ]);
+    }
+
+    async function loadReferralStats() {
+      try {
+        const stats = await apiFetch('/referral/stats');
+        if (!stats) return;
+        document.getElementById('ref-stat-total').textContent = stats.total || 0;
+        document.getElementById('ref-stat-sent').textContent = stats.by_status?.sent || 0;
+        document.getElementById('ref-stat-queued').textContent = stats.queued_today || 0;
+        document.getElementById('ref-stat-days').textContent = stats.estimated_days_remaining || 0;
+        document.getElementById('ref-stat-limit').textContent = stats.daily_remaining !== undefined ? stats.daily_remaining : 12;
+
+        const importSec = document.getElementById('referral-import-section');
+        if (importSec) {
+          if (stats.total === 0) {
+            importSec.style.border = '2px solid var(--accent)';
+          } else {
+            importSec.style.border = '1px solid var(--border)';
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load referral stats:', err);
+      }
+    }
+
+    function setupReferralDropzone() {
+      const dropzone = document.getElementById('ref-dropzone');
+      const fileInput = document.getElementById('ref-csv-file');
+      const fileLabel = document.getElementById('ref-selected-file');
+      const importBtn = document.getElementById('btn-import-csv');
+      if (!dropzone || dropzone.dataset.initialized) return;
+
+      dropzone.dataset.initialized = "true";
+
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          dropzone.style.borderColor = 'var(--accent)';
+          dropzone.style.background = 'var(--surface-2)';
+        });
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          dropzone.style.borderColor = 'var(--border-hover)';
+          dropzone.style.background = 'var(--bg-2)';
+        });
+      });
+
+      dropzone.addEventListener('drop', (e) => {
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          fileInput.files = files;
+          updateSelectedFile(files[0]);
+        }
+      });
+
+      fileInput.addEventListener('change', () => {
+        if (fileInput.files && fileInput.files.length > 0) {
+          updateSelectedFile(fileInput.files[0]);
+        }
+      });
+
+      function updateSelectedFile(file) {
+        if (file.name.toLowerCase().endsWith('.csv')) {
+          selectedReferralFile = file;
+          fileLabel.textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+          fileLabel.style.display = 'block';
+          importBtn.disabled = false;
+        } else {
+          showToast('Please select a valid .csv file');
+          importBtn.disabled = true;
+        }
+      }
+    }
+
+    async function handleReferralImport() {
+      const fileInput = document.getElementById('ref-csv-file');
+      const file = selectedReferralFile || (fileInput.files && fileInput.files[0]);
+      if (!file) {
+        showToast('Please select a CSV file first');
+        return;
+      }
+
+      const statusEl = document.getElementById('ref-import-status');
+      const summaryEl = document.getElementById('ref-import-summary');
+      const importBtn = document.getElementById('btn-import-csv');
+
+      statusEl.textContent = 'Uploading and parsing connections...';
+      importBtn.disabled = true;
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const resp = await fetch(`${API_BASE}/referral/import`, {
+          method: 'POST',
+          headers: API_KEY ? { 'X-API-Key': API_KEY } : {},
+          body: formData,
+        });
+
+        if (!resp.ok) {
+          const errData = await resp.json().catch(() => ({}));
+          throw new Error(errData.detail || 'Import failed');
+        }
+
+        const res = await resp.json();
+        statusEl.textContent = '';
+        
+        const byType = res.by_type || {};
+        summaryEl.innerHTML = `Imported ${res.imported} contacts: ${byType.hr || 0} HR/TA · ${byType.leadership || 0} Leaders · ${byType.technical || 0} Engineers · ${byType.other || 0} Other · ${byType.unknown || 0} Unknown`;
+        summaryEl.style.display = 'block';
+        showToast(`Successfully imported ${res.imported} contacts!`);
+
+        await loadReferralsTab();
+      } catch (err) {
+        statusEl.textContent = '';
+        showToast(`Import error: ${err.message}`);
+        console.error('Import failed:', err);
+      } finally {
+        importBtn.disabled = false;
+      }
+    }
+
+    async function loadReferralQueue() {
+      try {
+        const queue = await apiFetch('/referral/queue/today');
+        const emptyView = document.getElementById('ref-queue-empty-view');
+        const cardsList = document.getElementById('ref-queue-cards-list');
+        const badge = document.getElementById('ref-queue-count-badge');
+
+        if (!queue) return;
+
+        badge.textContent = `${queue.length} messages to send today`;
+
+        if (queue.length === 0) {
+          emptyView.style.display = 'block';
+          cardsList.innerHTML = '';
+          return;
+        }
+
+        emptyView.style.display = 'none';
+        cardsList.innerHTML = queue.map(c => renderQueueCard(c)).join('');
+      } catch (err) {
+        console.error('Failed to load queue:', err);
+      }
+    }
+
+    function renderQueueCard(c) {
+      const typeBadge = getTypeBadge(c.contact_type);
+      const isSent = c.status === 'sent';
+      const cardStyle = isSent
+        ? 'background:var(--bg-2);border:1px solid var(--border);opacity:0.6;'
+        : 'background:var(--surface);border:1px solid var(--border);';
+
+      return `
+        <div id="ref-card-${c.id}" class="card" style="padding:16px;border-radius:var(--radius);transition:var(--trans);${cardStyle}">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+            <div>
+              <div style="font-size:16px;font-weight:600;color:var(--text)">
+                ${esc(c.first_name)} ${esc(c.last_name || '')}
+                ${c.linkedin_url ? `<a href="${esc(c.linkedin_url)}" target="_blank" style="font-size:12px;color:var(--accent-2);margin-left:6px" title="LinkedIn Profile">🔗 Profile</a>` : ''}
+              </div>
+              <div style="font-size:13px;color:var(--text-dim);margin-top:2px">
+                ${esc(c.position || 'Unknown Role')} at <strong>${esc(c.company || 'Unknown Company')}</strong>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              ${typeBadge}
+              <span id="ref-status-badge-${c.id}">${getStatusBadge(c.status)}</span>
+            </div>
+          </div>
+
+          <div style="margin-bottom:12px">
+            <textarea id="ref-draft-${c.id}" rows="5" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-family:inherit;font-size:13px;resize:vertical">${esc(c.message_draft || '')}</textarea>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <div style="display:flex;gap:8px">
+              <button class="btn-accent" style="padding:6px 14px;font-size:13px" onclick="copyReferralDraft('${c.id}')">📋 Copy Message</button>
+              <button class="btn-outline" style="padding:6px 14px;font-size:13px;color:var(--green);border-color:var(--green)" onclick="markReferralSent('${c.id}')">✓ Mark Sent</button>
+              <button class="btn-outline" style="padding:6px 14px;font-size:13px;color:var(--red);border-color:var(--red)" onclick="skipReferral('${c.id}')">✕ Skip</button>
+            </div>
+            <button class="btn-outline" style="padding:6px 10px;font-size:12px;color:var(--text-dim)" onclick="regenerateReferralDraft('${c.id}')">🔄 Regenerate Draft</button>
+          </div>
+        </div>
+      `;
+    }
+
+    async function generateTodayQueue() {
+      try {
+        const btn = document.getElementById('btn-gen-queue');
+        if (btn) btn.disabled = true;
+        await apiFetch('/referral/queue/generate', {
+          method: 'POST',
+          body: JSON.stringify({ count: 12 }),
+        });
+        showToast('Generated outreach queue for today!');
+        await loadReferralsTab();
+      } catch (err) {
+        showToast(`Failed to generate queue: ${err.message}`);
+      }
+    }
+
+    async function copyReferralDraft(id) {
+      const textarea = document.getElementById(`ref-draft-${id}`);
+      if (textarea) {
+        await navigator.clipboard.writeText(textarea.value);
+        showToast('Message draft copied to clipboard!');
+      }
+    }
+
+    async function markReferralSent(id) {
+      try {
+        const textarea = document.getElementById(`ref-draft-${id}`);
+        const draft = textarea ? textarea.value : undefined;
+        await apiFetch(`/referral/contacts/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'sent', message_draft: draft }),
+        });
+        showToast('Marked outreach as sent!');
+        const card = document.getElementById(`ref-card-${id}`);
+        if (card) {
+          card.style.opacity = '0.6';
+          card.style.background = 'var(--bg-2)';
+        }
+        const badgeEl = document.getElementById(`ref-status-badge-${id}`);
+        if (badgeEl) badgeEl.innerHTML = getStatusBadge('sent');
+        await loadReferralStats();
+      } catch (err) {
+        showToast(`Error marking sent: ${err.message}`);
+      }
+    }
+
+    async function skipReferral(id) {
+      try {
+        await apiFetch(`/referral/contacts/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'skipped' }),
+        });
+        showToast('Contact skipped');
+        const card = document.getElementById(`ref-card-${id}`);
+        if (card) card.style.display = 'none';
+        await loadReferralStats();
+      } catch (err) {
+        showToast(`Error skipping contact: ${err.message}`);
+      }
+    }
+
+    async function regenerateReferralDraft(id) {
+      try {
+        const updated = await apiFetch(`/referral/contacts/${id}/regenerate`, {
+          method: 'POST',
+        });
+        if (updated && updated.message_draft) {
+          const textarea = document.getElementById(`ref-draft-${id}`);
+          if (textarea) textarea.value = updated.message_draft;
+          showToast('Regenerated draft successfully!');
+        }
+      } catch (err) {
+        showToast(`Error regenerating draft: ${err.message}`);
+      }
+    }
+
+    function getTypeBadge(ctype) {
+      switch ((ctype || '').toLowerCase()) {
+        case 'hr':
+          return '<span class="badge badge-green">HR / Recruiter</span>';
+        case 'leadership':
+          return '<span class="badge badge-amber">Leadership</span>';
+        case 'technical':
+          return '<span class="badge badge-purple">Technical</span>';
+        case 'other':
+          return '<span class="badge badge-gray">Other</span>';
+        default:
+          return '<span class="badge badge-muted">Unknown</span>';
+      }
+    }
+
+    function getStatusBadge(status) {
+      switch ((status || '').toLowerCase()) {
+        case 'pending':
+          return '<span class="badge badge-gray">Pending</span>';
+        case 'queued':
+          return '<span class="badge badge-blue">Queued</span>';
+        case 'sent':
+          return '<span class="badge badge-green">Sent ✓</span>';
+        case 'replied':
+          return '<span class="badge badge-green">Replied</span>';
+        case 'skipped':
+          return '<span class="badge badge-red">Skipped</span>';
+        default:
+          return '<span class="badge badge-muted">' + esc(status || 'unknown') + '</span>';
+      }
+    }
+
+    function debounceRefSearch() {
+      clearTimeout(referralSearchTimeout);
+      referralSearchTimeout = setTimeout(() => loadReferralContacts(true), 300);
+    }
+
+    async function loadReferralContacts(reset = false) {
+      if (reset) {
+        referralOffset = 0;
+      }
+
+      const typeFilter = document.getElementById('ref-filter-type')?.value || 'all';
+      const statusFilter = document.getElementById('ref-filter-status')?.value || 'all';
+      const companySearch = document.getElementById('ref-search-company')?.value || '';
+
+      const query = new URLSearchParams({
+        type: typeFilter,
+        status: statusFilter,
+        company: companySearch,
+        limit: REFERRAL_LIMIT,
+        offset: referralOffset,
+      });
+
+      try {
+        const res = await apiFetch(`/referral/contacts?${query.toString()}`);
+        if (!res) return;
+
+        const contacts = res.data || [];
+        const total = res.pagination?.total || 0;
+        referralHasMore = res.pagination?.has_more || false;
+
+        const tbody = document.getElementById('referral-table-body');
+        const loadMoreWrap = document.getElementById('ref-load-more-wrap');
+
+        if (!tbody) return;
+
+        if (reset) {
+          tbody.innerHTML = '';
+        }
+
+        if (contacts.length === 0 && reset) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">No contacts found matching criteria.</td></tr>`;
+          loadMoreWrap.style.display = 'none';
+          return;
+        }
+
+        const rowsHtml = contacts.map(c => `
+          <tr id="ref-row-${c.id}">
+            <td style="font-weight:500">
+              ${esc(c.first_name)} ${esc(c.last_name || '')}
+              ${c.linkedin_url ? `<a href="${esc(c.linkedin_url)}" target="_blank" style="color:var(--accent-2);margin-left:4px">🔗</a>` : ''}
+            </td>
+            <td>${esc(c.company || '-')}</td>
+            <td>${esc(c.position || '-')}</td>
+            <td>${getTypeBadge(c.contact_type)}</td>
+            <td>${getStatusBadge(c.status)}</td>
+            <td>
+              <button class="btn-outline" style="padding:4px 10px;font-size:12px" onclick="toggleRefDraftRow('${c.id}')">View Draft</button>
+            </td>
+          </tr>
+          <tr id="ref-draft-row-${c.id}" style="display:none;background:var(--bg-2)">
+            <td colspan="6" style="padding:16px">
+              <div style="font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:6px">Outreach Draft:</div>
+              <textarea id="ref-table-draft-${c.id}" rows="4" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-family:inherit;font-size:13px;margin-bottom:8px">${esc(c.message_draft || '')}</textarea>
+              <div style="display:flex;gap:8px">
+                <button class="btn-accent" style="padding:4px 12px;font-size:12px" onclick="copyTableDraft('${c.id}')">📋 Copy Draft</button>
+                <button class="btn-outline" style="padding:4px 12px;font-size:12px" onclick="saveTableDraft('${c.id}')">💾 Save Edit</button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+
+        if (reset) {
+          tbody.innerHTML = rowsHtml;
+        } else {
+          tbody.insertAdjacentHTML('beforeend', rowsHtml);
+        }
+
+        loadMoreWrap.style.display = referralHasMore ? 'block' : 'none';
+      } catch (err) {
+        console.error('Failed to load referral contacts:', err);
+      }
+    }
+
+    function loadMoreReferralContacts() {
+      if (referralHasMore) {
+        referralOffset += REFERRAL_LIMIT;
+        loadReferralContacts(false);
+      }
+    }
+
+    function toggleRefDraftRow(id) {
+      const row = document.getElementById(`ref-draft-row-${id}`);
+      if (row) {
+        row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+      }
+    }
+
+    async function copyTableDraft(id) {
+      const textarea = document.getElementById(`ref-table-draft-${id}`);
+      if (textarea) {
+        await navigator.clipboard.writeText(textarea.value);
+        showToast('Draft copied to clipboard!');
+      }
+    }
+
+    async function saveTableDraft(id) {
+      const textarea = document.getElementById(`ref-table-draft-${id}`);
+      if (!textarea) return;
+      try {
+        await apiFetch(`/referral/contacts/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ message_draft: textarea.value }),
+        });
+        showToast('Draft saved!');
+      } catch (err) {
+        showToast(`Failed to save draft: ${err.message}`);
+      }
+    }
+
+    // ===========================================================================
     // HEALTH INDICATORS
     // ===========================================================================
     const healthContainer = document.createElement('div');
@@ -3410,6 +3957,7 @@ ${esc(res.email_draft.body)}</pre>
       <div class="health-dot" id="health-agent-search" data-status="degraded" title="Search Agent"></div>
       <div class="health-dot" id="health-contact" data-status="degraded" title="Contact Discovery"></div>
       <div class="health-dot" id="health-email" data-status="degraded" title="Email Generator"></div>
+      <div class="health-dot" id="health-referral" data-status="degraded" title="Referral Outreach"></div>
     `;
     document.querySelector('.nav-right').prepend(healthContainer);
 

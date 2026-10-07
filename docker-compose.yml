@@ -250,6 +250,29 @@ services:
       retries: 5
       start_period: 20s
 
+  referral:
+    build:
+      context: ./referral-service
+      dockerfile: Dockerfile
+      <<: *build-dns
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-jobuser}:${POSTGRES_PASSWORD:-jobpass}@postgres:5432/${POSTGRES_DB:-jobsdb}
+      REFERRAL_YOUR_NAME: ${REFERRAL_YOUR_NAME:-Applicant}
+      REFERRAL_STACK: ${REFERRAL_STACK:-Python,FastAPI,PostgreSQL}
+      REFERRAL_OPPORTUNITY_TYPE: ${REFERRAL_OPPORTUNITY_TYPE:-both full-time and internship}
+      REFERRAL_DAILY_LIMIT: ${REFERRAL_DAILY_LIMIT:-12}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [jobnet]
+    restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8011/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
   gateway:
     build:
       context: ./gateway
@@ -265,6 +288,7 @@ services:
       AGENT_SEARCH_URL:  http://agent-search:8009
       GEMINI_AGENT_URL:  http://gemini-agent:8010
       CRAWLER_URL:       http://crawler:8004
+      REFERRAL_URL:      http://referral:8011
       SUMMARY_PATH:      /data/run_summary.json
       JOBHUNTER_API_KEY: ${JOBHUNTER_API_KEY:-}
     volumes:

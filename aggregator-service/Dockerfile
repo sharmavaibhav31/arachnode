@@ -9,7 +9,7 @@ RUN pip config set global.timeout 120 \
 
 COPY requirements.txt .
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --prefix=/install -r requirements.txt
+    pip install --extra-index-url https://download.pytorch.org/whl/cpu --prefix=/install -r requirements.txt
 
 
 # ── Stage 2: runtime ─────────────────────────────────────────────────────────

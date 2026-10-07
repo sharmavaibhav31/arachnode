@@ -112,6 +112,7 @@ async def gateway_health():
         proxy.health_check("agent-search", proxy.AGENT_SEARCH_URL),
         proxy.health_check("gemini-agent", proxy.GEMINI_AGENT_URL),
         proxy.health_check("crawler",      proxy.CRAWLER_URL),
+        proxy.health_check("referral",     REFERRAL_URL),
     )
     all_ok = all(r["status"] == "ok" for r in results)
     return JSONResponse(
@@ -246,6 +247,40 @@ async def proxy_agent_email(request: Request):
 async def proxy_agent_sessions(path: str, request: Request):
     return await proxy.proxy_request(
         request, f"{proxy.GEMINI_AGENT_URL}/agent/sessions/{path}"
+    )
+
+REFERRAL_URL = os.environ.get("REFERRAL_URL", "http://referral:8011")
+
+@app.api_route("/api/referral/import", methods=["POST"], tags=["referral"])
+async def proxy_referral_import(request: Request):
+    return await proxy.proxy_request(
+        request, f"{REFERRAL_URL}/import"
+    )
+
+@app.api_route("/api/referral/contacts", methods=["GET"], tags=["referral"])
+async def proxy_referral_contacts(request: Request):
+    return await proxy.proxy_request(
+        request, f"{REFERRAL_URL}/contacts"
+    )
+
+@app.api_route("/api/referral/contacts/{path:path}", 
+               methods=["GET", "PATCH", "POST"], tags=["referral"])
+async def proxy_referral_contacts_path(path: str, request: Request):
+    return await proxy.proxy_request(
+        request, f"{REFERRAL_URL}/contacts/{path}"
+    )
+
+@app.api_route("/api/referral/queue/{path:path}", 
+               methods=["GET", "POST"], tags=["referral"])
+async def proxy_referral_queue(path: str, request: Request):
+    return await proxy.proxy_request(
+        request, f"{REFERRAL_URL}/queue/{path}"
+    )
+
+@app.api_route("/api/referral/stats", methods=["GET"], tags=["referral"])
+async def proxy_referral_stats(request: Request):
+    return await proxy.proxy_request(
+        request, f"{REFERRAL_URL}/stats"
     )
 
 

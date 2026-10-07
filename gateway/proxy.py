@@ -31,6 +31,7 @@ EMAIL_GEN_URL    = _url("EMAIL_GEN_URL",    "http://email-gen:8003")
 AGENT_SEARCH_URL = _url("AGENT_SEARCH_URL", "http://agent-search:8009")
 GEMINI_AGENT_URL = _url("GEMINI_AGENT_URL", "http://gemini-agent:8010")
 CRAWLER_URL      = _url("CRAWLER_URL",      "http://crawler:8004")
+REFERRAL_URL     = _url("REFERRAL_URL",     "http://referral:8011")
 
 
 
