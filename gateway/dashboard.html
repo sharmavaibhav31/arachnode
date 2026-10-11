@@ -511,10 +511,11 @@
       border-color: var(--border-hover);
       transform: translateY(-2px);
       box-shadow: var(--shadow);
+    }
     .job-card.keyboard-focused {
       outline: 3px solid rgba(37, 99, 235, .55);
       outline-offset: 3px;
-      box-shadow: 0 0 0 6px rgba(37, 99, 235, .12)
+      box-shadow: 0 0 0 6px rgba(37, 99, 235, .12);
     }
 
     .job-card.status-new {
@@ -2957,7 +2958,8 @@
       if (!list) return;
       
       const data = await apiFetch(`/contacts/${jobId}`);
-      if (!data || data.length === 0) {
+      const contactsList = Array.isArray(data) ? data : (data?.contacts || []);
+      if (!contactsList.length) {
         list.innerHTML = `
           <div style="font-size:13px;color:var(--muted)">
             No contacts discovered yet.
@@ -2971,7 +2973,7 @@
         return;
       }
       
-      list.innerHTML = data.map(c => `
+      list.innerHTML = contactsList.map(c => `
         <div class="detail-contact-card">
           <div>
             <div style="font-weight:600;font-size:13px">
