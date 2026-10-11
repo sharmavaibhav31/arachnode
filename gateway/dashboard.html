@@ -1363,6 +1363,341 @@
       border-color: var(--accent);
       background: rgba(108,71,255,0.08);
     }
+
+    /* ============================================================
+       JOBS SPLIT LAYOUT
+    ============================================================ */
+    #tab-jobs.tab-view {        /* use .tab-view in selector to win specificity */
+      display: flex !important;
+      flex-direction: column !important;
+      height: calc(100vh - 130px) !important;
+      overflow: hidden !important;
+      padding: 0 !important;    /* remove any padding that shifts children */
+    }
+
+    #tab-jobs.tab-view:not(.active) {
+      display: none !important;
+    }
+
+    #jobs-filter-bar {
+      flex-shrink: 0 !important;
+      padding: 0 0 12px 0 !important;
+    }
+
+    #jobs-split {
+      display: flex !important;
+      flex-direction: row !important;
+      flex: 1 1 0 !important;
+      min-height: 0 !important;   /* CRITICAL — without this, flex children 
+                                     don't shrink and overflow instead */
+      overflow: hidden !important;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    #jobs-list-pane {
+      width: 60% !important;
+      min-width: 0 !important;
+      flex-shrink: 0 !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      padding: 16px !important;
+      border-right: 1px solid var(--border) !important;
+      box-sizing: border-box !important;
+    }
+
+    #jobs-split-divider {
+      width: 4px !important;
+      background: var(--border) !important;
+      flex-shrink: 0 !important;
+      cursor: col-resize !important;
+    }
+    #jobs-split-divider:hover {
+      background: var(--accent) !important;
+    }
+
+    #jobs-detail-pane {
+      flex: 1 1 0 !important;
+      min-width: 0 !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      padding: 20px !important;
+      box-sizing: border-box !important;
+    }
+
+    /* Left pane grid is 3 columns, NOT single column */
+    #jobs-list-pane #jobs-grid,
+    #jobs-list-pane .jobs-grid {
+      display: grid !important;
+      grid-template-columns: repeat(3, 1fr) !important;
+      gap: 10px !important;
+      width: 100% !important;
+    }
+
+    /* Cards in 3-column grid — compact but full info */
+    #jobs-list-pane .job-card {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 6px !important;
+      padding: 12px !important;
+      border-radius: 8px !important;
+      border: 1px solid var(--border) !important;
+      background: var(--surface) !important;
+      cursor: pointer !important;
+      transition: border-color 150ms, background 150ms !important;
+      min-height: 120px !important;
+      position: relative !important;
+      overflow: hidden !important;
+    }
+
+    #jobs-list-pane .job-card:hover {
+      border-color: var(--accent) !important;
+      background: rgba(108,71,255,0.05) !important;
+    }
+
+    #jobs-list-pane .job-card.selected {
+      border-color: var(--accent) !important;
+      border-left: 3px solid var(--accent) !important;
+      background: rgba(108,71,255,0.08) !important;
+    }
+
+    /* Action buttons in list card */
+    #jobs-list-pane .job-card .card-actions {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      display: none;
+      gap: 4px;
+    }
+    #jobs-list-pane .job-card:hover .card-actions {
+      display: flex;
+    }
+
+    /* Keep card text readable at compact size */
+    #jobs-list-pane .card-company {
+      font-size: 13px !important;
+      font-weight: 600 !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      color: var(--text) !important;
+    }
+
+    #jobs-list-pane .card-role {
+      font-size: 12px !important;
+      color: var(--muted) !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+    }
+
+    #jobs-list-pane .card-tags {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      gap: 3px !important;
+    }
+
+    #jobs-list-pane .card-footer {
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      font-size: 11px !important;
+      color: var(--muted) !important;
+      margin-top: auto !important;   /* push to bottom of card */
+    }
+
+    /* Status left border colors */
+    #jobs-list-pane .job-card.status-new     { border-left: 3px solid var(--accent) !important; }
+    #jobs-list-pane .job-card.status-applied { border-left: 3px solid #22c55e !important; }
+    #jobs-list-pane .job-card.status-ignored { border-left: 3px solid #ef4444 !important; opacity: 0.5 !important; }
+
+    /* Detail panel placeholder */
+    #jobs-detail-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--muted);
+      gap: 12px;
+    }
+    .detail-empty-icon {
+      font-size: 32px;
+      opacity: 0.4;
+    }
+    .detail-empty-text {
+      font-size: 14px;
+    }
+
+    /* Detail panel content */
+    #jobs-detail-content {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .detail-header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+    }
+    .detail-company {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .detail-role {
+      font-size: 15px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .detail-meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .detail-meta-item {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .detail-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .detail-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .detail-apply-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: opacity 150ms;
+    }
+    .detail-apply-btn:hover { opacity: 0.85; }
+
+    .detail-action-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .detail-action-btn {
+      padding: 8px 14px;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 150ms;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .detail-action-btn:hover { background: var(--surface); }
+
+    .detail-stack-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .detail-contacts-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .detail-contact-card {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .detail-outreach-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .detail-outreach-select {
+      padding: 8px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .detail-email-preview {
+      padding: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 12px;
+      white-space: pre-wrap;
+      line-height: 1.6;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    /* Mobile — single column, stack vertically */
+    @media (max-width: 900px) {
+      #tab-jobs.tab-view {
+        height: auto !important;
+        overflow: visible !important;
+      }
+      #jobs-split {
+        flex-direction: column !important;
+        overflow: visible !important;
+      }
+      #jobs-list-pane {
+        width: 100% !important;
+        overflow-y: visible !important;
+        border-right: none !important;
+        border-bottom: 1px solid var(--border) !important;
+      }
+      #jobs-list-pane #jobs-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+      #jobs-split-divider {
+        display: none !important;
+      }
+      #jobs-detail-pane {
+        overflow-y: visible !important;
+      }
+      #jobs-detail-placeholder {
+        display: none !important;
+      }
+    }
+
+    @media (max-width: 600px) {
+      #jobs-list-pane #jobs-grid {
+        grid-template-columns: 1fr !important;
+      }
+    }
   </style>
 </head>
 
@@ -1421,7 +1756,8 @@
 
     <!-- JOBS TAB -->
     <section id="tab-jobs" class="tab-view active">
-      <div class="filter-bar">
+      <!-- Filter bar — full width above the split -->
+      <div id="jobs-filter-bar" class="filter-bar">
         <input type="text" id="job-search" placeholder="Search company or role…" />
         <select id="job-status-filter">
           <option value="all">All statuses</option>
@@ -1440,21 +1776,34 @@
         <button class="btn-outline" id="btn-export-jobs">Export CSV</button>
       </div>
 
-      <div class="jobs-split-wrapper" id="jobs-split-wrapper">
-        <div class="jobs-left-col">
-          <div id="jobs-grid" class="card-grid"></div>
-          <div id="kanban-board"></div>
-        </div>
-        <aside id="detail-panel" class="jobs-right-col">
-          <div class="panel-header">
-            <div>
-              <div id="panel-company" style="font-size:16px;font-weight:600;color:var(--text)"></div>
-              <div id="panel-role" style="font-size:13px;color:var(--text-dim);margin-top:3px"></div>
-            </div>
-            <button class="btn-close-x" id="panel-close" onclick="closePanel()">✕</button>
+      <!-- Split pane wrapper -->
+      <div id="jobs-split">
+
+        <!-- LEFT: card list, 60% -->
+        <div id="jobs-list-pane">
+          <div id="jobs-grid">
+            <!-- cards rendered here — unchanged -->
           </div>
-          <div id="panel-content"></div>
-        </aside>
+          <div id="kanban-board"></div>
+          <div id="jobs-load-more-area"></div>
+        </div>
+
+        <!-- Divider -->
+        <div id="jobs-split-divider"></div>
+
+        <!-- RIGHT: detail panel, 40% -->
+        <div id="jobs-detail-pane">
+          <div id="jobs-detail-placeholder">
+            <div style="text-align:center;padding:40px;color:var(--muted)">
+              <div style="font-size:32px;margin-bottom:12px">←</div>
+              <div style="font-size:14px">Select a job to see details</div>
+            </div>
+          </div>
+          <div id="jobs-detail-content" style="display:none;flex-direction:column;gap:20px">
+            <!-- populated by renderDetailPanel(job) -->
+          </div>
+        </div>
+
       </div>
     </section>
 
@@ -2257,7 +2606,7 @@
       if (!loadMore) {
         jobsOffset = 0;
         document.getElementById('jobs-grid').innerHTML =
-          `<div style="grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:14px">${skelCards(6)}</div>`;
+          `<div style="display:flex;flex-direction:column;gap:8px">${skelCards(6)}</div>`;
       }
       
       const btn = document.getElementById('btn-load-more-jobs');
@@ -2267,7 +2616,7 @@
       if (!data) {
         if (!loadMore) {
           document.getElementById('jobs-grid').innerHTML =
-            `<div class="empty" style="grid-column:1/-1">
+            `<div class="empty">
               <div class="empty-icon">⚠</div>
               <p>Failed to load jobs. <button class="btn-outline" onclick="loadJobs(true)">Retry</button></p>
             </div>`;
@@ -2289,15 +2638,22 @@
       // Append Load More button if there are more jobs
       const hasMore = data.pagination ? data.pagination.has_more : false;
       const grid = document.getElementById('jobs-grid');
+      const loadMoreArea = document.getElementById('jobs-load-more-area');
       const existingBtn = document.getElementById('btn-load-more-jobs');
       if (existingBtn) existingBtn.remove();
       
       if (hasMore) {
-        grid.insertAdjacentHTML('beforeend', LOAD_MORE_JOBS_BTN);
+        if (loadMoreArea) {
+          loadMoreArea.innerHTML = LOAD_MORE_JOBS_BTN;
+        } else {
+          grid.insertAdjacentHTML('beforeend', LOAD_MORE_JOBS_BTN);
+        }
         document.getElementById('btn-load-more-jobs').addEventListener('click', () => {
           jobsOffset += 50;
           loadJobs(false, true);
         });
+      } else if (loadMoreArea) {
+        loadMoreArea.innerHTML = '';
       }
     }
 
@@ -2361,7 +2717,10 @@
       if (!cards.length) return;
       if (state.focusedJobIndex < 0) state.focusedJobIndex = 0;
       const card = cards[state.focusedJobIndex];
-      if (card?.dataset.id) openDetailPanel(card.dataset.id);
+      if (card?.dataset.id) {
+        const job = state.jobs.find(j => String(j.id) === String(card.dataset.id));
+        if (job) renderDetailPanel(job);
+      }
     }
 
     function renderJobs() {
@@ -2369,7 +2728,7 @@
       const grid = document.getElementById('jobs-grid');
       if (!jobs.length) {
         state.focusedJobIndex = -1;
-        grid.innerHTML = `<div class="empty" style="grid-column:1/-1">
+        grid.innerHTML = `<div class="empty">
           <div class="empty-icon">📭</div>
           <h3>No jobs found yet</h3>
           <p>Trigger a scrape to get started.</p>
@@ -2380,8 +2739,10 @@
         </div>`;
         return;
       }
-      grid.innerHTML = jobs.map(j => `
-        <div class="job-card status-${esc(j.status || 'new')} ${state.selectedJobId === j.id ? 'is-selected' : ''}" 
+      grid.innerHTML = jobs.map(j => {
+        const stackList = Array.isArray(j.stack) ? j.stack : (typeof j.stack === 'string' ? j.stack.split(',') : []);
+        return `
+        <div class="job-card status-${esc(j.status || 'new')} ${state.selectedJobId === j.id ? 'selected' : ''}" 
              data-id="${esc(j.id)}" tabindex="0" role="button">
           <div class="card-actions">
             <button class="icon-btn" data-action="discover" 
@@ -2394,224 +2755,400 @@
           <div class="card-company">${esc(j.company)}</div>
           <div class="card-role">${esc(j.role)}</div>
           <div class="card-tags">
-            ${(j.stack || []).slice(0, 5).map(t => 
-              `<span class="tag">${esc(t)}</span>`).join('')}
+            ${stackList.slice(0, 5).map(t => 
+              `<span class="tag">${esc(t.trim())}</span>`).join('')}
           </div>
           <div class="card-footer">
             <span class="tag tag-gray">${esc(j.source || '—')}</span>
             <span>${relTime(j.posted_at)}</span>
           </div>
-        </div>`).join('');
+        </div>`;
+      }).join('');
       updateFocusedJobCard();
     }
 
-    async function discoverForJob(jobId) {
-      const job = state.jobs.find(j => j.id === jobId);
+    // ===========================================================================
+    // JOBS DETAIL PANEL
+    // ===========================================================================
+    function renderDetailPanel(job) {
       if (!job) return;
-      toast(`Discovering contacts for ${job.company}…`, 'info');
-      const r = await apiFetch('/workflow/apply', { method: 'POST', body: { job_id: jobId, template: 'cold_outreach' } });
-      if (r) toast(`Workflow triggered for ${job.company}`, 'success');
+
+      // Mark selected card
+      document.querySelectorAll('#jobs-list-pane .job-card')
+        .forEach(c => c.classList.remove('selected'));
+      const card = document.querySelector(
+        `#jobs-list-pane .job-card[data-id="${job.id}"]`
+      );
+      if (card) {
+        card.classList.add('selected');
+        // Scroll card into view within the left pane
+        card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+
+      // Hide placeholder, show content
+      const placeholder = document.getElementById('jobs-detail-placeholder');
+      if (placeholder) placeholder.style.display = 'none';
+      const content = document.getElementById('jobs-detail-content');
+      if (content) content.style.display = 'flex';
+      document.getElementById('jobs-detail-pane')?.classList.add('has-job');
+      
+      state.selectedJobId = job.id;
+
+      // Format dates
+      const postedDate = job.posted_at 
+        ? new Date(job.posted_at).toLocaleDateString('en-IN', {
+            day: 'numeric', month: 'short', year: 'numeric'
+          })
+        : 'Unknown date';
+      const postedRelative = relTime(job.posted_at);
+
+      // Stack tags
+      const stackArray = Array.isArray(job.stack) 
+        ? job.stack 
+        : (typeof job.stack === 'string' ? job.stack.split(',').map(s=>s.trim()).filter(Boolean) : []);
+      const stackHtml = stackArray.map(t => 
+        `<span class="tag">${esc(t)}</span>`
+      ).join('');
+
+      // Status options
+      const statuses = ['new', 'applied', 'ignored'];
+      const statusSelect = statuses.map(s => 
+        `<option value="${s}" ${job.status === s ? 'selected' : ''}>${s}</option>`
+      ).join('');
+
+      content.innerHTML = `
+        <!-- Header -->
+        <div class="detail-header">
+          <div class="detail-company">${esc(job.company || '—')}</div>
+          <div class="detail-role">${esc(job.role || '—')}</div>
+          
+          <div class="detail-meta-row">
+            ${job.location ? `
+              <div class="detail-meta-item">
+                📍 ${esc(job.location)}
+              </div>` : ''}
+            <div class="detail-meta-item">
+              🕐 ${postedRelative}
+              <span style="color:var(--muted);font-size:11px">
+                (${postedDate})
+              </span>
+            </div>
+            <div class="detail-meta-item">
+              🌐 ${esc(job.source || '—')}
+            </div>
+          </div>
+
+          <!-- Apply button + status -->
+          <div class="detail-action-row">
+            ${job.url ? `
+              <a href="${esc(job.url)}" target="_blank" 
+                 rel="noopener" class="detail-apply-btn">
+                🚀 Apply Now ↗
+              </a>` : `
+              <button class="detail-apply-btn" disabled 
+                      style="opacity:0.4;cursor:not-allowed">
+                No URL available
+              </button>`}
+            
+            <select class="detail-outreach-select" 
+                    style="padding:8px 12px"
+                    onchange="updateJobStatus('${esc(job.id)}', this.value)">
+              ${statusSelect}
+            </select>
+          </div>
+        </div>
+
+        <!-- Tech Stack -->
+        ${stackHtml ? `
+          <div class="detail-section">
+            <div class="detail-section-title">Tech Stack</div>
+            <div class="detail-stack-tags">${stackHtml}</div>
+          </div>` : ''}
+
+        <!-- Product description if available -->
+        ${job.product ? `
+          <div class="detail-section">
+            <div class="detail-section-title">About the Role</div>
+            <div style="font-size:13px;color:var(--muted);line-height:1.6">
+              ${esc(job.product)}
+            </div>
+          </div>` : ''}
+
+        <!-- Actions row -->
+        <div class="detail-section">
+          <div class="detail-section-title">Actions</div>
+          <div class="detail-action-row">
+            <button class="detail-action-btn" 
+                    onclick="discoverContacts('${esc(job.id)}')">
+              👤 Discover Contacts
+            </button>
+            <button class="detail-action-btn"
+                    onclick="draftEmailForJob('${esc(job.id)}')">
+              ✉ Draft Email
+            </button>
+            <button class="detail-action-btn"
+                    onclick="copyJobLink('${esc(job.url || '')}')">
+              🔗 Copy Link
+            </button>
+          </div>
+        </div>
+
+        <!-- Contacts section -->
+        <div class="detail-section" id="detail-contacts-section">
+          <div class="detail-section-title">
+            👤 Contacts
+            <button class="detail-action-btn" 
+                    style="display:inline-flex;padding:3px 10px;
+                           font-size:11px;margin-left:8px"
+                    onclick="discoverContacts('${esc(job.id)}')">
+              + Discover
+            </button>
+          </div>
+          <div id="detail-contacts-list" 
+               class="detail-contacts-list">
+            <div style="font-size:13px;color:var(--muted)">
+              Loading contacts...
+            </div>
+          </div>
+        </div>
+
+        <!-- Email outreach section -->
+        <div class="detail-section">
+          <div class="detail-section-title">✉ Email Outreach</div>
+          <div class="detail-outreach-section">
+            <select class="detail-outreach-select" 
+                    id="detail-template-select">
+              <option value="cold_outreach">Cold Outreach</option>
+              <option value="recruiter_outreach">Recruiter Outreach</option>
+              <option value="followup">Follow Up</option>
+            </select>
+            <div id="detail-email-preview" 
+                 class="detail-email-preview"
+                 style="display:none"></div>
+            <div class="detail-action-row">
+              <button class="detail-action-btn"
+                      onclick="draftEmailForJob('${esc(job.id)}')">
+                ✨ Draft Email
+              </button>
+              <button class="detail-action-btn" id="detail-copy-email-btn"
+                      style="display:none"
+                      onclick="copyDetailEmail()">
+                📋 Copy Email
+              </button>
+            </div>
+            <div id="detail-emails-list" style="margin-top:8px"></div>
+          </div>
+        </div>
+      `;
+
+      // Ensure detail placeholder is hidden and content is visible
+      const detailPlaceholder = document.getElementById('jobs-detail-placeholder');
+      if (detailPlaceholder) detailPlaceholder.style.display = 'none';
+      if (content) content.style.display = 'flex';
+
+      // Load contacts for this job
+      loadDetailContacts(job.id);
+      // Load existing email drafts
+      loadDetailEmails(job.id);
     }
 
-    async function draftForJob(jobId) {
-      const job = state.jobs.find(j => j.id === jobId);
-      if (!job) return;
-      toast('Generating draft email…', 'info');
-      const r = await apiFetch('/workflow/apply', { method: 'POST', body: { job_id: jobId, template: 'cold_outreach' } });
-      if (r?.draft_email) {
-        openDetailPanel(jobId);
-        toast('Draft generated — see panel', 'success');
+    async function loadDetailContacts(jobId) {
+      const list = document.getElementById('detail-contacts-list');
+      if (!list) return;
+      
+      const data = await apiFetch(`/contacts/${jobId}`);
+      if (!data || data.length === 0) {
+        list.innerHTML = `
+          <div style="font-size:13px;color:var(--muted)">
+            No contacts discovered yet.
+            <button class="detail-action-btn" 
+                    style="display:inline-flex;margin-left:8px;
+                           padding:4px 10px;font-size:11px"
+                    onclick="discoverContacts('${jobId}')">
+              Discover now
+            </button>
+          </div>`;
+        return;
+      }
+      
+      list.innerHTML = data.map(c => `
+        <div class="detail-contact-card">
+          <div>
+            <div style="font-weight:600;font-size:13px">
+              ${esc(c.name || '—')}
+            </div>
+            <div style="font-size:11px;color:var(--muted)">
+              ${esc(c.role || '')} 
+              ${c.email ? '· ' + esc(c.email) : ''}
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <span style="font-size:11px;padding:2px 8px;
+                         border-radius:99px;
+                         background:${c.verified === 'verified' 
+                           ? 'rgba(34,197,94,0.15)' 
+                           : 'rgba(255,255,255,0.07)'};
+                         color:${c.verified === 'verified' 
+                           ? 'var(--green,#22c55e)' 
+                           : 'var(--muted)'}">
+              ${esc(c.verified || 'unverified')}
+            </span>
+            ${c.email ? `
+              <button class="detail-action-btn" 
+                      style="padding:3px 8px;font-size:11px"
+                      onclick="navigator.clipboard.writeText('${esc(c.email)}')
+                               .then(()=>toast('Email copied','success'))">
+                Copy
+              </button>` : ''}
+          </div>
+        </div>`
+      ).join('');
+    }
+
+    async function loadDetailEmails(jobId) {
+      const list = document.getElementById('detail-emails-list');
+      if (!list) return;
+      
+      const data = await apiFetch(`/emails?job_id=${jobId}`);
+      if (!data || data.length === 0) return;
+      
+      // Show the most recent draft
+      const latest = data[0];
+      const preview = document.getElementById('detail-email-preview');
+      if (preview && latest.body) {
+        preview.textContent = `Subject: ${latest.subject}\n\n${latest.body}`;
+        preview.style.display = 'block';
+        const copyBtn = document.getElementById('detail-copy-email-btn');
+        if (copyBtn) copyBtn.style.display = 'flex';
       }
     }
 
-    async function markApplied(jobId) {
-      const r = await apiFetch(`/jobs/${jobId}/status`, { method: 'PATCH', body: { status: 'applied' } });
-      if (r !== null) {
-        const j = state.jobs.find(x => x.id === jobId);
-        if (j) j.status = 'applied';
-        renderJobs();
-        toast('Marked as applied!', 'success');
-      }
+    function copyDetailEmail() {
+      const preview = document.getElementById('detail-email-preview');
+      if (!preview) return;
+      navigator.clipboard.writeText(preview.textContent)
+        .then(() => toast('Email copied', 'success'));
     }
 
-    // DETAIL PANEL
-    function openDetailPanel(jobId) {
-      const job = state.jobs.find(j => j.id === jobId);
+    async function discoverContacts(jobId) {
+      toast('Discovering contacts...', 'info');
+      const job = state.jobs.find(j => String(j.id) === String(jobId));
       if (!job) return;
-      state.selectedJobId = jobId;
-      if (state.activeTab !== 'jobs') {
-        switchTab('jobs');
-      }
-      document.getElementById('panel-company').textContent = job.company;
-      document.getElementById('panel-role').textContent = job.role;
-      const wrapper = document.getElementById('jobs-split-wrapper');
-      if (wrapper) wrapper.classList.add('has-detail-open');
-      const panel = document.getElementById('detail-panel');
-      if (panel) panel.classList.add('open');
-      highlightSelectedCard(jobId);
-      renderPanelContent(job);
-      fetchPanelData(job);
-    }
-
-    function highlightSelectedCard(jobId) {
-      document.querySelectorAll('.job-card').forEach(card => {
-        if (jobId && card.dataset.id === jobId) {
-          card.classList.add('is-selected');
-        } else {
-          card.classList.remove('is-selected');
+      
+      await apiFetch('/discover', {
+        method: 'POST',
+        body: {
+          company: job.company,
+          job_id: jobId,
+          roles: ['Engineering Manager', 'Recruiter', 'Talent Acquisition']
         }
       });
-    }
-
-    function renderPanelContent(job) {
-      const stackList = Array.isArray(job.stack) ? job.stack : (typeof job.stack === 'string' ? job.stack.split(',') : []);
-      const postedStr = job.posted_at ? `${relTime(job.posted_at)} · (${fmtDate(job.posted_at)})` : 'Recently posted';
       
-      document.getElementById('panel-content').innerHTML = `
-        <div class="detail-card-body">
-          <div class="detail-section-card">
-            <div class="company-role-header">
-              <div class="company-name-text">🏢 ${esc(job.company || '—')}</div>
-              <div class="role-title-text">${esc(job.role || '—')}</div>
-            </div>
-
-            <div class="meta-details-list">
-              <div class="meta-item">
-                <span class="meta-label">📅 Posted</span>
-                <span class="meta-val highlight">${esc(postedStr)}</span>
-              </div>
-              <div class="meta-item">
-                <span class="meta-label">📍 Location</span>
-                <span class="meta-val">${esc(job.location || 'Not specified')}</span>
-              </div>
-              <div class="meta-item">
-                <span class="meta-label">🌐 Source</span>
-                <span class="meta-val"><span class="tag tag-gray">${esc(job.source || '—')}</span></span>
-              </div>
-              <div class="meta-item">
-                <span class="meta-label">📌 Status</span>
-                <span class="meta-val">${statusBadge(job.status)}</span>
-              </div>
-            </div>
-
-            <div class="tech-stack-container">
-              <div class="sub-label">💻 Tech Stack</div>
-              <div class="stack-chips-wrap">
-                ${stackList.length > 0 
-                  ? stackList.map(t => `<span class="tag tag-purple">${esc(t.trim())}</span>`).join('') 
-                  : '<span style="color:var(--muted);font-size:12px;font-style:italic">No stack specified</span>'}
-              </div>
-            </div>
-
-            <div class="apply-link-container">
-              ${job.url ? `
-                <a href="${esc(job.url)}" target="_blank" rel="noopener" class="btn-accent btn-apply-link">
-                  <span>🚀 Apply Now</span>
-                  <span style="font-size:14px;margin-left:4px">↗</span>
-                </a>
-              ` : `
-                <div class="no-apply-link">No apply URL available</div>
-              `}
-            </div>
-          </div>
-
-          <div class="detail-section-card" id="panel-contacts-section">
-            <h4 class="section-sub-title">👤 Contacts</h4>
-            <div class="skel skel-row"></div>
-          </div>
-
-          <div class="detail-section-card" id="panel-emails-section">
-            <h4 class="section-sub-title">✉ Email Outreach</h4>
-            <div class="skel skel-row"></div>
-          </div>
-        </div>`;
+      toast('Contact discovery started — check back in 30 seconds', 'info');
+      setTimeout(() => loadDetailContacts(jobId), 30000);
     }
 
-    async function fetchPanelData(job) {
-      const [contacts, emails] = await Promise.all([
-        apiFetch(`/contacts/${job.id}`),
-        apiFetch(`/emails?job_id=${job.id}`),
-      ]);
+    async function draftEmailForJob(jobId) {
+      const template = document.getElementById('detail-template-select')?.value 
+        || 'cold_outreach';
+      toast('Drafting email...', 'info');
+      
+      await apiFetch('/generate', {
+        method: 'POST',
+        body: {
+          job_id: jobId,
+          template,
+          your_name: 'Vaibhav Sharma',
+          your_stack: ['Python', 'FastAPI', 'Java', 'Spring Boot', 'Node.js'],
+          github_url: 'https://github.com/sharmavaibhav31',
+          graduation_year: 2027
+        }
+      });
+      
+      toast('Email drafted', 'success');
+      loadDetailEmails(jobId);
+    }
 
-      const cSect = document.getElementById('panel-contacts-section');
-      if (cSect) {
-        if (!contacts?.length) {
-          cSect.innerHTML = `
-            <h4 class="section-sub-title">👤 Contacts</h4>
-            <p style="font-size:13px;color:var(--muted);margin-bottom:10px">No contacts discovered yet.</p>
-            <button class="btn-outline" style="height:32px;font-size:12px;width:100%" onclick="discoverForJob('${esc(job.id)}')">👤 Discover Contacts</button>`;
-        } else {
-          cSect.innerHTML = `
-            <h4 class="section-sub-title">👤 Contacts (${contacts.length})</h4>
-            ${contacts.map(c => `
-              <div style="margin-bottom:8px;font-size:13px;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2)">
-                <div style="font-weight:600;margin-bottom:2px;color:var(--text)">${esc(c.name || '—')}</div>
-                <div style="color:var(--text-dim);font-size:12px">${esc(c.email || '—')} · ${verifiedBadge(c.verified)}</div>
-                ${c.role ? `<div style="color:var(--muted);font-size:11px;margin-top:2px">${esc(c.role)}</div>` : ''}
-              </div>`).join('')}
-            <button class="btn-outline" style="height:30px;font-size:12px;width:100%;margin-top:4px" onclick="discoverForJob('${esc(job.id)}')">+ Discover More</button>`;
+    async function updateJobStatus(jobId, status) {
+      await apiFetch(`/jobs/${jobId}/status`, {
+        method: 'PATCH',
+        body: { status }
+      });
+      // Update local state
+      const job = state.jobs.find(j => String(j.id) === String(jobId));
+      if (job) {
+        job.status = status;
+        // Update card class in list
+        const card = document.querySelector(
+          `#jobs-list-pane .job-card[data-id="${jobId}"]`
+        );
+        if (card) {
+          card.className = card.className
+            .replace(/status-\w+/, `status-${status}`);
         }
       }
+      toast(`Status updated to ${status}`, 'success');
+    }
 
-      const eSect = document.getElementById('panel-emails-section');
-      if (eSect) {
-        const tmplSel = `<select id="panel-tmpl" style="height:34px;padding:0 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;background:var(--surface);color:var(--text)">
-          <option value="cold_outreach">Cold Outreach</option>
-          <option value="recruiter_outreach">Recruiter Outreach</option>
-          <option value="referral_outreach">Referral Outreach</option>
-          <option value="followup">Follow-up</option>
-        </select>`;
-        const referralInput = `<input id="panel-referred-by" type="text" placeholder="Referred by name" style="display:none;height:34px;padding:0 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;background:var(--surface);color:var(--text)">`;
-        if (!emails?.length) {
-          eSect.innerHTML = `
-            <h4 class="section-sub-title">✉ Email Outreach</h4>
-            <p style="font-size:13px;color:var(--muted);margin-bottom:10px">No emails drafted yet.</p>
-            <div style="display:flex;flex-direction:column;gap:8px">
-              ${tmplSel}${referralInput}
-              <button class="btn-accent" id="panel-draft-btn" style="height:34px;font-size:12px;width:100%">✨ Draft Email</button>
-            </div>`;
-        } else {
-          eSect.innerHTML = `
-            <h4 class="section-sub-title">✉ Email Outreach (${emails.length})</h4>
-            ${emails.map(e => `
-              <div style="margin-bottom:8px;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);font-size:12px">
-                <div style="font-weight:600;margin-bottom:4px;color:var(--text)">${esc(e.subject)}</div>
-                <div style="color:var(--muted);margin-bottom:6px">${esc(e.template)} · ${statusBadge(e.status)}</div>
-                ${e.body ? `<div style="white-space:pre-wrap;color:var(--text-dim);max-height:120px;overflow-y:auto;background:var(--surface);padding:8px;border-radius:4px;border:1px solid var(--border);font-family:var(--font-mono);font-size:11px">${esc(e.body)}</div>` : ''}
-              </div>`).join('')}
-            <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
-              ${tmplSel}${referralInput}
-              <button class="btn-accent" id="panel-draft-btn" style="height:34px;font-size:12px;width:100%">✨ Draft New Email</button>
-            </div>`;
-        }
-        const tmplEl = document.getElementById('panel-tmpl');
-        const referredByEl = document.getElementById('panel-referred-by');
-        const syncReferralInput = () => {
-          if (referredByEl) referredByEl.style.display = tmplEl?.value === 'referral_outreach' ? 'block' : 'none';
-        };
-        tmplEl?.addEventListener('change', syncReferralInput);
-        syncReferralInput();
-        document.getElementById('panel-draft-btn')?.addEventListener('click', async () => {
-          const tmpl = tmplEl?.value || 'cold_outreach';
-          const payload = { job_id: job.id, template: tmpl };
-          if (tmpl === 'referral_outreach' && referredByEl?.value.trim()) {
-            payload.referred_by = referredByEl.value.trim();
-          }
-          toast('Generating…', 'info');
-          const r = await apiFetch('/workflow/apply', { method: 'POST', body: payload });
-          if (r) { toast('Draft created!', 'success'); fetchPanelData(job); }
-        });
-      }
+    function copyJobLink(url) {
+      if (!url) { toast('No URL available', 'error'); return; }
+      navigator.clipboard.writeText(url)
+        .then(() => toast('Link copied', 'success'));
+    }
+
+    function openDetailPanel(jobId) {
+      const job = state.jobs.find(j => String(j.id) === String(jobId));
+      if (job) renderDetailPanel(job);
     }
 
     function closePanel() {
-      const wrapper = document.getElementById('jobs-split-wrapper');
-      if (wrapper) wrapper.classList.remove('has-detail-open');
-      const panel = document.getElementById('detail-panel');
-      if (panel) panel.classList.remove('open');
+      const placeholder = document.getElementById('jobs-detail-placeholder');
+      const content = document.getElementById('jobs-detail-content');
+      if (placeholder && content) {
+        placeholder.style.display = 'flex';
+        content.style.display = 'none';
+      }
       state.selectedJobId = null;
-      highlightSelectedCard(null);
+      document.querySelectorAll('#jobs-list-pane .job-card').forEach(c => c.classList.remove('selected'));
+      document.getElementById('jobs-detail-pane')?.classList.remove('has-job');
     }
+
+    function discoverForJob(jobId) { discoverContacts(jobId); }
+    function draftForJob(jobId) { draftEmailForJob(jobId); }
+    function markApplied(jobId) { updateJobStatus(jobId, 'applied'); }
+
+    // Divider resizing
+    (function initSplitResizer() {
+      const divider = document.getElementById('jobs-split-divider');
+      const listPane = document.getElementById('jobs-list-pane');
+      const split = document.getElementById('jobs-split');
+      if (!divider || !listPane || !split) return;
+
+      let isDragging = false;
+      divider.addEventListener('mousedown', () => {
+        isDragging = true;
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+      });
+
+      window.addEventListener('mousemove', e => {
+        if (!isDragging) return;
+        const rect = split.getBoundingClientRect();
+        const offsetX = e.clientX - rect.left;
+        let pct = (offsetX / rect.width) * 100;
+        if (pct < 25) pct = 25;
+        if (pct > 75) pct = 75;
+        listPane.style.setProperty('width', `${pct}%`, 'important');
+      });
+
+      window.addEventListener('mouseup', () => {
+        if (isDragging) {
+          isDragging = false;
+          document.body.style.cursor = '';
+          document.body.style.userSelect = '';
+        }
+      });
+    })();
 
     // ===========================================================================
     // CONTACTS VIEW
@@ -3434,24 +3971,29 @@ ${esc(res.email_draft.body)}</pre>
     document.getElementById('btn-refresh-emails').addEventListener('click', () => loadEmails(true));
 
     document.getElementById('jobs-grid').addEventListener('click', e => {
+      const card = e.target.closest('.job-card');
+      if (!card) return;
+
       const actionBtn = e.target.closest('[data-action]');
       if (actionBtn) {
-        e.stopPropagation();
+        // existing action button handling — keep unchanged
         const { action, id } = actionBtn.dataset;
-        if (action === 'discover') discoverForJob(id);
-        else if (action === 'draft') draftForJob(id);
-        else if (action === 'apply') markApplied(id);
+        if (action === 'discover') discoverContacts(id);
+        if (action === 'draft')   draftEmailForJob(id);
+        if (action === 'apply')   updateJobStatus(id, 'applied');
+        e.stopPropagation();
         return;
       }
-      const card = e.target.closest('.job-card');
-      if (card) {
-        const idx = visibleJobCards().indexOf(card);
-        if (idx >= 0) {
-          state.focusedJobIndex = idx;
-          updateFocusedJobCard();
-        }
-        openDetailPanel(card.dataset.id);
+
+      // Card click — open detail panel
+      const jobId = card.dataset.id;
+      const idx = visibleJobCards().indexOf(card);
+      if (idx >= 0) {
+        state.focusedJobIndex = idx;
+        updateFocusedJobCard();
       }
+      const job = state.jobs.find(j => String(j.id) === String(jobId));
+      if (job) renderDetailPanel(job);
     });
     document.getElementById('jobs-grid').addEventListener('focusin', e => {
       const card = e.target.closest('.job-card');
@@ -3462,8 +4004,8 @@ ${esc(res.email_draft.body)}</pre>
       }
     });
 
-    document.getElementById('panel-close').addEventListener('click', closePanel);
-    document.getElementById('panel-backdrop').addEventListener('click', closePanel);
+    document.getElementById('panel-close')?.addEventListener('click', closePanel);
+    document.getElementById('panel-backdrop')?.addEventListener('click', closePanel);
 
     document.getElementById('contacts-table').addEventListener('click', e => {
       const th = e.target.closest('th[data-col]');

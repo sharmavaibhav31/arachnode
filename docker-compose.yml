@@ -41,18 +41,18 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER:     ${POSTGRES_USER:-jobuser}
+      POSTGRES_USER: ${POSTGRES_USER:-jobuser}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-jobpass}
-      POSTGRES_DB:       ${POSTGRES_DB:-jobsdb}
+      POSTGRES_DB: ${POSTGRES_DB:-jobsdb}
     volumes:
       - pgdata:/var/lib/postgresql/data
     # No ports exposed — access via: docker exec -it <container> psql -U jobuser jobsdb
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jobuser} -d ${POSTGRES_DB:-jobsdb}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jobuser} -d ${POSTGRES_DB:-jobsdb}" ]
       interval: 5s
       timeout: 5s
       retries: 10
-    networks: [jobnet]
+    networks: [ jobnet ]
     restart: unless-stopped
 
   redis:
@@ -62,11 +62,11 @@ services:
       - redis_data:/data
     # No ports exposed — access via: docker exec -it <container> redis-cli
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       timeout: 3s
       retries: 5
-    networks: [jobnet]
+    networks: [ jobnet ]
     restart: unless-stopped
 
   # ── Application Services ────────────────────────────────────────────────────
@@ -79,15 +79,15 @@ services:
     environment:
       REDIS_HOST: redis
       REDIS_PORT: "6379"
-      JOBSEEKER_ROLE:  ${JOBSEEKER_ROLE:-Backend Engineer}
+      JOBSEEKER_ROLE: ${JOBSEEKER_ROLE:-Backend Engineer}
       JOBSEEKER_STACK: ${JOBSEEKER_STACK:-Python,FastAPI,PostgreSQL,Redis,Go}
     depends_on:
       redis:
         condition: service_healthy
     restart: on-failure
-    networks: [jobnet]
+    networks: [ jobnet ]
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8004/health || exit 1"]
+      test: [ "CMD-SHELL", "curl -sf http://localhost:8004/health || exit 1" ]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -110,10 +110,10 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
-    networks: [jobnet]
+    networks: [ jobnet ]
     restart: on-failure
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
+      test: [ "CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -131,14 +131,14 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-    networks: [jobnet]
+    networks: [ jobnet ]
     restart: on-failure
     deploy:
       resources:
         limits:
           memory: 1G
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
+      test: [ "CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -159,14 +159,14 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    networks: [jobnet]
+    networks: [ jobnet ]
     restart: on-failure
     deploy:
       resources:
         limits:
           memory: 1G
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
+      test: [ "CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -179,18 +179,18 @@ services:
       <<: *build-dns
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-jobuser}:${POSTGRES_PASSWORD:-jobpass}@postgres:5432/${POSTGRES_DB:-jobsdb}
-      OLLAMA_BASE_URL:    ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
-      GMAIL_ADDRESS:      ${GMAIL_ADDRESS:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      GMAIL_ADDRESS: ${GMAIL_ADDRESS:-}
       GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD:-}
-      YOUR_NAME:          ${YOUR_NAME:-Applicant}
-      YOUR_GITHUB_URL:    ${YOUR_GITHUB_URL:-}
+      YOUR_NAME: ${YOUR_NAME:-Applicant}
+      YOUR_GITHUB_URL: ${YOUR_GITHUB_URL:-}
     depends_on:
       postgres:
         condition: service_healthy
-    networks: [jobnet]
+    networks: [ jobnet ]
     restart: on-failure
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
+      test: [ "CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -215,14 +215,14 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    networks: [jobnet]
+    networks: [ jobnet ]
     restart: on-failure
     deploy:
       resources:
         limits:
           memory: 512M
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8009/health || exit 1"]
+      test: [ "CMD-SHELL", "curl -sf http://localhost:8009/health || exit 1" ]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -241,10 +241,10 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    networks: [jobnet]
+    networks: [ jobnet ]
     restart: on-failure
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8010/health || exit 1"]
+      test: [ "CMD-SHELL", "curl -sf http://localhost:8010/health || exit 1" ]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -264,10 +264,10 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    networks: [jobnet]
+    networks: [ jobnet ]
     restart: on-failure
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8011/health || exit 1"]
+      test: [ "CMD-SHELL", "curl -sf http://localhost:8011/health || exit 1" ]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -281,15 +281,15 @@ services:
     ports:
       - "${GATEWAY_PORT:-8080}:8080"
     environment:
-      AGGREGATOR_URL:    http://aggregator:8000
-      SCRAPER_URL:       http://scraper:8000
-      CONTACT_URL:       http://contact:8000
-      EMAIL_GEN_URL:     http://email-gen:8000
-      AGENT_SEARCH_URL:  http://agent-search:8009
-      GEMINI_AGENT_URL:  http://gemini-agent:8010
-      CRAWLER_URL:       http://crawler:8004
-      REFERRAL_URL:      http://referral:8011
-      SUMMARY_PATH:      /data/run_summary.json
+      AGGREGATOR_URL: http://aggregator:8000
+      SCRAPER_URL: http://scraper:8000
+      CONTACT_URL: http://contact:8000
+      EMAIL_GEN_URL: http://email-gen:8000
+      AGENT_SEARCH_URL: http://agent-search:8009
+      GEMINI_AGENT_URL: http://gemini-agent:8010
+      CRAWLER_URL: http://crawler:8004
+      REFERRAL_URL: http://referral:8011
+      SUMMARY_PATH: /data/run_summary.json
       JOBHUNTER_API_KEY: ${JOBHUNTER_API_KEY:-}
     volumes:
       - run_summary:/data:ro
@@ -304,10 +304,10 @@ services:
         condition: service_healthy
       agent-search:
         condition: service_healthy
-    networks: [jobnet]
+    networks: [ jobnet ]
     restart: on-failure
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8080/api/health || exit 1"]
+      test: [ "CMD-SHELL", "curl -sf http://localhost:8080/api/health || exit 1" ]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -319,24 +319,25 @@ services:
       dockerfile: Dockerfile
       <<: *build-dns
     environment:
-      GATEWAY_URL:             http://gateway:8080
-      CRAWLER_URL:             http://crawler:8004
-      JOBHUNTER_API_KEY:       ${JOBHUNTER_API_KEY:-}
-      JOBSEEKER_ROLE:          ${JOBSEEKER_ROLE:-Backend Engineer}
-      JOBSEEKER_STACK:         ${JOBSEEKER_STACK:-Python,FastAPI,PostgreSQL,Redis,Go}
-      CRAWL_INTERVAL_HOURS:    ${CRAWL_INTERVAL_HOURS:-8}
+      GATEWAY_URL: http://gateway:8080
+      CRAWLER_URL: http://crawler:8004
+      JOBHUNTER_API_KEY: ${JOBHUNTER_API_KEY:-}
+      JOBSEEKER_ROLE: ${JOBSEEKER_ROLE:-Backend Engineer}
+      JOBSEEKER_STACK: ${JOBSEEKER_STACK:-Python,FastAPI,PostgreSQL,Redis,Go}
+      CRAWL_INTERVAL_HOURS: ${CRAWL_INTERVAL_HOURS:-8}
       DISCOVER_INTERVAL_HOURS: ${DISCOVER_INTERVAL_HOURS:-24}
-      SCRAPER_WAIT_SECS:       ${SCRAPER_WAIT_SECS:-60}
-      DISCOVER_DELAY_SECS:     ${DISCOVER_DELAY_SECS:-30}
-      SUMMARY_PATH:            /data/run_summary.json
+      SCRAPER_WAIT_SECS: ${SCRAPER_WAIT_SECS:-60}
+      DISCOVER_DELAY_SECS: ${DISCOVER_DELAY_SECS:-30}
+      SUMMARY_PATH: /data/run_summary.json
     volumes:
       - run_summary:/data
+      - ./gateway:/app
     depends_on:
       gateway:
         condition: service_healthy
       crawler:
         condition: service_healthy
-    networks: [jobnet]
+    networks: [ jobnet ]
     restart: on-failure
 
 # ---------------------------------------------------------------------------
