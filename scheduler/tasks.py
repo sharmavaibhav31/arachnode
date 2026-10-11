@@ -27,8 +27,9 @@ def _gw() -> str:
 def _crawler_url() -> str:
     return os.environ.get("CRAWLER_URL", "http://crawler:8004").rstrip("/")
 
-def _role() -> str:
-    return os.environ.get("JOBSEEKER_ROLE", "Backend Engineer")
+def _roles() -> list[str]:
+    raw = os.environ.get("JOBSEEKER_ROLE", "Backend Engineer")
+    return [r.strip() for r in raw.split(",") if r.strip()]
 
 def _stack() -> list[str]:
     raw = os.environ.get("JOBSEEKER_STACK", "Python,FastAPI,PostgreSQL,Redis,Go")
@@ -105,14 +106,14 @@ def _job_count() -> int:
 # ---------------------------------------------------------------------------
 
 def run_scrape_cycle() -> None:
-    log.info("Scrape cycle starting", role=_role(), stack=_stack())
+    log.info("Scrape cycle starting", roles=_roles(), stack=_stack())
     jobs_before = _job_count()
 
     try:
         with _client(timeout=_HTTP_TIMEOUT) as c:
             r = c.post(
                 f"{_gw()}/api/scrape",
-                json={"role": _role(), "stack": _stack()},
+                json={"roles": _roles(), "stack": _stack()},
             )
             r.raise_for_status()
         log.info("Platform scraper triggered", response=r.json())
@@ -125,7 +126,11 @@ def run_scrape_cycle() -> None:
             with _client(timeout=httpx.Timeout(10.0)) as c:
                 r = c.post(
                     f"{_crawler_url()}/crawl",
-                    json={"spider": spider}
+                    json={
+                        "spider": spider,
+                        "roles": _roles(),
+                        "stack": _stack(),
+                    }
                 )
                 r.raise_for_status()
                 log.info("Spider triggered", spider=spider, stdout_lines=r.json())

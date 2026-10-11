@@ -34,7 +34,7 @@ from urllib.parse import quote
 import httpx
 from bs4 import BeautifulSoup
 
-from .base import PlatformScraper
+from .base import PlatformScraper, matches_roles, matches_stack
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ def _role_to_slug(role: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", role.lower()).strip("-")
 
 
-def _parse_cards(soup: BeautifulSoup, role: str) -> list[dict[str, Any]]:
+def _parse_cards(soup: BeautifulSoup, roles: list[str], stack: list[str]) -> list[dict[str, Any]]:
     """
     Extract job dicts from one page of search results.
 
@@ -105,10 +105,18 @@ def _parse_cards(soup: BeautifulSoup, role: str) -> list[dict[str, Any]]:
             if not company:
                 continue
 
+            # Only keep jobs whose title matches one of our target roles
+            if not matches_roles(title, roles):
+                continue
+
+            # Stack filter: only apply if job has listed skills
+            if stack and skills and not matches_stack(skills, stack):
+                continue
+
             jobs.append(
                 {
                     "company":   company,
-                    "role":      title or role,
+                    "role":      title,
                     "source":    "naukri",
                     "url":       job_url,
                     "stack":     skills,
@@ -130,8 +138,10 @@ class NaukriScraper(PlatformScraper):
     def __init__(self) -> None:
         self._delay: float = float(os.environ.get("SCRAPER_DELAY_SECONDS", 3))
 
-    async def scrape(self, role: str, stack: list[str]) -> list[dict[str, Any]]:
-        slug = _role_to_slug(role)
+    async def scrape(self, roles: list[str], stack: list[str]) -> list[dict[str, Any]]:
+        primary_role = roles[0] if roles else "software engineer"
+        slug = primary_role.lower().strip()
+        slug = re.sub(r'[^a-z0-9]+', '-', slug).strip('-')
         all_jobs: list[dict[str, Any]] = []
 
         async with httpx.AsyncClient(
@@ -156,7 +166,7 @@ class NaukriScraper(PlatformScraper):
                     break
 
                 soup  = BeautifulSoup(resp.text, "html.parser")
-                cards = _parse_cards(soup, role)
+                cards = _parse_cards(soup, roles, stack)
                 logger.info("[Naukri] Page %d → %d jobs", page, len(cards))
                 all_jobs.extend(cards)
 
@@ -168,5 +178,5 @@ class NaukriScraper(PlatformScraper):
                     delay = self._delay + random.uniform(-0.5, 1.0)
                     await asyncio.sleep(max(delay, 1.5))
 
-        logger.info("[Naukri] Total scraped: %d jobs for role '%s'", len(all_jobs), role)
+        logger.info("[Naukri] Total scraped: %d jobs for roles %s", len(all_jobs), roles)
         return all_jobs

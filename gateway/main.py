@@ -158,6 +158,14 @@ async def proxy_pipeline_status(request: Request):
 async def proxy_scrape(request: Request):
     return await proxy.proxy_request(request, f"{proxy.SCRAPER_URL}/scrape")
 
+CRAWLER_URL = os.environ.get("CRAWLER_URL", "http://crawler:8004")
+
+@app.api_route("/api/crawl", methods=["POST"], tags=["proxy"])
+async def proxy_crawl(request: Request):
+    return await proxy.proxy_request(
+        request, f"{CRAWLER_URL}/crawl"
+    )
+
 @app.api_route("/api/contacts", methods=["GET", "POST"], tags=["proxy"])
 async def proxy_contacts(request: Request):
     return await proxy.proxy_request(request, f"{proxy.CONTACT_URL}/contacts")

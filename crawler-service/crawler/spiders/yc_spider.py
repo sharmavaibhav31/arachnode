@@ -28,6 +28,9 @@ class YCJobsSpider(BaseStartupSpider):
                 # Stack tags live in the company card, not the role row
                 stack_tags = row.css("span.tag::text").getall()
 
+                if not self.stack_matches(stack_tags):
+                    continue
+
                 yield JobItem(
                     company=company,
                     role=role_text,

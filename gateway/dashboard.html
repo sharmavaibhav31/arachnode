@@ -440,6 +440,237 @@
       color: var(--text);
     }
 
+    /* ── Multi-Filter & Category Filter Bar ────────────────────────────── */
+    .jobs-filter-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-shrink: 0;
+    }
+
+    .filter-controls-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .multi-search-container {
+      flex: 1;
+      min-width: 280px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      padding: 3px 10px;
+      min-height: 38px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text);
+      transition: border-color var(--trans), box-shadow var(--trans);
+      cursor: text;
+    }
+
+    .multi-search-container:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-low);
+    }
+
+    .multi-search-container .search-icon {
+      font-size: 13px;
+      opacity: 0.6;
+      flex-shrink: 0;
+      user-select: none;
+    }
+
+    .filter-tags-list {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .filter-tag-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 500;
+      background: var(--accent-low);
+      color: var(--accent);
+      border: 1px solid rgba(124, 92, 252, .3);
+      border-radius: 12px;
+      white-space: nowrap;
+      user-select: none;
+      animation: tagPopIn 140ms cubic-bezier(.175, .885, .32, 1.275);
+    }
+
+    @keyframes tagPopIn {
+      from { transform: scale(0.85); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .filter-tag-pill .tag-close {
+      cursor: pointer;
+      font-size: 11px;
+      opacity: 0.7;
+      border: none;
+      background: none;
+      color: inherit;
+      padding: 0 2px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      border-radius: 50%;
+    }
+
+    .filter-tag-pill .tag-close:hover {
+      opacity: 1;
+      color: var(--red);
+    }
+
+    .multi-search-container input {
+      flex: 1;
+      min-width: 140px;
+      border: none !important;
+      outline: none !important;
+      background: transparent !important;
+      color: var(--text);
+      font-size: 13px;
+      height: 28px;
+      padding: 0;
+      box-shadow: none !important;
+    }
+
+    .btn-clear-tags {
+      border: none;
+      background: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 13px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: color var(--trans);
+    }
+
+    .btn-clear-tags:hover {
+      color: var(--text);
+    }
+
+    .filter-select-wrap select {
+      height: 38px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      font-size: 12px;
+      font-weight: 500;
+      outline: none;
+      color: var(--text);
+      cursor: pointer;
+      transition: border-color var(--trans), box-shadow var(--trans);
+    }
+
+    .filter-select-wrap select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-low);
+    }
+
+    .filter-chips-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 2px 0 4px 0;
+    }
+
+    .chips-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-right: 2px;
+      user-select: none;
+    }
+
+    .quick-chip {
+      padding: 4px 10px;
+      border-radius: 14px;
+      font-size: 11px;
+      font-weight: 500;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 150ms ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      user-select: none;
+    }
+
+    .quick-chip:hover {
+      border-color: var(--border-hover);
+      color: var(--text);
+      background: var(--surface-2);
+      transform: translateY(-1px);
+    }
+
+    .quick-chip.active {
+      background: var(--accent-low);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+      box-shadow: 0 0 8px var(--accent-low);
+    }
+
+    .quick-chip .chip-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .quick-chip .chip-dot.dot-tech { background: #3b82f6; }
+    .quick-chip .chip-dot.dot-non-tech { background: #10b981; }
+
+    .chips-sep {
+      width: 1px;
+      height: 14px;
+      background: var(--border);
+      margin: 0 4px;
+    }
+
+    .filter-stats-badge {
+      font-size: 11px;
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      padding: 3px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .btn-reset-filters {
+      border: none;
+      background: none;
+      color: var(--accent);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 0;
+      text-decoration: underline;
+    }
+    .btn-reset-filters:hover {
+      color: var(--accent-2);
+    }
+
     .btn-outline {
       height: 36px;
       padding: 0 14px;
@@ -1758,23 +1989,101 @@
     <!-- JOBS TAB -->
     <section id="tab-jobs" class="tab-view active">
       <!-- Filter bar — full width above the split -->
-      <div id="jobs-filter-bar" class="filter-bar">
-        <input type="text" id="job-search" placeholder="Search company or role…" />
-        <select id="job-status-filter">
-          <option value="all">All statuses</option>
-          <option value="new">New</option>
-          <option value="applied">Applied</option>
-          <option value="ignored">Ignored</option>
-        </select>
-        <select id="job-stack-filter">
-          <option value="all">All stacks</option>
-        </select>
-        <button class="btn-outline" id="btn-refresh-jobs">Refresh</button>
-        <div class="view-toggle">
-          <button id="btn-view-grid" onclick="setView('grid')" title="Grid view">⊞ Grid</button>
-          <button id="btn-view-kanban" onclick="setView('kanban')" title="Kanban view">☰ Kanban</button>
+      <div id="jobs-filter-bar" class="jobs-filter-wrapper">
+        <div class="filter-controls-row">
+          <!-- Multi-token tag search input container -->
+          <div class="multi-search-container" id="multi-search-box">
+            <span class="search-icon">🔍</span>
+            <div class="filter-tags-list" id="filter-tags-list"></div>
+            <input type="text" id="job-search" placeholder="Filter by skills or roles (e.g. Python, Intern, Backend)... press Enter" autocomplete="off" />
+            <button type="button" class="btn-clear-tags" id="btn-clear-tags" title="Clear all search tags" style="display:none">✕</button>
+          </div>
+
+          <!-- Category dropdown: Tech vs Non-Tech -->
+          <div class="filter-select-wrap">
+            <select id="job-category-filter" title="Filter by Job Category">
+              <option value="all">📁 All Categories</option>
+              <option value="tech">💻 Tech & IT Roles</option>
+              <option value="non_tech">📊 Non-Tech & Business</option>
+            </select>
+          </div>
+
+          <!-- Experience dropdown: Fresher vs Experienced -->
+          <div class="filter-select-wrap">
+            <select id="job-experience-filter" title="Filter by Experience Level">
+              <option value="all">🎯 All Levels</option>
+              <option value="fresher">🎓 Freshers & Interns</option>
+              <option value="experienced">💼 Experienced (Mid/Sr+)</option>
+            </select>
+          </div>
+
+          <!-- Status dropdown -->
+          <div class="filter-select-wrap">
+            <select id="job-status-filter" title="Filter by Application Status">
+              <option value="all">All statuses</option>
+              <option value="new">New</option>
+              <option value="applied">Applied</option>
+              <option value="ignored">Ignored</option>
+            </select>
+          </div>
+
+          <!-- Stack dropdown -->
+          <div class="filter-select-wrap">
+            <select id="job-stack-filter" title="Filter by Tech Stack">
+              <option value="all">All stacks</option>
+            </select>
+          </div>
+
+          <button class="btn-outline" id="btn-refresh-jobs" title="Reload jobs">Refresh</button>
+          <div class="view-toggle">
+            <button id="btn-view-grid" onclick="setView('grid')" title="Grid view">⊞ Grid</button>
+            <button id="btn-view-kanban" onclick="setView('kanban')" title="Kanban view">☰ Kanban</button>
+          </div>
+          <button class="btn-outline" id="btn-export-jobs">Export CSV</button>
         </div>
-        <button class="btn-outline" id="btn-export-jobs">Export CSV</button>
+
+        <!-- Quick filter chips row -->
+        <div class="filter-chips-row" id="filter-chips-row">
+          <span class="chips-label">Quick:</span>
+          
+          <!-- Category Quick Chips -->
+          <button type="button" class="quick-chip" data-chip-type="category" data-val="tech" title="Filter tech & engineering roles">
+            <span class="chip-dot dot-tech"></span>💻 Tech Roles
+          </button>
+          <button type="button" class="quick-chip" data-chip-type="category" data-val="non_tech" title="Filter business, product & non-tech roles">
+            <span class="chip-dot dot-non-tech"></span>📊 Non-Tech
+          </button>
+          
+          <span class="chips-sep"></span>
+          
+          <!-- Experience Quick Chips -->
+          <button type="button" class="quick-chip" data-chip-type="experience" data-val="fresher" title="Filter internships and early career roles">
+            🎓 Intern / Fresher
+          </button>
+          <button type="button" class="quick-chip" data-chip-type="experience" data-val="experienced" title="Filter experienced / senior roles">
+            💼 Experienced
+          </button>
+          
+          <span class="chips-sep"></span>
+          
+          <!-- Popular Role & Skill Tags -->
+          <button type="button" class="quick-chip tag-chip" data-chip-tag="python">Python</button>
+          <button type="button" class="quick-chip tag-chip" data-chip-tag="software engineering">Software Engineering</button>
+          <button type="button" class="quick-chip tag-chip" data-chip-tag="intern">Intern</button>
+          <button type="button" class="quick-chip tag-chip" data-chip-tag="backend">Backend</button>
+          <button type="button" class="quick-chip tag-chip" data-chip-tag="frontend">Frontend</button>
+          <button type="button" class="quick-chip tag-chip" data-chip-tag="full stack">Full Stack</button>
+          <button type="button" class="quick-chip tag-chip" data-chip-tag="data analyst">Data Analyst</button>
+          <button type="button" class="quick-chip tag-chip" data-chip-tag="product manager">Product Manager</button>
+          <button type="button" class="quick-chip tag-chip" data-chip-tag="business analyst">Business Analyst</button>
+          <button type="button" class="quick-chip tag-chip" data-chip-tag="ui/ux">UI/UX</button>
+
+          <!-- Active filters counter & reset -->
+          <div class="filter-stats-badge" id="filter-stats-badge" style="margin-left:auto; display:none">
+            <span id="filtered-count-text"></span>
+            <button type="button" id="btn-reset-all-filters" class="btn-reset-filters">Reset</button>
+          </div>
+        </div>
       </div>
 
       <!-- Split pane wrapper -->
@@ -2229,15 +2538,44 @@
         <button class="btn-close-x" id="modal-close">✕</button>
       </div>
       <div class="modal-body">
+        <!-- Roles input — multiple, comma-separated -->
         <div class="field-group">
-          <label>Role</label>
-          <input type="text" id="scrape-role" value="Backend Engineer" />
+          <label style="font-size:12px;font-weight:600;
+                        color:var(--muted);margin-bottom:6px;display:block">
+            Target Roles
+            <span style="font-weight:400;color:var(--muted)">
+              (comma-separated)
+            </span>
+          </label>
+          <input type="text" id="scrape-roles"
+                 placeholder="Backend Engineer Intern, SDE Intern, Software Developer Intern"
+                 style="width:100%;padding:10px;border:1px solid var(--border);
+                        border-radius:var(--radius);background:var(--bg);
+                        color:var(--text);font-size:13px">
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">
+            All roles are searched in parallel. More specific = better results.
+          </div>
         </div>
-        <div class="field-group">
-          <label>Stack (comma-separated)</label>
-          <input type="text" id="scrape-stack" value="Python,Go,FastAPI" />
+        
+        <!-- Stack input -->
+        <div class="field-group" style="margin-top:12px">
+          <label style="font-size:12px;font-weight:600;
+                        color:var(--muted);margin-bottom:6px;display:block">
+            Tech Stack / Skills
+            <span style="font-weight:400;color:var(--muted)">
+              (comma-separated)
+            </span>
+          </label>
+          <input type="text" id="scrape-stack"
+                 placeholder="Python, FastAPI, Java, Node.js, PostgreSQL"
+                 style="width:100%;padding:10px;border:1px solid var(--border);
+                        border-radius:var(--radius);background:var(--bg);
+                        color:var(--text);font-size:13px">
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">
+            Jobs with matching skills are prioritized. Leave blank to skip.
+          </div>
         </div>
-        <div class="field-group">
+        <div class="field-group" style="margin-top:12px">
           <label>Platforms</label>
           <div class="platform-chips" id="platform-chips">
             <button type="button" class="platform-chip" data-platform="linkedin">
@@ -2482,7 +2820,14 @@
       activeTab: 'jobs',
       selectedJobId: null,
       focusedJobIndex: -1,
-      filters: { search: '', status: 'all', stack: 'all' },
+      filters: {
+        search: '',
+        searchTags: [],
+        category: 'all',
+        experience: 'all',
+        status: 'all',
+        stack: 'all',
+      },
       contactSort: { col: 'company', dir: 1 },
       chart: null,
     };
@@ -2634,6 +2979,8 @@
       }
       
       populateStackFilter();
+      renderFilterTags();
+      syncQuickChipsState();
       renderJobs();
       
       // Append Load More button if there are more jobs
@@ -2670,15 +3017,195 @@
       });
     }
 
+    // ===========================================================================
+    // JOB CLASSIFICATION TAXONOMY (Tech vs Non-Tech, Fresher vs Experienced)
+    // ===========================================================================
+    const TECH_KEYWORDS = [
+      'software', 'developer', 'engineer', 'engineering', 'programmer', 'coder',
+      'architect', 'devops', 'sre', 'sysadmin', 'systems', 'infrastructure',
+      'frontend', 'front-end', 'front end', 'backend', 'back-end', 'back end',
+      'fullstack', 'full-stack', 'full stack', 'sde', 'swe', 'web dev', 'mobile dev',
+      'ios', 'android', 'flutter', 'react native', 'data scientist', 'data science',
+      'data engineer', 'data analyst', 'database', 'dba', 'machine learning',
+      'artificial intelligence', 'ai/ml', 'deep learning', 'nlp', 'computer vision',
+      'cloud', 'aws', 'azure', 'gcp', 'cybersecurity', 'infosec', 'security',
+      'qa', 'quality assurance', 'sdet', 'automation tester', 'tester', 'testing',
+      'embedded', 'firmware', 'hardware', 'network', 'it support', 'technical support',
+      'tech lead', 'technical lead', 'scrum master', 'solutions architect'
+    ];
+
+    const NON_TECH_KEYWORDS = [
+      'product manager', 'product management', 'product owner', 'associate product manager', 'apm',
+      'project manager', 'project management', 'program manager', 'pmo',
+      'business analyst', 'business analysis', 'business development', 'bde', 'bdr', 'sdr', 'sales',
+      'account executive', 'client relationship', 'marketing', 'digital marketing', 'growth',
+      'seo', 'sem', 'social media', 'content writer', 'copywriter', 'technical writer',
+      'ui/ux', 'ux/ui', 'ui designer', 'ux designer', 'product designer', 'graphic designer',
+      'visual designer', 'human resources', 'hr', 'recruiter', 'talent acquisition', 'people ops',
+      'operations', 'supply chain', 'logistics', 'finance', 'financial analyst', 'accountant',
+      'accounting', 'customer success', 'customer support', 'client support', 'legal', 'compliance'
+    ];
+
+    const FRESHER_KEYWORDS = [
+      'intern', 'internship', 'trainee', 'apprentice', 'fresher', 'freshers',
+      'entry level', 'entry-level', 'junior', 'jr', 'graduate', 'grad', 'campus',
+      'college', 'associate', '0-1', '0-2', '0 to 1', '0 to 2', 'early career', 'new grad'
+    ];
+
+    const EXPERIENCED_KEYWORDS = [
+      'senior', 'sr', 'lead', 'staff', 'principal', 'chief', 'director', 'head of',
+      'vp', 'vice president', 'architect', 'manager', 'mid-senior', 'experienced',
+      '3+', '4+', '5+', '6+', '7+', '8+'
+    ];
+
+    function isTechJob(job) {
+      const text = `${job.role || ''} ${(job.stack || []).join(' ')}`.toLowerCase();
+      const stackList = Array.isArray(job.stack) ? job.stack : (typeof job.stack === 'string' ? job.stack.split(',') : []);
+      if (stackList.length > 0) {
+        const techSkills = ['python', 'java', 'c++', 'c#', 'javascript', 'typescript', 'react', 'node', 'fastapi', 'django', 'spring', 'sql', 'golang', 'go', 'rust', 'docker', 'aws', 'git'];
+        if (stackList.some(s => techSkills.includes(s.toLowerCase().trim()))) return true;
+      }
+      return TECH_KEYWORDS.some(k => text.includes(k));
+    }
+
+    function isNonTechJob(job) {
+      const roleText = (job.role || '').toLowerCase();
+      if (NON_TECH_KEYWORDS.some(k => roleText.includes(k))) return true;
+      return !isTechJob(job);
+    }
+
+    function isFresherJob(job) {
+      const roleText = (job.role || '').toLowerCase();
+      const productText = (job.product || '').toLowerCase();
+      const source = (job.source || '').toLowerCase();
+      const url = (job.url || '').toLowerCase();
+      if (source === 'internshala' || url.includes('/internship') || url.includes('/internships/')) return true;
+      return FRESHER_KEYWORDS.some(k => roleText.includes(k) || productText.includes(k));
+    }
+
+    function isExperiencedJob(job) {
+      const roleText = (job.role || '').toLowerCase();
+      const productText = (job.product || '').toLowerCase();
+      if (isFresherJob(job)) return false;
+      return EXPERIENCED_KEYWORDS.some(k => roleText.includes(k) || productText.includes(k));
+    }
+
+    function matchesSearchTerm(fullText, term) {
+      const t = term.toLowerCase().trim();
+      if (!t) return true;
+      if (fullText.includes(t)) return true;
+      // Synonym helpers: engineering <-> engineer, intern <-> internship
+      if (t.includes('engineering') && fullText.includes(t.replace('engineering', 'engineer'))) return true;
+      if (t.includes('engineer') && fullText.includes(t.replace('engineer', 'engineering'))) return true;
+      if (t === 'intern' && fullText.includes('internship')) return true;
+      if (t === 'internship' && fullText.includes('intern')) return true;
+      return false;
+    }
+
     function filteredJobs() {
-      const { search, status, stack } = state.filters;
+      const { search, searchTags, category, experience, status, stack } = state.filters;
+      const activeTerms = [...(searchTags || []), (search || '').trim()].filter(Boolean);
+
       return state.jobs.filter(j => {
-        const q = search.toLowerCase();
-        const matchQ = !q || j.company?.toLowerCase().includes(q) || j.role?.toLowerCase().includes(q);
-        const matchS = status === 'all' || j.status === status;
-        const matchT = stack === 'all' || (j.stack || []).includes(stack);
-        return matchQ && matchS && matchT;
+        // Status filter
+        if (status !== 'all' && j.status !== status) return false;
+
+        // Stack filter
+        if (stack !== 'all') {
+          const sList = Array.isArray(j.stack) ? j.stack : (typeof j.stack === 'string' ? j.stack.split(',') : []);
+          if (!sList.some(s => s.toLowerCase().trim() === stack.toLowerCase().trim())) return false;
+        }
+
+        // Category filter: Tech vs Non-Tech
+        if (category === 'tech' && !isTechJob(j)) return false;
+        if (category === 'non_tech' && !isNonTechJob(j)) return false;
+
+        // Experience filter: Fresher vs Experienced
+        if (experience === 'fresher' && !isFresherJob(j)) return false;
+        if (experience === 'experienced' && !isExperiencedJob(j)) return false;
+
+        // Multi-term search filters (AND logic across all tokens)
+        if (activeTerms.length > 0) {
+          const fullText = [
+            j.role || '',
+            j.company || '',
+            Array.isArray(j.stack) ? j.stack.join(' ') : (j.stack || ''),
+            j.location || '',
+            j.product || '',
+            j.source || ''
+          ].join(' ').toLowerCase();
+
+          for (const term of activeTerms) {
+            if (!matchesSearchTerm(fullText, term)) {
+              return false;
+            }
+          }
+        }
+
+        return true;
       });
+    }
+
+    function renderFilterTags() {
+      const list = document.getElementById('filter-tags-list');
+      const clearBtn = document.getElementById('btn-clear-tags');
+      if (!list) return;
+
+      list.innerHTML = (state.filters.searchTags || []).map((tag, idx) => `
+        <span class="filter-tag-pill">
+          ${esc(tag)}
+          <button type="button" class="tag-close" data-tag-index="${idx}" title="Remove tag">✕</button>
+        </span>
+      `).join('');
+
+      if (clearBtn) {
+        clearBtn.style.display = (state.filters.searchTags?.length || state.filters.search) ? 'inline-block' : 'none';
+      }
+
+      // Sync active state on tag chips
+      document.querySelectorAll('.quick-chip.tag-chip').forEach(chip => {
+        const tag = chip.dataset.chipTag?.toLowerCase();
+        const active = (state.filters.searchTags || []).some(t => t.toLowerCase() === tag);
+        chip.classList.toggle('active', active);
+      });
+    }
+
+    function syncQuickChipsState() {
+      // Category chips
+      document.querySelectorAll('.quick-chip[data-chip-type="category"]').forEach(chip => {
+        chip.classList.toggle('active', state.filters.category === chip.dataset.val);
+      });
+      // Experience chips
+      document.querySelectorAll('.quick-chip[data-chip-type="experience"]').forEach(chip => {
+        chip.classList.toggle('active', state.filters.experience === chip.dataset.val);
+      });
+      // Tag chips
+      renderFilterTags();
+    }
+
+    function updateFilterStats(filteredCount, totalCount) {
+      const badge = document.getElementById('filter-stats-badge');
+      const text = document.getElementById('filtered-count-text');
+      const resetBtn = document.getElementById('btn-reset-all-filters');
+      if (!badge || !text) return;
+
+      const hasActiveFilters =
+        (state.filters.searchTags?.length > 0) ||
+        (state.filters.search?.trim().length > 0) ||
+        state.filters.category !== 'all' ||
+        state.filters.experience !== 'all' ||
+        state.filters.status !== 'all' ||
+        state.filters.stack !== 'all';
+
+      if (hasActiveFilters) {
+        badge.style.display = 'inline-flex';
+        text.textContent = `${filteredCount} of ${totalCount} jobs`;
+        if (resetBtn) resetBtn.style.display = 'inline-block';
+      } else {
+        badge.style.display = totalCount > 0 ? 'inline-flex' : 'none';
+        text.textContent = `${totalCount} jobs`;
+        if (resetBtn) resetBtn.style.display = 'none';
+      }
     }
 
     function visibleJobCards() {
@@ -2726,18 +3253,31 @@
 
     function renderJobs() {
       const jobs = filteredJobs();
+      updateFilterStats(jobs.length, state.jobs.length);
       const grid = document.getElementById('jobs-grid');
       if (!jobs.length) {
         state.focusedJobIndex = -1;
-        grid.innerHTML = `<div class="empty">
-          <div class="empty-icon">📭</div>
-          <h3>No jobs found yet</h3>
-          <p>Trigger a scrape to get started.</p>
-          <button class="btn-accent" 
-            onclick="document.getElementById('btn-scrape').click()">
-            ▶ Trigger Scrape
-          </button>
-        </div>`;
+        if (state.jobs.length > 0) {
+          grid.innerHTML = `<div class="empty">
+            <div class="empty-icon">🔍</div>
+            <h3>No jobs match your filters</h3>
+            <p>Try removing some search tags or selecting "All Categories".</p>
+            <button class="btn-outline" style="margin-top:12px"
+              onclick="document.getElementById('btn-reset-all-filters')?.click()">
+              Clear All Filters
+            </button>
+          </div>`;
+        } else {
+          grid.innerHTML = `<div class="empty">
+            <div class="empty-icon">📭</div>
+            <h3>No jobs found yet</h3>
+            <p>Trigger a scrape to get started.</p>
+            <button class="btn-accent" 
+              onclick="document.getElementById('btn-scrape').click()">
+              ▶ Trigger Scrape
+            </button>
+          </div>`;
+        }
         return;
       }
       grid.innerHTML = jobs.map(j => {
@@ -3642,7 +4182,7 @@ ${esc(res.email_draft.body)}</pre>
       if (key === 's') {
         e.preventDefault();
         scrapeModal.classList.add('open');
-        document.getElementById('scrape-role')?.focus();
+        (document.getElementById('scrape-roles') || document.getElementById('scrape-role'))?.focus();
       } else if (key === 'r') {
         e.preventDefault();
         switchTab('jobs');
@@ -3662,8 +4202,14 @@ ${esc(res.email_draft.body)}</pre>
     function exportJobsCSV() {
       const params = new URLSearchParams();
 
-      if (state.filters.search.trim()) {
-        params.set('search', state.filters.search.trim());
+      const combinedTerms = [...(state.filters.searchTags || [])];
+      if (state.filters.search && state.filters.search.trim()) {
+        combinedTerms.push(state.filters.search.trim());
+      }
+      if (combinedTerms.length) {
+        const queryTerm = combinedTerms.join(' ');
+        params.set('role', queryTerm);
+        params.set('search', queryTerm);
       }
 
       if (state.filters.status !== 'all') {
@@ -3950,17 +4496,185 @@ ${esc(res.email_draft.body)}</pre>
       btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
 
-    document.getElementById('job-search').addEventListener('input', e => {
-      state.filters.search = e.target.value;
+    // Filter tag management helpers
+    function addSearchTag(rawTag) {
+      const tag = (rawTag || '').trim().replace(/^,+|,+$/g, '');
+      if (!tag) return;
+      if (!state.filters.searchTags) state.filters.searchTags = [];
+      const exists = state.filters.searchTags.some(t => t.toLowerCase() === tag.toLowerCase());
+      if (!exists) {
+        state.filters.searchTags.push(tag);
+      }
+      state.filters.search = '';
+      const input = document.getElementById('job-search');
+      if (input) input.value = '';
+      renderFilterTags();
+      syncQuickChipsState();
+      renderJobs();
+    }
+
+    function removeSearchTag(indexOrText) {
+      if (!state.filters.searchTags) return;
+      if (typeof indexOrText === 'number') {
+        state.filters.searchTags.splice(indexOrText, 1);
+      } else {
+        const text = String(indexOrText).toLowerCase();
+        state.filters.searchTags = state.filters.searchTags.filter(t => t.toLowerCase() !== text);
+      }
+      renderFilterTags();
+      syncQuickChipsState();
+      renderJobs();
+    }
+
+    function clearAllSearchTags() {
+      state.filters.searchTags = [];
+      state.filters.search = '';
+      const input = document.getElementById('job-search');
+      if (input) input.value = '';
+      renderFilterTags();
+      syncQuickChipsState();
+      renderJobs();
+    }
+
+    function resetAllFilters() {
+      state.filters.search = '';
+      state.filters.searchTags = [];
+      state.filters.category = 'all';
+      state.filters.experience = 'all';
+      state.filters.status = 'all';
+      state.filters.stack = 'all';
+
+      const searchInput = document.getElementById('job-search');
+      if (searchInput) searchInput.value = '';
+
+      const catSelect = document.getElementById('job-category-filter');
+      if (catSelect) catSelect.value = 'all';
+
+      const expSelect = document.getElementById('job-experience-filter');
+      if (expSelect) expSelect.value = 'all';
+
+      const statSelect = document.getElementById('job-status-filter');
+      if (statSelect) statSelect.value = 'all';
+
+      const stackSelect = document.getElementById('job-stack-filter');
+      if (stackSelect) stackSelect.value = 'all';
+
+      renderFilterTags();
+      syncQuickChipsState();
+      renderJobs();
+    }
+
+    // Multi-search box focus and keyboard handling
+    const multiSearchBox = document.getElementById('multi-search-box');
+    const jobSearchInput = document.getElementById('job-search');
+
+    if (multiSearchBox) {
+      multiSearchBox.addEventListener('click', e => {
+        if (!e.target.closest('.tag-close') && !e.target.closest('.btn-clear-tags')) {
+          jobSearchInput?.focus();
+        }
+      });
+    }
+
+    if (jobSearchInput) {
+      jobSearchInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ',') {
+          e.preventDefault();
+          const val = jobSearchInput.value.trim();
+          if (val) addSearchTag(val);
+        } else if (e.key === 'Backspace' && !jobSearchInput.value && state.filters.searchTags?.length > 0) {
+          removeSearchTag(state.filters.searchTags.length - 1);
+        }
+      });
+
+      jobSearchInput.addEventListener('input', e => {
+        const val = e.target.value;
+        if (val.includes(',')) {
+          const parts = val.split(',');
+          const last = parts.pop();
+          parts.forEach(p => { if (p.trim()) addSearchTag(p.trim()); });
+          e.target.value = last;
+          state.filters.search = last.trim();
+        } else {
+          state.filters.search = val.trim();
+        }
+        const clearBtn = document.getElementById('btn-clear-tags');
+        if (clearBtn) {
+          clearBtn.style.display = (state.filters.searchTags?.length || state.filters.search) ? 'inline-block' : 'none';
+        }
+        renderJobs();
+      });
+    }
+
+    document.getElementById('filter-tags-list')?.addEventListener('click', e => {
+      const closeBtn = e.target.closest('.tag-close');
+      if (closeBtn) {
+        const idx = parseInt(closeBtn.dataset.tagIndex, 10);
+        if (!isNaN(idx)) removeSearchTag(idx);
+      }
+    });
+
+    document.getElementById('btn-clear-tags')?.addEventListener('click', e => {
+      e.stopPropagation();
+      clearAllSearchTags();
+    });
+
+    document.getElementById('job-category-filter')?.addEventListener('change', e => {
+      state.filters.category = e.target.value;
+      syncQuickChipsState();
       renderJobs();
     });
-    document.getElementById('job-status-filter').addEventListener('change', e => {
+
+    document.getElementById('job-experience-filter')?.addEventListener('change', e => {
+      state.filters.experience = e.target.value;
+      syncQuickChipsState();
+      renderJobs();
+    });
+
+    document.getElementById('job-status-filter')?.addEventListener('change', e => {
       state.filters.status = e.target.value;
       renderJobs();
     });
-    document.getElementById('job-stack-filter').addEventListener('change', e => {
+
+    document.getElementById('job-stack-filter')?.addEventListener('change', e => {
       state.filters.stack = e.target.value;
       renderJobs();
+    });
+
+    document.getElementById('btn-reset-all-filters')?.addEventListener('click', () => {
+      resetAllFilters();
+    });
+
+    document.getElementById('filter-chips-row')?.addEventListener('click', e => {
+      const chip = e.target.closest('.quick-chip');
+      if (!chip) return;
+
+      const chipType = chip.dataset.chipType;
+      const chipTag = chip.dataset.chipTag;
+      const chipVal = chip.dataset.val;
+
+      if (chipType === 'category') {
+        const newVal = (state.filters.category === chipVal) ? 'all' : chipVal;
+        state.filters.category = newVal;
+        const sel = document.getElementById('job-category-filter');
+        if (sel) sel.value = newVal;
+        syncQuickChipsState();
+        renderJobs();
+      } else if (chipType === 'experience') {
+        const newVal = (state.filters.experience === chipVal) ? 'all' : chipVal;
+        state.filters.experience = newVal;
+        const sel = document.getElementById('job-experience-filter');
+        if (sel) sel.value = newVal;
+        syncQuickChipsState();
+        renderJobs();
+      } else if (chipTag) {
+        const exists = (state.filters.searchTags || []).some(t => t.toLowerCase() === chipTag.toLowerCase());
+        if (exists) {
+          removeSearchTag(chipTag);
+        } else {
+          addSearchTag(chipTag);
+        }
+      }
     });
     document.getElementById('btn-refresh-jobs').addEventListener('click', () => loadJobs(true));
     document.getElementById('btn-export-jobs').addEventListener('click', exportJobsCSV);
@@ -4082,26 +4796,74 @@ ${esc(res.email_draft.body)}</pre>
     shortcutsModal.addEventListener('click', e => { if (e.target === shortcutsModal) closeShortcutsModal(); });
     document.addEventListener('keydown', handleGlobalShortcut);
 
-    document.getElementById('modal-submit').addEventListener('click', async () => {
-      const role  = document.getElementById('scrape-role').value.trim();
-      const stack = document.getElementById('scrape-stack').value.split(',').map(s => s.trim()).filter(Boolean);
-      if (!role) { toast('Enter a role first', 'error'); return; }
-
+    async function triggerScrape() {
+      const rolesInput = document.getElementById('scrape-roles') || document.getElementById('scrape-role');
+      const rolesRaw = rolesInput ? rolesInput.value : '';
+      const stackRaw = document.getElementById('scrape-stack').value;
+      
+      const roles = rolesRaw.split(',')
+        .map(r => r.trim()).filter(Boolean);
+      const stack = stackRaw.split(',')
+        .map(s => s.trim()).filter(Boolean);
+      
+      if (!roles.length) {
+        toast('Enter at least one role', 'error');
+        return;
+      }
+      
       // Collect selected platforms; empty array = scrape-all (backend default)
       const selectedChips = document.querySelectorAll('#platform-chips .platform-chip.active');
       const platforms = selectedChips.length > 0
         ? [...selectedChips].map(c => c.dataset.platform)
         : [];
-
+      
+      // Close modal, show progress
       scrapeModal.classList.remove('open');
       const btn = document.getElementById('modal-submit');
-      btn.disabled = true;
-      const body = { role, stack };
-      if (platforms.length > 0) body.platforms = platforms;
-      const r = await apiFetch('/scrape', { method: 'POST', body });
-      btn.disabled = false;
-      if (r !== null) toast('Scraping started — new jobs will appear in ~60 seconds', 'info', 6000);
-    });
+      if (btn) btn.disabled = true;
+      toast(`Scraping for: ${roles.join(', ')}`, 'info');
+      
+      try {
+        // 1. Trigger platform scrapers (Naukri, LinkedIn, Internshala, Unstop)
+        const scrapeRes = await apiFetch('/scrape', {
+          method: 'POST',
+          body: { roles, stack, platforms }
+        });
+        
+        // 2. Trigger each Scrapy spider (Remotive, YC, Wellfound, Cutshort, Glassdoor)
+        const spiders = ['remotive', 'yc_jobs', 'wellfound', 'cutshort', 'glassdoor'];
+        const crawlResults = await Promise.allSettled(
+          spiders.map(spider =>
+            apiFetch('/crawl', {
+              method: 'POST',
+              body: { spider, roles, stack }
+            })
+          )
+        );
+        
+        const crawlOk = crawlResults.filter(r => r.status === 'fulfilled').length;
+        
+        toast(
+          `Scraping started across ${spiders.length} crawlers + platform scrapers. ` +
+          `Jobs will appear in ~60 seconds.`,
+          'success'
+        );
+        
+        // Auto-refresh jobs after 60 seconds
+        setTimeout(() => {
+          toast('Refreshing jobs...', 'info');
+          jobsOffset = 0;
+          state.jobs = [];
+          loadJobs();
+        }, 60000);
+      } catch (err) {
+        toast('Error starting scrape: ' + (err.message || err), 'error');
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    document.getElementById('modal-submit').addEventListener('click', triggerScrape);
 
     document.getElementById('btn-dismiss-banner').addEventListener('click', hideBanner);
 
@@ -4795,6 +5557,7 @@ ${esc(res.email_draft.body)}</pre>
     (async () => {
       // Expose state for kanban.js interop — must be window property
       window._state = state;
+      window.filteredJobs = filteredJobs;
       
       // Wrap renderJobs so kanban board stays in sync
       const _origRenderJobs = renderJobs;
@@ -4803,7 +5566,7 @@ ${esc(res.email_draft.body)}</pre>
         const board = document.getElementById('kanban-board');
         if (board && board.style.display !== 'none') {
           if (typeof renderKanban === 'function') {
-            renderKanban(state.jobs);
+            renderKanban(filteredJobs());
           }
         }
       };

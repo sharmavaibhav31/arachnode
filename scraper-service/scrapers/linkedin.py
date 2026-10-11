@@ -40,11 +40,11 @@ import asyncio
 import logging
 import os
 from typing import Any
-from urllib.parse import quote_plus
+from urllib.parse import quote, quote_plus
 
 from playwright.async_api import async_playwright, TimeoutError as PWTimeout
 
-from .base import PlatformScraper
+from .base import PlatformScraper, matches_roles
 
 logger = logging.getLogger(__name__)
 
@@ -59,12 +59,12 @@ _LINK_SEL      = "a.base-card__full-link"
 _TIME_SEL      = "time"
 
 
-def _build_url(role: str) -> str:
-    kw = quote_plus(role)
+def _build_url(roles: list[str]) -> str:
+    query = " OR ".join(f'"{r}"' for r in roles) if roles else "software engineer"
     # f_TPR=r604800 → past week; geoId=102713980 → India
     return (
         f"https://www.linkedin.com/jobs/search/"
-        f"?keywords={kw}&location=India&geoId=102713980"
+        f"?keywords={quote(query)}&location=India&geoId=102713980"
         f"&f_TPR=r604800&position=1&pageNum=0"
     )
 
@@ -78,8 +78,8 @@ class LinkedInScraper(PlatformScraper):
             MIN_SCROLL_DELAY,
         )
 
-    async def scrape(self, role: str, stack: list[str]) -> list[dict[str, Any]]:
-        url = _build_url(role)
+    async def scrape(self, roles: list[str], stack: list[str]) -> list[dict[str, Any]]:
+        url = _build_url(roles)
         jobs: list[dict[str, Any]] = []
 
         async with async_playwright() as pw:
@@ -142,6 +142,9 @@ class LinkedInScraper(PlatformScraper):
                         if not title or not company:
                             continue
 
+                        if not matches_roles(title, roles):
+                            continue
+
                         jobs.append(
                             {
                                 "company":   company,
@@ -163,5 +166,5 @@ class LinkedInScraper(PlatformScraper):
             finally:
                 await browser.close()
 
-        logger.info("[LinkedIn] Total scraped: %d jobs for role '%s'", len(jobs), role)
+        logger.info("[LinkedIn] Total scraped: %d jobs for roles %s", len(jobs), roles)
         return jobs

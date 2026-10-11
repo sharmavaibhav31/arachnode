@@ -42,6 +42,7 @@ log = get_logger("scheduler.main")
 CRAWL_INTERVAL_HOURS    = int(os.environ.get("CRAWL_INTERVAL_HOURS",    8))
 DISCOVER_INTERVAL_HOURS = int(os.environ.get("DISCOVER_INTERVAL_HOURS", 24))
 SUMMARY_PATH            = Path(os.environ.get("SUMMARY_PATH", "/data/run_summary.json"))
+SCRAPING_AUTO_ENABLED   = os.environ.get("SCRAPING_AUTO_ENABLED", "false").lower() == "true"
 
 # ---------------------------------------------------------------------------
 # Run summary
@@ -117,15 +118,15 @@ def build_scheduler() -> BackgroundScheduler:
         timezone="UTC",
     )
 
-    # ── Job 1: Scrape every CRAWL_INTERVAL_HOURS ──────────────────────────
-    scheduler.add_job(
-        func=lambda: _run(tasks.run_scrape_cycle, "scrape"),
-        trigger="interval",
-        hours=CRAWL_INTERVAL_HOURS,
-        id="scrape",
-        name="Platform + Scrapy scrape",
-        next_run_time=datetime.now(timezone.utc),  # run immediately on startup
-    )
+    # ── Job 1: Scrape every CRAWL_INTERVAL_HOURS (if auto-enabled) ────────
+    if SCRAPING_AUTO_ENABLED:
+        scheduler.add_job(
+            func=lambda: _run(tasks.run_scrape_cycle, "scrape"),
+            trigger="interval",
+            hours=CRAWL_INTERVAL_HOURS,
+            id="scrape",
+            name="Platform + Scrapy scrape",
+        )
 
     # ── Job 2: Discover contacts every DISCOVER_INTERVAL_HOURS ────────────
     scheduler.add_job(
@@ -224,6 +225,7 @@ def main() -> None:
         discover_interval_hours=DISCOVER_INTERVAL_HOURS,
         gateway_url=os.environ.get("GATEWAY_URL", "http://gateway:8080"),
         role=os.environ.get("JOBSEEKER_ROLE", "Backend Engineer"),
+        scraping_auto_enabled=SCRAPING_AUTO_ENABLED,
     )
 
     _maybe_manual_run()   # exits if MANUAL_TASK is set

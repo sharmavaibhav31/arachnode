@@ -16,7 +16,7 @@ from datetime import date
 from typing import Any
 
 from fastapi import FastAPI, BackgroundTasks
-from pydantic import BaseModel
+from pydantic import BaseModel, validator, root_validator
 
 import emit as emitter
 from discovery.dork_builder import DEFAULT_PLATFORMS, JobDorkConfig
@@ -67,9 +67,28 @@ app = FastAPI(
 # ---------------------------------------------------------------------------
 
 class ScrapeRequest(BaseModel):
-    role: str = "Backend Engineer"
+    roles: list[str] = ["Backend Engineer"]  # multiple roles
+    role: str | None = None
     stack: list[str] = []
     platforms: list[str] = []   # empty → scrape all platforms
+
+    @root_validator(pre=True)
+    def handle_legacy_role(cls, values):
+        if isinstance(values, dict):
+            if "role" in values and "roles" not in values:
+                r = values["role"]
+                if isinstance(r, str):
+                    values["roles"] = [item.strip() for item in r.split(",") if item.strip()]
+                elif isinstance(r, list):
+                    values["roles"] = r
+        return values
+
+    # backward compat: also accept single role string
+    @validator('roles', pre=True, always=True)
+    def parse_roles(cls, v):
+        if isinstance(v, str):
+            return [r.strip() for r in v.split(',') if r.strip()]
+        return v
 
 
 class ScrapeResponse(BaseModel):
@@ -97,7 +116,7 @@ class DorkDiscoverResponse(BaseModel):
 # Background scrape runner
 # ---------------------------------------------------------------------------
 
-async def _run_scrapers(role: str, stack: list[str], platforms: list[str]) -> None:
+async def _run_scrapers(roles: list[str], stack: list[str], platforms: list[str]) -> None:
     """
    
     Run selected (or all) scrapers concurrently then emit results to Redis.
@@ -129,7 +148,7 @@ async def _run_scrapers(role: str, stack: list[str], platforms: list[str]) -> No
 
     # Run selected scrapers in parallel; capture per-scraper exceptions.
     results = await asyncio.gather(
-        *[s.scrape(role, stack) for s in scrapers],
+        *[s.scrape(roles, stack) for s in scrapers],
         return_exceptions=True,
     )
 
@@ -171,7 +190,7 @@ async def trigger_scrape(body: ScrapeRequest, background_tasks: BackgroundTasks)
         if body.platforms
         else PLATFORMS
     )
-    background_tasks.add_task(_run_scrapers, body.role, body.stack, body.platforms)
+    background_tasks.add_task(_run_scrapers, body.roles, body.stack, body.platforms)
     return ScrapeResponse(triggered=True, platforms=active_platforms)
 
 

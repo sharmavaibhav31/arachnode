@@ -29,6 +29,8 @@ app = FastAPI(title="Crawler API")
 
 class CrawlRequest(BaseModel):
     spider: str
+    roles: list[str] = []   # empty = use env var defaults
+    stack: list[str] = []   # empty = use env var defaults
 
 runner = None
 reactor_thread = None
@@ -61,7 +63,7 @@ async def global_exception_handler(request: Request, exc: Exception):
         }
     )
 
-def _run_spider(spider_name: str):
+def _run_spider(spider_name: str, roles: list[str], stack: list[str]):
     spiders = {
         "remotive": RemotiveSpider,
         "yc_jobs": YCJobsSpider,
@@ -74,10 +76,26 @@ def _run_spider(spider_name: str):
         logger.error(f"Spider not found: {spider_name}")
         return
     
-    logger.info(f"Scheduling spider: {spider_name}")
+    settings_override = {}
+    if roles:
+        settings_override["JOBSEEKER_ROLES"] = roles
+        settings_override["JOBSEEKER_ROLE"] = roles[0]  # compat
+    if stack:
+        settings_override["JOBSEEKER_STACK"] = ",".join(stack)
     
-    # Schedule the crawl on the reactor thread (thread-safe)
-    reactor.callFromThread(runner.crawl, spider_cls)
+    logger.info(f"Scheduling spider: {spider_name} roles={roles} stack={stack}")
+    
+    from scrapy.utils.project import get_project_settings
+    settings = get_project_settings()
+    settings.update(settings_override)
+    
+    reactor.callFromThread(
+        runner.crawl,
+        spider_cls,
+        custom_settings=settings_override,
+        roles=roles,
+        stack=stack,
+    )
 
 @app.post("/crawl")
 async def trigger_crawl(req: CrawlRequest, background_tasks: BackgroundTasks):
@@ -87,7 +105,7 @@ async def trigger_crawl(req: CrawlRequest, background_tasks: BackgroundTasks):
             status_code=400,
             content={"error": f"Unknown spider: {req.spider}. Valid: {sorted(valid)}"}
         )
-    background_tasks.add_task(_run_spider, req.spider)
+    background_tasks.add_task(_run_spider, req.spider, req.roles, req.stack)
     return {"triggered": True, "spider": req.spider, "status": "scheduled"}
 
 @app.get("/health")

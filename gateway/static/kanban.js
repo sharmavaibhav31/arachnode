@@ -1,4 +1,4 @@
-﻿/* kanban.js — Vanilla JS Kanban board for Arachnode dashboard
+/* kanban.js — Vanilla JS Kanban board for Arachnode dashboard
    Columns: Discovered → Contacted → Applied → Interviewing → Offer / Rejected
    - Drag-and-drop between columns (HTML5 drag API, no heavy libs)
    - PATCH /api/jobs/{id}/status on drop with optimistic update + rollback
@@ -186,8 +186,8 @@ function setView(view, save = true) {
     grid?.style  && (grid.style.display  = 'none');
     board?.style && (board.style.display = 'flex');
     btnG?.classList.remove('active-view');
-    btnK?.classList.add('active-view');
-    if (window._state?.jobs?.length) renderKanban(window._state.jobs);
+    const jobsToRender = typeof window.filteredJobs === 'function' ? window.filteredJobs() : (window._state?.jobs || []);
+    if (jobsToRender.length || window._state?.jobs?.length) renderKanban(jobsToRender);
   } else {
     grid?.style  && (grid.style.display  = '');
     board?.style && (board.style.display = 'none');

@@ -84,6 +84,9 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    volumes:
+      - ./crawler-service/crawler:/app/crawler
+      - ./crawler-service/api.py:/app/api.py
     restart: on-failure
     networks: [ jobnet ]
     healthcheck:
@@ -105,6 +108,8 @@ services:
       HF_HOME: /home/appuser/.cache/huggingface
     volumes:
       - hf_cache:/home/appuser/.cache/huggingface
+      - ./aggregator-service/db.py:/app/db.py
+      - ./aggregator-service/consumer.py:/app/consumer.py
     depends_on:
       redis:
         condition: service_healthy
@@ -131,6 +136,9 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    volumes:
+      - ./scraper-service/scrapers:/app/scrapers
+      - ./scraper-service/main.py:/app/main.py
     networks: [ jobnet ]
     restart: on-failure
     deploy:
@@ -293,6 +301,8 @@ services:
       JOBHUNTER_API_KEY: ${JOBHUNTER_API_KEY:-}
     volumes:
       - run_summary:/data:ro
+      - ./gateway/main.py:/app/main.py
+      - ./gateway/dashboard.html:/app/dashboard.html
     depends_on:
       aggregator:
         condition: service_healthy
@@ -325,13 +335,15 @@ services:
       JOBSEEKER_ROLE: ${JOBSEEKER_ROLE:-Backend Engineer}
       JOBSEEKER_STACK: ${JOBSEEKER_STACK:-Python,FastAPI,PostgreSQL,Redis,Go}
       CRAWL_INTERVAL_HOURS: ${CRAWL_INTERVAL_HOURS:-8}
+      SCRAPING_AUTO_ENABLED: ${SCRAPING_AUTO_ENABLED:-false}
       DISCOVER_INTERVAL_HOURS: ${DISCOVER_INTERVAL_HOURS:-24}
       SCRAPER_WAIT_SECS: ${SCRAPER_WAIT_SECS:-60}
       DISCOVER_DELAY_SECS: ${DISCOVER_DELAY_SECS:-30}
       SUMMARY_PATH: /data/run_summary.json
     volumes:
       - run_summary:/data
-      - ./gateway:/app
+      - ./scheduler/main.py:/app/main.py
+      - ./scheduler/tasks.py:/app/tasks.py
     depends_on:
       gateway:
         condition: service_healthy

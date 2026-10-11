@@ -47,7 +47,7 @@ from typing import Any
 import httpx
 from bs4 import BeautifulSoup
 
-from .base import PlatformScraper
+from .base import PlatformScraper, matches_roles
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +137,7 @@ def _extract_posted_at(card: Any) -> str | None:
     return _normalise_posted_at(match.group(1))
 
 
-def _parse_cards(soup: BeautifulSoup, role: str) -> list[dict[str, Any]]:
+def _parse_cards(soup: BeautifulSoup, roles: list[str]) -> list[dict[str, Any]]:
     """
     Extract job postings from one results page.
 
@@ -186,10 +186,13 @@ def _parse_cards(soup: BeautifulSoup, role: str) -> list[dict[str, Any]]:
             if not company:
                 continue
 
+            if not matches_roles(title, roles):
+                continue
+
             jobs.append(
                 {
                     "company":   company,
-                    "role":      title or role,
+                    "role":      title,
                     "source":    "internshala",
                     "url":       job_url,
                     "stack":     skills,
@@ -211,8 +214,10 @@ class IntershalaScraper(PlatformScraper):
     def __init__(self) -> None:
         self._delay: float = float(os.environ.get("SCRAPER_DELAY_SECONDS", 3))
 
-    async def scrape(self, role: str, stack: list[str]) -> list[dict[str, Any]]:
-        slug = _role_to_slug(role)
+    async def scrape(self, roles: list[str], stack: list[str]) -> list[dict[str, Any]]:
+        primary_role = roles[0] if roles else "software engineer"
+        role_slug = primary_role.lower().strip()
+        role_slug = re.sub(r'[^a-z0-9]+', '-', role_slug).strip('-')
         all_jobs: list[dict[str, Any]] = []
         seen_final_urls: set[str] = set()
 
@@ -222,7 +227,7 @@ class IntershalaScraper(PlatformScraper):
             timeout=20,
         ) as client:
             for page in range(1, MAX_PAGES + 1):
-                url = _build_page_url(slug, page)
+                url = _build_page_url(role_slug, page)
 
                 logger.info("[Internshala] Fetching page %d: %s", page, url)
                 try:
@@ -249,7 +254,7 @@ class IntershalaScraper(PlatformScraper):
                 seen_final_urls.add(final_url)
 
                 soup  = BeautifulSoup(resp.text, "html.parser")
-                cards = _parse_cards(soup, role)
+                cards = _parse_cards(soup, roles)
                 logger.info("[Internshala] Page %d → %d jobs", page, len(cards))
                 all_jobs.extend(cards)
 
@@ -261,6 +266,6 @@ class IntershalaScraper(PlatformScraper):
                     await asyncio.sleep(max(delay, 2.5))
 
         logger.info(
-            "[Internshala] Total scraped: %d jobs for role '%s'", len(all_jobs), role
+            "[Internshala] Total scraped: %d jobs for roles %s", len(all_jobs), roles
         )
         return all_jobs

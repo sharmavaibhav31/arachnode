@@ -46,10 +46,11 @@ import logging
 import os
 import re
 from typing import Any
+from urllib.parse import quote
 
 from playwright.async_api import async_playwright, TimeoutError as PWTimeout
 
-from .base import PlatformScraper
+from .base import PlatformScraper, matches_roles, matches_stack
 
 logger = logging.getLogger(__name__)
 
@@ -245,9 +246,10 @@ class UnstopScraper(PlatformScraper):
             3.0,
         )
 
-    async def scrape(self, role: str, stack: list[str]) -> list[dict[str, Any]]:
+    async def scrape(self, roles: list[str], stack: list[str]) -> list[dict[str, Any]]:
         all_jobs:  list[dict[str, Any]] = []
         seen_urls: set[str]             = set()
+        search_terms = roles if roles else ["software engineer"]
 
         async with async_playwright() as pw:
             browser = await pw.chromium.launch(
@@ -266,103 +268,114 @@ class UnstopScraper(PlatformScraper):
 
             try:
                 for section in _SECTIONS:
-                    logger.info("[Unstop] Scraping section: %s", section)
+                    for term in search_terms:
+                        encoded = quote(term)
+                        logger.info("[Unstop] Scraping section: %s term: %s", section, term)
 
-                    for page_num in range(1, MAX_PAGES + 1):
-                        url  = f"{BASE_URL}/{section}?page={page_num}"
-                        page = await context.new_page()
+                        for page_num in range(1, MAX_PAGES + 1):
+                            url  = f"{BASE_URL}/{section}?searchTerm={encoded}&page={page_num}"
+                            page = await context.new_page()
 
-                        try:
-                            logger.info("[Unstop] Loading: %s", url)
-                            await page.goto(
-                                url,
-                                wait_until="domcontentloaded",
-                                timeout=30_000,
-                            )
-
-                            # Wait for at least one card to appear
                             try:
-                                await page.wait_for_selector(
-                                    _CARD_SEL, timeout=15_000
+                                logger.info("[Unstop] Loading: %s", url)
+                                await page.goto(
+                                    url,
+                                    wait_until="domcontentloaded",
+                                    timeout=30_000,
                                 )
-                            except PWTimeout:
-                                logger.warning(
-                                    "[Unstop] No cards on %s — stopping section.", url
-                                )
-                                break
 
-                            # Brief pause to let Angular finish hydrating
-                            await asyncio.sleep(2.0)
-
-                            # ── Extract all listing card links ───────────────
-                            links = await page.query_selector_all(_CARD_SEL)
-                            logger.info(
-                                "[Unstop] %s page %d → %d raw links",
-                                section, page_num, len(links),
-                            )
-
-                            if not links:
-                                break
-
-                            page_count = 0
-                            for link_el in links:
+                                # Wait for at least one card to appear
                                 try:
-                                    href = (
-                                        await link_el.get_attribute("href") or ""
-                                    ).strip()
-
-                                    if not href:
-                                        continue
-
-                                    # Skip top-level category pages — listing
-                                    # URLs always have at least 2 path segments
-                                    # e.g. /jobs/react-developer-pragma-1234
-                                    path     = href.split("?")[0].rstrip("/")
-                                    segments = [s for s in path.split("/") if s]
-                                    if len(segments) < 2:
-                                        continue
-
-                                    # Deduplicate by canonical URL (no query string)
-                                    canonical = path
-                                    if canonical in seen_urls:
-                                        continue
-
-                                    text = (await link_el.inner_text()).strip()
-                                    job  = _parse_card(href, text)
-
-                                    if job:
-                                        seen_urls.add(canonical)
-                                        all_jobs.append(job)
-                                        page_count += 1
-
-                                except Exception:
-                                    logger.debug(
-                                        "[Unstop] Error parsing card", exc_info=True
+                                    await page.wait_for_selector(
+                                        _CARD_SEL, timeout=15_000
                                     )
-                                    continue
+                                except PWTimeout:
+                                    logger.warning(
+                                        "[Unstop] No cards on %s — stopping section term.", url
+                                    )
+                                    break
 
-                            logger.info(
-                                "[Unstop] %s page %d → %d jobs parsed",
-                                section, page_num, page_count,
-                            )
+                                # Brief pause to let Angular finish hydrating
+                                await asyncio.sleep(2.0)
 
-                            # If this page yielded nothing new, stop paginating
-                            if page_count == 0:
+                                # ── Extract all listing card links ───────────────
+                                links = await page.query_selector_all(_CARD_SEL)
+                                logger.info(
+                                    "[Unstop] %s term %s page %d → %d raw links",
+                                    section, term, page_num, len(links),
+                                )
+
+                                if not links:
+                                    break
+
+                                page_count = 0
+                                for link_el in links:
+                                    try:
+                                        href = (
+                                            await link_el.get_attribute("href") or ""
+                                        ).strip()
+
+                                        if not href:
+                                            continue
+
+                                        # Skip top-level category pages — listing
+                                        # URLs always have at least 2 path segments
+                                        # e.g. /jobs/react-developer-pragma-1234
+                                        path     = href.split("?")[0].rstrip("/")
+                                        segments = [s for s in path.split("/") if s]
+                                        if len(segments) < 2:
+                                            continue
+
+                                        # Deduplicate by canonical URL (no query string)
+                                        canonical = path
+                                        if canonical in seen_urls:
+                                            continue
+
+                                        text = (await link_el.inner_text()).strip()
+                                        job  = _parse_card(href, text)
+
+                                        if job:
+                                            job_title = job.get("role", "")
+                                            job_skills = job.get("stack", [])
+
+                                            if not matches_roles(job_title, roles):
+                                                continue
+
+                                            if stack and job_skills and not matches_stack(job_skills, stack):
+                                                continue
+
+                                            seen_urls.add(canonical)
+                                            all_jobs.append(job)
+                                            page_count += 1
+
+                                    except Exception:
+                                        logger.debug(
+                                            "[Unstop] Error parsing card", exc_info=True
+                                        )
+                                        continue
+
+                                logger.info(
+                                    "[Unstop] %s term %s page %d → %d jobs parsed",
+                                    section, term, page_num, page_count,
+                                )
+
+                                # If this page yielded nothing new, stop paginating
+                                if page_count == 0:
+                                    break
+
+                            except Exception:
+                                logger.exception("[Unstop] Unexpected error on %s", url)
                                 break
 
-                        except Exception:
-                            logger.exception("[Unstop] Unexpected error on %s", url)
-                            break
+                            finally:
+                                await page.close()
 
-                        finally:
-                            await page.close()
-
-                        # Polite delay between page loads
-                        if page_num < MAX_PAGES:
-                            await asyncio.sleep(self._delay)
+                            # Polite delay between page loads
+                            if page_num < MAX_PAGES:
+                                await asyncio.sleep(self._delay)
 
             finally:
                 await browser.close()
 
-        logger.info("[Unstop] Total scraped: %d opportunities", len(all_jobs))
+        logger.info("[Unstop] Total scraped: %d opportunities for roles %s", len(all_jobs), roles)
         return all_jobs

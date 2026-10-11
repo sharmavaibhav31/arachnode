@@ -15,7 +15,7 @@ from urllib.parse import urlsplit
 
 from discovery.dork_builder import DEFAULT_PLATFORMS, JobDorkConfig
 from discovery.dork_discovery import DorkDiscoveryService, provider_from_env
-from scrapers.base import PlatformScraper
+from scrapers.base import PlatformScraper, matches_roles
 
 logger = logging.getLogger(__name__)
 
@@ -43,14 +43,15 @@ def _parse_after(value: str | None) -> date | None:
 class GoogleDorkScraper(PlatformScraper):
     source_name = "google_dork"
 
-    async def scrape(self, role: str, stack: list[str]) -> list[dict]:
+    async def scrape(self, roles: list[str], stack: list[str]) -> list[dict]:
         platforms = tuple(
             item.strip()
             for item in os.environ.get("DORK_PLATFORMS", "").split(",")
             if item.strip()
         )
+        primary_role = roles[0] if roles else "Backend Engineer"
         config = JobDorkConfig(
-            role=role,
+            role=primary_role,
             stack=tuple(stack),
             location=os.environ.get("DORK_LOCATION"),
             year=int(os.environ["DORK_YEAR"]) if os.environ.get("DORK_YEAR") else None,
@@ -71,10 +72,14 @@ class GoogleDorkScraper(PlatformScraper):
 
         jobs: list[dict] = []
         for candidate in response.candidates:
+            title = candidate.title or primary_role
+            if not matches_roles(title, roles):
+                continue
+
             jobs.append(
                 {
                     "company": _company_from_url(candidate.url),
-                    "role": candidate.title or role,
+                    "role": title,
                     "source": self.source_name,
                     "url": candidate.url,
                     "stack": stack,
@@ -84,5 +89,5 @@ class GoogleDorkScraper(PlatformScraper):
                 }
             )
 
-        logger.info("[GoogleDork] Accepted %d discovered URLs", len(jobs))
+        logger.info("[GoogleDork] Accepted %d discovered URLs for roles %s", len(jobs), roles)
         return jobs

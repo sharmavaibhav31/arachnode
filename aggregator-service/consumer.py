@@ -109,12 +109,20 @@ async def _process_message(
 
     posted_at = normalize_date(data.get("posted_at"))
 
+    url = data.get("url", "").strip() or None
+    # If no URL, generate a synthetic one for dedup purposes
+    if not url:
+        synthetic = hashlib.md5(
+            f"{company}|{role}".lower().encode()
+        ).hexdigest()
+        url = f"synthetic://{synthetic}"
+
     row = await database.insert_job(
         pool,
         company=company,
         role=role,
         source=data.get("source") or None,
-        url=data.get("url") or None,
+        url=url,
         stack=stack,
         product=data.get("product") or None,
         location=data.get("location") or None,

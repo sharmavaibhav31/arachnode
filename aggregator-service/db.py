@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     company     TEXT        NOT NULL,
     role        TEXT        NOT NULL,
     source      TEXT,
-    url         TEXT,
+    url         TEXT        UNIQUE,
     stack       TEXT[],
     product     TEXT,
     location    TEXT,
@@ -75,6 +75,22 @@ CREATE INDEX IF NOT EXISTS idx_jobs_status
 async def _init_schema(pool: asyncpg.Pool) -> None:
     async with pool.acquire() as conn:
         await conn.execute(_SCHEMA_SQL)
+        try:
+            # Clean up pre-existing duplicate URLs before creating the unique index
+            await conn.execute("""
+                DELETE FROM jobs
+                WHERE id IN (
+                    SELECT id FROM (
+                        SELECT id, ROW_NUMBER() OVER (PARTITION BY url ORDER BY created_at DESC) as rnum
+                        FROM jobs
+                        WHERE url IS NOT NULL
+                    ) t
+                    WHERE t.rnum > 1
+                );
+            """)
+            await conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_url ON jobs (url);")
+        except Exception as e:
+            logger.warning("Could not create unique index on jobs(url): %s", e)
     logger.info("Database schema verified / created.")
 
 
@@ -93,7 +109,7 @@ async def insert_job(
     sql = """
         INSERT INTO jobs (company, role, source, url, stack, product, location, posted_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, COALESCE($8, NOW()))
-        ON CONFLICT DO NOTHING
+        ON CONFLICT (url) DO NOTHING
         RETURNING *
     """
     async with pool.acquire() as conn:
