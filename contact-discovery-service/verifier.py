@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import smtplib
 import socket
 import time
@@ -15,6 +16,12 @@ import os
 import redis.asyncio as redis
 
 logger = logging.getLogger(__name__)
+
+# Lightweight and robust regex for validating basic email structure:
+# - Exactly one "@"
+# - Non-empty local part
+# - Non-empty domain with a valid domain-like structure (e.g. domain.tld)
+EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
 
 VerifyResult = Literal["verified", "unverified", "invalid"]
 
@@ -97,7 +104,7 @@ async def verify_email(email: str, redis_client=None) -> VerifyResult:
     Async wrapper around the SMTP check.
     Enforces per-domain rate limiting using Redis before connecting.
     """
-    if not email or "@" not in email:
+    if not email or not EMAIL_REGEX.match(email):
         return "invalid"
 
     domain = email.split("@", 1)[1].lower()
